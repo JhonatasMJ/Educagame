@@ -1,0 +1,159 @@
+.intro-bg {
+  background-color: var(--preto-claro);
+  background-image: url("../imgs/bg-inicio.webp");
+}
+
+.intro-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.intro-container::before {
+  content: "";
+  background-image: url("../imgs/decorador-inicio.svg");
+  width: 52px;
+  height: 52px;
+  position: absolute;
+  top: 150px;
+}
+
+.conteudo {
+  display: grid;
+  margin-bottom: 110px;
+}
+
+.conteudo span {
+  font-weight: bold;
+  font-size: 1.25rem;
+  margin-bottom: 20px;
+}
+
+.conteudo h1 {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 3.125rem;
+  color: var(--texto);
+  transform: rotate(-0.0000000001deg);
+  letter-spacing: 2px;
+}
+
+.conteudo h1 span {
+  font-size: 3.125rem;
+}
+
+.conteudo p {
+  font-size: 1.125rem;
+  color: var(--texto);
+  font-family: "Titillium Web", sans-serif;
+  margin-top: 26px;
+}
+
+.conteudo .btn {
+  display: flex;
+  gap: 20px;
+  margin-top: 40px;
+  font-family: "Titillium Web", sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 1.125rem;
+}
+
+.conteudo .btn a {
+  text-decoration: none;
+}
+
+.conteudo .btn a:first-child {
+  background-image: var(--gradiente);
+  color: var(--preto-claro);
+  padding: 8px 24px;
+  border-radius: 2px;
+  transition: 0.6s ease;
+  display: flex;
+  align-items: center;
+  border: 2px solid transparent;
+}
+
+.conteudo .btn a:first-child:hover {
+  box-shadow: 0px 1px 16px var(--amarelo);
+  transform: scale(1.05);
+  border: 2px solid var(--amarelo);
+}
+
+.conteudo .btn a:last-child {
+  border: 2px solid var(--amarelo);
+  padding: 8px 58px;
+  color: var(--texto);
+  border-radius: 2px;
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  transition: color 1s;
+}
+
+.conteudo .btn a:last-child:hover {
+  color: var(--preto-claro);
+  box-shadow: 0px 1px 16px var(--amarelo);
+}
+
+.conteudo .btn a:last-child span {
+  position: relative;
+  z-index: 1;
+}
+
+.conteudo .btn a:last-child::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background-image: var(--gradiente);
+  transition: left 0.8s;
+  z-index: 0;
+}
+
+.conteudo .btn a:last-child:hover::before {
+  left: 0;
+}
+
+@media (max-width: 768px) {
+  .intro-container {
+    grid-template-columns: 1fr;
+    padding: 40px 20px;
+  }
+
+  .intro-container::before {
+    display: none;
+  }
+
+  .conteudo span {
+    text-align: start;
+    font-size: 1rem;
+  }
+
+  .conteudo h1,
+  .conteudo h1 span {
+    font-size: 2.2rem;
+    text-align: start;
+  }
+
+  .conteudo p {
+    font-size: 1rem;
+    text-align: start;
+  }
+
+  .cofre {
+    display: none;
+  }
+
+  .conteudo .btn a:last-child {
+    padding: 6px 10px;
+  }
+
+  .conteudo .btn a:first-child {
+    padding: 6px 12px;
+  }
+}

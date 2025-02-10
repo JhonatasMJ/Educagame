@@ -1,0 +1,103 @@
+.contato-bg {
+  background-image: url("../imgs/bg-inicio.webp");
+  background-color: var(--preto-claro);
+}
+
+.contato-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 120px;
+}
+
+.contato-conteudo .web {
+  color: var(--texto);
+  font-size: 1.125rem;
+  margin-top: 24px;
+}
+.contato-conteudo {
+  position: relative;
+}
+
+.contato-conteudo::before {
+  content: "";
+  display: block;
+  background-image: url("../imgs/decorador-inicio.svg");
+  background-repeat: no-repeat;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 32px;
+  transform: rotate(90deg);
+  position: absolute;
+  right: 0px;
+  top: -41px;
+  padding: 10px 0px;
+}
+
+.redes {
+  margin-top: 54px;
+}
+
+.redes .titulo {
+  font-size: 1.6rem;
+}
+
+.redes a {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.icon-redes {
+  color: #fff;
+  font-size: 1.4rem;
+
+  background-image: var(--gradiente);
+  padding: 10px;
+  border-radius: 50px;
+}
+
+.contato-conteudo .titulo .citacao {
+  font-size: 1.8rem;
+}
+
+.citacao-div {
+  display: flex;
+  flex-direction: column;
+  margin-top: 60px;
+}
+
+.citacao-div .citacao-span {
+  font-size: 1rem;
+  color: #ffffff7c;
+}
+
+.citacao-div .btn-simulacao {
+  width: max-content;
+  color: var(--cinza);
+  margin-bottom: 12px;
+}
+
+.citacao-div .btn-simulacao:hover {
+  box-shadow: 0px 1px 16px var(--amarelo);
+  transform: scale(1.1);
+}
+
+.icon-whats {
+  margin-bottom: 2px;
+}
+
+@media (max-width: 768px) {
+  .contato-container {
+    grid-template-columns: 1fr;
+    padding: 40px 20px;
+  }
+  .contato-container img {
+    display: none;
+  }
+}

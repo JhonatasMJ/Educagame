@@ -1,0 +1,89 @@
+.simulacao-bg {
+  background-image: url("../imgs/bg-inicio.webp");
+  background-color: var(--preto-claro);
+}
+
+.simulacao-container {
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  gap: 80px;
+  grid-template-columns: 1fr 1fr;
+  padding: 180px 0px 180px 0px;
+}
+
+.simulacao-conteudo::before {
+  content: "";
+  display: block;
+  background-image: url("../imgs/decorador-inicio.svg");
+  width: 52px;
+  height: 52px;
+  margin-bottom: 32px;
+}
+
+.simulacao-conteudo p {
+  color: var(--texto);
+  font-size: 1.125rem;
+}
+
+.simulacao-conteudo p {
+  margin-bottom: 28px;
+}
+
+.simulacao-conteudo h2 {
+  margin-bottom: 18px;
+}
+
+.btn-simulacao {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background-image: var(--gradiente);
+  text-decoration: none;
+  color: var(--preto-claro);
+  padding: 8px 36px;
+  border-radius: 2px;
+  font-size: 1.4rem;
+  transition: 0.6s ease;
+}
+
+.arrow-simulacao {
+  transition: 0.6s ease-in;
+}
+
+.simulacao-conteudo a:hover {
+  box-shadow: 0px 1px 16px var(--amarelo);
+  transform: scale(1.05);
+}
+.simulacao-conteudo a:hover .arrow-simulacao {
+  transform: translate3d(10px, 0, 0);
+  transition: 0.6s ease-in;
+}
+
+.grafico {
+  text-align: center;
+}
+
+.grafico h3 {
+  color: var(--texto);
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.grafico p {
+  color: var(--texto);
+  margin-top: 24px;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .simulacao-container {
+    grid-template-columns: 1fr;
+    padding: 40px 20px;
+  }
+  .simulacao-conteudo {
+    padding: 40px 20px;
+  }
+}

@@ -1,0 +1,101 @@
+.footer-bg {
+  background-image: url("../imgs/bg-header.png"), var(--gradiente);
+  padding: 38px 0px;
+}
+
+footer .logotipo {
+  width: 6rem;
+}
+
+.footer-container {
+  display: grid;
+}
+
+.footer-conteudo {
+  display: grid;
+  grid-template-columns: 3fr 5fr auto;
+  align-items: center;
+}
+
+.footer-conteudo h3 {
+  font-size: 1.6rem;
+  margin-bottom: 12px;
+}
+
+.footer-contato,
+.footer-inform {
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-conteudo .web {
+  color: var(--preto);
+  text-decoration: none;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.icon-footer {
+  color: var(--preto);
+  font-size: 1.8rem;
+}
+
+.icones {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.decorador::after {
+  display: block;
+  content: "";
+  width: 260px;
+  height: 2px;
+  background-color: var(--preto-claro);
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+footer span {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.jhow-copy {
+  font-size: 0.9rem;
+  margin-top: 12px;
+}
+
+.jhow {
+  color: var(--cinza);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .footer-bg {
+    padding: 0px;
+  }
+  .footer-conteudo {
+    grid-template-columns: 1fr;
+  }
+  .footer-container {
+    padding: 40px 20px;
+  }
+  .footer-contato {
+    margin-bottom: 32px;
+  }
+
+  .footer-conteudo h3 {
+    font-size: 1.4rem;
+    margin-bottom: 12px;
+  }
+  .footer-conteudo .web {
+    font-size: 1rem;
+  }
+  footer .logotipo {
+    width: 5.6rem;
+    margin-bottom: 20px;
+  }
+  .footer-inform {
+    margin-bottom: 12px;
+  }
+}
