@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Crbr",
-    "slug": "Crbr",
+    "name": "Educagame",
+    "slug": "Educagame",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -16,7 +16,7 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#030303"
       },
-      "package": "com.anonymous.Crbr"
+      "package": "com.anonymous.Educagame"
     },
     "web": {
       "bundler": "metro",
