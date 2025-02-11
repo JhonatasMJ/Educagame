@@ -11,7 +11,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
 } from "react-native";
-/* import ImagemAdaptativa from "../components/ImagemAdaptativa"; */
+ import ImagemAdaptativa from "../components/ImagemAdaptativa"; 
 
 
 interface Errors {
@@ -128,7 +128,8 @@ const Login = () => {
           className="flex-1"
         >
           <View className="p-5 flex-1 justify-center">
- {/*            <ImagemAdaptativa nome="logo" estilo="w-9/10 h-1/6 my-4" source={""} /> */}
+          <ImagemAdaptativa nome="logo"  estilo={{ width: '90%', height: '16%' }} />
+
             <View>
               <Text className="text-xl font-semibold mb-2 text-primary" >Bem-vindo (a) 👋</Text>
               <Text className="text-4xl font-bold mb-4">Entre na sua conta</Text>
