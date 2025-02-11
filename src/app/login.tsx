@@ -127,8 +127,8 @@ const Login = () => {
           bounces={false}
           className="flex-1"
         >
-          <View className="p-5 flex-1 justify-center">
-          <ImagemAdaptativa nome="logo"  estilo={{ width: '90%', height: '16%' }} />
+          <View className="p-5 flex-1 justify-center mt-28">
+          <ImagemAdaptativa nome="logo"  estilo={{ width: '80%', height: '30%' }} />
 
             <View>
               <Text className="text-xl font-semibold mb-2 text-primary" >Bem-vindo (a) 👋</Text>
@@ -138,7 +138,7 @@ const Login = () => {
               <View>
                 <Text className="text-lg font-medium text-gray-800 mb-2">E-mail:</Text>
                 <TextInput
-                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-blue-600'}`}
+                  className={` w-full border-2 rounded-lg p-4 text-lg bg-secondary ${errors.email ? 'border-red-500' : 'border-primary'}`}
                   placeholder="E-mail"
                   value={formData.email}
                   onChangeText={(value: string) => updateFormField("email", value)}
@@ -153,10 +153,10 @@ const Login = () => {
                 )}
               </View>
 
-              <View className="mb-5">
+              <View className="mt-6">
                 <Text className="text-lg font-medium text-gray-800 mb-2">Senha:</Text>
                 <TextInput
-                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-blue-600'}`}
+                  className={`w-full border-2 rounded-lg p-4 text-lg bg-secondary ${errors.password ? 'border-red-500' : 'border-primary'}`}
                   placeholder="Senha"
                   value={formData.password}
                   onChangeText={(value: string) => updateFormField("password", value)}
@@ -167,6 +167,9 @@ const Login = () => {
                 {errors.password && (
                   <Text className="text-red-500 text-sm mt-1 ml-1">{errors.password}</Text>
                 )}
+                     <Text className="text-primary underline text-sm text-right font-bold mt-2">
+                  Esqueci minha senha
+                </Text>
               </View>
             </View>
 
@@ -186,9 +189,7 @@ const Login = () => {
                 onPress={handleForgotPassword}
                 disabled={isLoading}
               >
-                <Text className="text-blue-600 text-sm text-center">
-                  Esqueceu sua senha?
-                </Text>
+           
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -196,7 +197,7 @@ const Login = () => {
              /*    onPress={() => navigation.navigate("Step")} */
                 disabled={isLoading}
               >
-                <Text className="text-blue-600 text-sm text-center">
+                <Text className="text-primary font-bold text-sm text-center">
                   Não tem uma conta? Cadastre-se
                 </Text>
               </TouchableOpacity>
