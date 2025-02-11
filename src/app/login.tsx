@@ -11,7 +11,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
 } from "react-native";
- import ImagemAdaptativa from "../components/ImagemAdaptativa"; 
+import ImagemAdaptativa from "../components/ImagemAdaptativa";
 
 
 interface Errors {
@@ -79,6 +79,10 @@ const Login = () => {
     }
   };
 
+  const handleRegister = () => {
+        router.push("/register");
+  };
+
   // Função para atualizar os campos do formulário
   const updateFormField = (field: keyof FormData, value: string): void => {
     setFormData((prev) => ({
@@ -127,9 +131,8 @@ const Login = () => {
           bounces={false}
           className="flex-1"
         >
-          <View className="p-5 flex-1 justify-center mt-28">
-          <ImagemAdaptativa nome="logo"  estilo={{ width: '80%', height: '30%' }} />
-
+          <View className="p-5 flex-1 justify-center">
+ {/*            <ImagemAdaptativa nome="logo" estilo="w-9/10 h-1/6 my-4" source={""} /> */}
             <View>
               <Text className="text-xl font-semibold mb-2 text-primary" >Bem-vindo (a) 👋</Text>
               <Text className="text-4xl font-bold mb-4">Entre na sua conta</Text>
@@ -138,7 +141,7 @@ const Login = () => {
               <View>
                 <Text className="text-lg font-medium text-gray-800 mb-2">E-mail:</Text>
                 <TextInput
-                  className={` w-full border-2 rounded-lg p-4 text-lg bg-secondary ${errors.email ? 'border-red-500' : 'border-primary'}`}
+                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-blue-600'}`}
                   placeholder="E-mail"
                   value={formData.email}
                   onChangeText={(value: string) => updateFormField("email", value)}
@@ -153,10 +156,10 @@ const Login = () => {
                 )}
               </View>
 
-              <View className="mt-6">
+              <View className="mb-5">
                 <Text className="text-lg font-medium text-gray-800 mb-2">Senha:</Text>
                 <TextInput
-                  className={`w-full border-2 rounded-lg p-4 text-lg bg-secondary ${errors.password ? 'border-red-500' : 'border-primary'}`}
+                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-blue-600'}`}
                   placeholder="Senha"
                   value={formData.password}
                   onChangeText={(value: string) => updateFormField("password", value)}
@@ -167,9 +170,6 @@ const Login = () => {
                 {errors.password && (
                   <Text className="text-red-500 text-sm mt-1 ml-1">{errors.password}</Text>
                 )}
-                     <Text className="text-primary underline text-sm text-right font-bold mt-2">
-                  Esqueci minha senha
-                </Text>
               </View>
             </View>
 
@@ -189,15 +189,15 @@ const Login = () => {
                 onPress={handleForgotPassword}
                 disabled={isLoading}
               >
-           
+                
               </TouchableOpacity>
 
-              <TouchableOpacity
+              <TouchableOpacity onPress={handleRegister}
                 className="py-2"
              /*    onPress={() => navigation.navigate("Step")} */
                 disabled={isLoading}
               >
-                <Text className="text-primary font-bold text-sm text-center">
+                <Text className="text-blue-600 text-sm text-center">
                   Não tem uma conta? Cadastre-se
                 </Text>
               </TouchableOpacity>
