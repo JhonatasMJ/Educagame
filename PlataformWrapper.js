@@ -5,7 +5,7 @@ import useDeviceType from "./useDeviceType";
 
 const PlatformWrapper = ({ children }) => {
   const { isDesktop, isMobileDevice, screenWidth } = useDeviceType();
-  const MOBILE_WIDTH = 410;
+  const MOBILE_WIDTH = 465;
   const screenHeight = Dimensions.get("window").height;
 
   // Se for dispositivo móvel (nativo ou web) ou tela pequena

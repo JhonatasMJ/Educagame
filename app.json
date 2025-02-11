@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#030303"
-      }
+      },
+      "package": "com.anonymous.Crbr"
     },
     "web": {
       "bundler": "metro",
