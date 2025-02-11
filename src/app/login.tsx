@@ -12,56 +12,56 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import ImagemAdaptativa from "../components/ImagemAdaptativa";
-
-
+ 
+ 
 interface Errors {
   email?: string;
   password?: string;
 }
-
+ 
 // Definindo a interface de dados do formulário
 interface FormData {
   email: string;
   password: string;
 }
-
+ 
 const Login = () => {
   // Tipando o estado de formData
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
   });
-
+ 
   // Tipando o estado de erros
   const [errors, setErrors] = useState<Errors>({});
   const [isLoading, setIsLoading] = useState(false);
-
+ 
   // Função de validação do e-mail com tipagem explícita
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
-
+ 
   // Validação do formulário
   const validateForm = (): boolean => {
     const newErrors: Errors = {};
-
+ 
     if (!formData.email) {
       newErrors.email = "E-mail é obrigatório";
     } else if (!validateEmail(formData.email)) {
       newErrors.email = "E-mail inválido";
     }
-
+ 
     if (!formData.password) {
       newErrors.password = "Senha é obrigatória";
     } else if (formData.password.length < 6) {
       newErrors.password = "Senha deve ter no mínimo 6 caracteres";
     }
-
+ 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+ 
   // Função de login
   const handleLogin = async () => {
     try {
@@ -69,8 +69,8 @@ const Login = () => {
         setIsLoading(true);
         console.log("Dados do login:", formData);
         router.push("../(tabs)/home");
-
-      
+ 
+     
       }
     } catch (error) {
       Alert.alert("Erro", "Ocorreu um erro ao fazer login. Tente novamente.");
@@ -78,18 +78,18 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-
+ 
   const handleRegister = () => {
         router.push("/register");
   };
-
+ 
   // Função para atualizar os campos do formulário
   const updateFormField = (field: keyof FormData, value: string): void => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
-
+ 
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -97,7 +97,7 @@ const Login = () => {
       }));
     }
   };
-
+ 
   // Função de recuperação de senha
   const handleForgotPassword = () => {
     if (!formData.email) {
@@ -116,7 +116,7 @@ const Login = () => {
     }
    /*  navigation.navigate("ForgotPasswordScreen", { email: formData.email }); */
   };
-
+ 
   return (
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
@@ -155,7 +155,7 @@ const Login = () => {
                   <Text className="text-red-500 text-sm mt-1 ml-1">{errors.email}</Text>
                 )}
               </View>
-
+ 
               <View className="mb-5">
                 <Text className="text-lg font-medium text-gray-800 mb-2">Senha:</Text>
                 <TextInput
@@ -172,7 +172,7 @@ const Login = () => {
                 )}
               </View>
             </View>
-
+ 
             <View className="h-1/3 w-full justify-between items-center">
               <TouchableOpacity
                 className={`w-full h-14 bg-primary rounded-lg justify-center items-center mt-8 ${isLoading ? 'bg-primary' : ''}`}
@@ -183,15 +183,15 @@ const Login = () => {
                   {isLoading ? "Carregando..." : "Entrar"}
                 </Text>
               </TouchableOpacity>
-
+ 
               <TouchableOpacity
                 className="mt-3 py-2"
                 onPress={handleForgotPassword}
                 disabled={isLoading}
               >
-                
+               
               </TouchableOpacity>
-
+ 
               <TouchableOpacity onPress={handleRegister}
                 className="py-2"
              /*    onPress={() => navigation.navigate("Step")} */
@@ -208,5 +208,6 @@ const Login = () => {
     </SafeAreaView>
   );
 };
-
+ 
 export default  Login;
+ 
