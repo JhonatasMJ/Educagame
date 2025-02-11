@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#3185BE", // Adicionando cor de fundo
   },
   fullScreenContainer: {
-    flex: 1,
+    flex: 1,0
     width: "100%",
     height: Platform.OS === "web" ? "100vh" : "100%",
     backgroundColor: "#3185BE",
