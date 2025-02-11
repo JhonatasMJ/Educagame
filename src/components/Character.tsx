@@ -8,17 +8,15 @@ interface CharacterProps {
 const Character = ( {source}:CharacterProps) => {
     return(
         <TouchableOpacity style={styles.character}>
-             <Image source={source} resizeMode="contain" style={{ width: 100, height: 100 }} />
+             <Image source={source} resizeMode="contain" style={{ width: 150, height: 150 }} />
         </TouchableOpacity>
     )
 }
 const styles = StyleSheet.create({
     character: {
-      width: 100,
-      height: 100,
-      margin: 5,
-      justifyContent: "center",
-      alignItems: "center",
+      width: 150,
+      height: 150,
+      margin: 4
     },
   });
   

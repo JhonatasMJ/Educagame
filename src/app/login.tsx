@@ -80,7 +80,7 @@ const Login = () => {
   };
 
   const handleRegister = () => {
-        router.push("/register");
+        router.push("/(register)");
   };
 
   // Função para atualizar os campos do formulário
