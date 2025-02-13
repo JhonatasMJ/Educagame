@@ -3,9 +3,10 @@ import { View, Platform, Dimensions, StyleSheet } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import useDeviceType from "./useDeviceType";
 
+export const MOBILE_WIDTH = 435; // Variável exportada
+
 const PlatformWrapper = ({ children }) => {
   const { isDesktop, isMobileDevice, screenWidth } = useDeviceType();
-  const MOBILE_WIDTH = 435;
   const screenHeight = Dimensions.get("window").height;
 
   // Se for dispositivo móvel (nativo ou web) ou tela pequena
@@ -51,7 +52,7 @@ const PlatformWrapper = ({ children }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#3185BE", // Adicionando cor de fundo
+    backgroundColor: "#3185BE",
   },
   fullScreenContainer: {
     flex: 1,

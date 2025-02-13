@@ -13,6 +13,8 @@ export default function TabLayout() {
       paddingHorizontal: '5%',
       borderTopRightRadius: 15,
       borderTopLeftRadius: 15,
+      borderWidth: 5,
+      borderColor: '#606060',
       backgroundColor: '#606060',
       height: 86,
       overflow: 'hidden',
