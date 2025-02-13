@@ -1,30 +1,37 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Text,
-  Alert,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  KeyboardAvoidingView,
-  Image,
-  StyleSheet 
-} from "react-native";
-import Character from "../../components/Character";
+// step1.tsx
+import { useLocalSearchParams } from "expo-router";
+import React from "react";
+import { View, Text, SafeAreaView } from "react-native";
+import Avatar1 from "../../../assets/images/avatar1.svg";
+import Avatar2 from "../../../assets/images/avatar2.svg";
+import Avatar3 from "../../../assets/images/avatar3.svg";
+import Avatar4 from "../../../assets/images/avatar4.svg";
 import RegisterButton from "@/src/components/CustomButton";
 
+const avatarMapping: Record<string, React.FC<any>> = {
+  avatar1: Avatar1,
+  avatar2: Avatar2,
+  avatar3: Avatar3,
+  avatar4: Avatar4,
+};
 
 const Step01 = () => {
-    return (
-        <SafeAreaView>
-            <Text>Essa é a tela Step 01</Text>
+  const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
 
-            <RegisterButton nextStep="/(register)/step2" />
-        </SafeAreaView>
-    );
+  const SelectedAvatar = avatarSource ? avatarMapping[avatarSource] : null;
+
+  return (
+    <SafeAreaView className="flex-1 bg-white">
+      <Text>Essa é a tela Step 01</Text>
+      <Text>Avatar selecionado: {avatarId}</Text>
+      {SelectedAvatar && <SelectedAvatar width={150} height={150} />}
+      
+      <RegisterButton 
+        nextStep="/(register)/step2"
+        params={{ avatarId, avatarSource }}
+      />
+    </SafeAreaView>
+  );
 };
 
 export default Step01;

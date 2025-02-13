@@ -1,11 +1,40 @@
 import React from 'react';
 import { router } from "expo-router";
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, Alert } from 'react-native';
 
+interface RegisterButtonProps {
+    nextStep: `/${string}` | (string & {});
+    validation?: {
+        isValid: boolean;
+        message: string;
+    };
+    params?: Record<string, any>;
+    onPress?: () => void; // Adiciona a propriedade onPress
+}
 
-const RegisterButton = ({ nextStep }: { nextStep: any }) => {
+const RegisterButton = ({ nextStep, validation, params, onPress }: RegisterButtonProps) => {
     const goToNextStep = () => {
-        router.push(nextStep)
+        if (onPress) {
+            // Se uma função onPress for passada, executa ela
+            onPress();
+        } else {
+            // Senão, segue a lógica padrão
+            if (validation) {
+                if (validation.isValid) {
+                    router.push({
+                        pathname: nextStep as any,
+                        params: params
+                    });
+                } else {
+                    Alert.alert(validation.message);
+                }
+            } else {
+                router.push({
+                    pathname: nextStep as any,
+                    params: params
+                });
+            }
+        }
     };
 
     return (

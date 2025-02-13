@@ -6,7 +6,6 @@ import {
     Text,
     SafeAreaView,
 } from "react-native";
-
 import Avatar1 from "../../../assets/images/avatar1.svg";
 import Avatar2 from "../../../assets/images/avatar2.svg";
 import Avatar3 from "../../../assets/images/avatar3.svg";
@@ -21,14 +20,14 @@ const avatarMapping: Record<string, React.FC<any>> = {
 };
 
 
-const Step02 = () => {
+const Step03 = () => {
     const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
 
     const SelectedAvatar = avatarSource ? avatarMapping[avatarSource] : null;
 
     return (
         <SafeAreaView  className="flex-1 bg-white">
-            <Text>Essa é a tela Step 02</Text>
+            <Text>Essa é a tela Step 03</Text>
             <Text>Avatar selecionado: {avatarId}</Text>
       {SelectedAvatar && <SelectedAvatar width={150} height={150} />}
 
@@ -40,4 +39,4 @@ const Step02 = () => {
     );
 };
 
-export default Step02;
+export default Step03;
