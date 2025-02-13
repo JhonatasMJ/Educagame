@@ -11,6 +11,8 @@ import Animated, {
   withTiming,
   runOnJS
 } from 'react-native-reanimated';
+
+import { useUserData } from "../../hooks/useData";
 // Dados das trilhas de aprendizado e componente personalizado
 import { trilhas } from '../../dados';
 import TrilhaCard from '@/src/components/TrilhaCard';
@@ -23,7 +25,11 @@ const THRESHOLD_PERCENTAGE = 0.3; // 30%
 
 const THRESHOLD = width * THRESHOLD_PERCENTAGE;
 
+
+
 const Home = () => {
+
+  
   // Estado para controlar qual trilha está sendo exibida atualmente
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0);
   // Valor compartilhado para controlar a animação de deslize horizontal
@@ -133,6 +139,7 @@ const Home = () => {
                       >
                         <Text style={styles.etapaTitulo}>{etapa.titulo}</Text>
                         <Text style={styles.etapaDescricao}>{etapa.descricao}</Text>
+          
                       </TouchableOpacity>
                     ))}
                   </View>

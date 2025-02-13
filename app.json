@@ -14,7 +14,12 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#030303"
+        "backgroundColor": "#030303",
+        "config": {
+          "googleSignIn": {
+            "apiKey": "AIzaSyBsF-15bEYrtjYJNNuvaqdhSvnfEzesjcA"
+          }
+        }
       },
       "package": "com.anonymous.Educagame"
     },

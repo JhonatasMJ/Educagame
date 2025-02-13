@@ -1,147 +1,61 @@
-import { router } from "expo-router";
 import React, { useState } from "react";
+import { router } from "expo-router";
 import {
   View,
   TextInput,
   TouchableOpacity,
   Text,
-  Alert,
   Platform,
   SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
 } from "react-native";
 import ImagemAdaptativa from "../components/ImagemAdaptativa";
-
+import { FontAwesome } from "@expo/vector-icons";
+import { useLogin } from "../hooks/UseLogin";
+/* import { useGoogleAuth } from "../hooks/useGoogle"; // Importe o hook de autenticação do Google */
 
 interface Errors {
   email?: string;
   password?: string;
 }
 
-// Definindo a interface de dados do formulário
 interface FormData {
   email: string;
   password: string;
 }
 
 const Login = () => {
-  // Tipando o estado de formData
-  const [formData, setFormData] = useState<FormData>({
-    email: "",
-    password: "",
-  });
+  const { handleLogin, isLoading } = useLogin(); // Hook para login com email/senha
+ 
 
-  // Tipando o estado de erros
+  const [formData, setFormData] = useState<FormData>({ email: "", password: "" });
   const [errors, setErrors] = useState<Errors>({});
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Função de validação do e-mail com tipagem explícita
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // Validação do formulário
-  const validateForm = (): boolean => {
-    const newErrors: Errors = {};
-
-    if (!formData.email) {
-      newErrors.email = "E-mail é obrigatório";
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = "E-mail inválido";
-    }
-
-    if (!formData.password) {
-      newErrors.password = "Senha é obrigatória";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Senha deve ter no mínimo 6 caracteres";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Função de login
-  const handleLogin = async () => {
-    try {
-      if (validateForm()) {
-        setIsLoading(true);
-        console.log("Dados do login:", formData);
-        router.push("../(tabs)/home");
-
-      
-      }
-    } catch (error) {
-      Alert.alert("Erro", "Ocorreu um erro ao fazer login. Tente novamente.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRegister = () => {
-        router.push("/(register)");
-  };
-
-  // Função para atualizar os campos do formulário
   const updateFormField = (field: keyof FormData, value: string): void => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
     if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-  };
-
-  // Função de recuperação de senha
-  const handleForgotPassword = () => {
-    if (!formData.email) {
-      setErrors((prev) => ({
-        ...prev,
-        email: "Digite seu e-mail para recuperar a senha",
-      }));
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      setErrors((prev) => ({
-        ...prev,
-        email: "Digite um e-mail válido",
-      }));
-      return;
-    }
-   /*  navigation.navigate("ForgotPasswordScreen", { email: formData.email }); */
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-      >
-        <ScrollView
-     
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          className="flex-1"
-        >
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} className="flex-1">
           <View className="p-5 flex-1 justify-center">
- {/*            <ImagemAdaptativa nome="logo" estilo="w-9/10 h-1/6 my-4" source={""} /> */}
+            <ImagemAdaptativa nome="logo" className="text-center justify-center my-10" />
             <View>
-              <Text className="text-xl font-semibold mb-2 text-primary" >Bem-vindo (a) 👋</Text>
+              <Text className="text-xl font-semibold mb-2 text-primary">Bem-vindo (a) 👋</Text>
               <Text className="text-4xl font-bold mb-4">Entre na sua conta</Text>
             </View>
+
             <View>
               <View>
                 <Text className="text-lg font-medium text-gray-800 mb-2">E-mail:</Text>
                 <TextInput
-                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-blue-600'}`}
+                  className={`w-full border-2 rounded-lg px-4 py-5 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-primary'}`}
                   placeholder="E-mail"
                   value={formData.email}
                   onChangeText={(value: string) => updateFormField("email", value)}
@@ -151,15 +65,13 @@ const Login = () => {
                   cursorColor="blue"
                   editable={!isLoading}
                 />
-                {errors.email && (
-                  <Text className="text-red-500 text-sm mt-1 ml-1">{errors.email}</Text>
-                )}
+                {errors.email && <Text className="text-red-500 text-sm mt-1 ml-1">{errors.email}</Text>}
               </View>
 
               <View className="mb-5">
                 <Text className="text-lg font-medium text-gray-800 mb-2">Senha:</Text>
                 <TextInput
-                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-blue-600'}`}
+                  className={`w-full border-2 rounded-lg px-4 py-5 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-primary'}`}
                   placeholder="Senha"
                   value={formData.password}
                   onChangeText={(value: string) => updateFormField("password", value)}
@@ -167,16 +79,14 @@ const Login = () => {
                   cursorColor="blue"
                   editable={!isLoading}
                 />
-                {errors.password && (
-                  <Text className="text-red-500 text-sm mt-1 ml-1">{errors.password}</Text>
-                )}
+                {errors.password && <Text className="text-red-500 text-sm mt-1 ml-1">{errors.password}</Text>}
               </View>
             </View>
 
             <View className="h-1/3 w-full justify-between items-center">
               <TouchableOpacity
-                className={`w-full h-14 bg-primary rounded-lg justify-center items-center mt-8 ${isLoading ? 'bg-primary' : ''}`}
-                onPress={handleLogin}
+                className={`w-full py-5 bg-primary rounded-lg justify-center items-center mt-8 ${isLoading ? 'bg-primary' : ''}`}
+                onPress={() => handleLogin(formData.email, formData.password)}
                 disabled={isLoading}
               >
                 <Text className="text-white text-lg font-semibold">
@@ -184,22 +94,22 @@ const Login = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                className="mt-3 py-2"
-                onPress={handleForgotPassword}
-                disabled={isLoading}
-              >
-                
-              </TouchableOpacity>
+              <View className="flex-row gap-24 mt-4">
+                <TouchableOpacity
+                  className="bg-primary p-2 rounded-lg"
+            
+                >
+                  <FontAwesome size={32} name="google" color={"#fff"} />
+                </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity onPress={handleRegister}
-                className="py-2"
-             /*    onPress={() => navigation.navigate("Step")} */
-                disabled={isLoading}
-              >
-                <Text className="text-blue-600 text-sm text-center">
-                  Não tem uma conta? Cadastre-se
-                </Text>
+              {googleError && <Text className="text-red-500 mt-2">{googleError}</Text>}
+
+              <TouchableOpacity onPress={() => router.push("./register")} className="py-2">
+                <View className="flex-row gap-2">
+                  <Text className="text-primary">Não tem uma conta?</Text>
+                  <Text className="text-primary underline">Cadastre-se</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -209,4 +119,4 @@ const Login = () => {
   );
 };
 
-export default  Login;
+export default Login;

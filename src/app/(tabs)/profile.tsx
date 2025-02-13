@@ -1,7 +1,13 @@
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useUserData } from '../../hooks/useData';
+
 
 const ProfileScreen = () => {
+
+  const { userData } = useUserData(); 
+
   return (
     <View style={styles.container}>
       <View style={styles.avatarContainer}>
@@ -10,10 +16,11 @@ const ProfileScreen = () => {
         </View>
       </View>
 
+
       <View style={styles.formContainer}>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Nome</Text>
-          <Text style={styles.inputValue}>Nome</Text>
+          <Text style={styles.inputValue}>Nome:</Text>
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Sobrenome</Text>
@@ -21,7 +28,7 @@ const ProfileScreen = () => {
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>E-mail</Text>
-          <Text style={styles.inputValue}>email@exemplo.com</Text>
+          <Text className='text-red-500' style={styles.inputValue}>{userData?.email}</Text>
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Data Nascimento</Text>

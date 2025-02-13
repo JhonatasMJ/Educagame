@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Trilha } from '../types/types';
 import { MaterialIcons } from '@expo/vector-icons';
 
+
 type TrilhaCardProps = {
   trilha: Trilha;
   onNext: () => void;
@@ -11,7 +12,11 @@ type TrilhaCardProps = {
   isLast?: boolean;
 };
 
+
+
 const TrilhaCard = ({ trilha, onNext, onPrevious, isFirst = false, isLast = false }: TrilhaCardProps) => {
+
+
   return (
     <View style={styles.cardWrapper}>
       {!isFirst && onPrevious && (
@@ -23,6 +28,7 @@ const TrilhaCard = ({ trilha, onNext, onPrevious, isFirst = false, isLast = fals
       <View style={styles.cardContainer}>
         <View style={styles.card}>
           <Text style={styles.nome}>{trilha.nome}</Text>
+
         </View>
       </View>
       
