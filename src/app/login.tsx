@@ -141,7 +141,7 @@ const Login = () => {
               <View>
                 <Text className="text-lg font-medium text-gray-800 mb-2">E-mail:</Text>
                 <TextInput
-                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-blue-600'}`}
+                  className={` w-full border-2 rounded-lg px-4 py-5 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-primary'}`}
                   placeholder="E-mail"
                   value={formData.email}
                   onChangeText={(value: string) => updateFormField("email", value)}
@@ -159,7 +159,7 @@ const Login = () => {
               <View className="mb-5">
                 <Text className="text-lg font-medium text-gray-800 mb-2">Senha:</Text>
                 <TextInput
-                  className={`h-14 w-full border-2 rounded-lg px-4 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-blue-600'}`}
+                  className={` w-full border-2 rounded-lg px-4 py-5 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-primary'}`}
                   placeholder="Senha"
                   value={formData.password}
                   onChangeText={(value: string) => updateFormField("password", value)}
@@ -175,7 +175,7 @@ const Login = () => {
  
             <View className="h-1/3 w-full justify-between items-center">
               <TouchableOpacity
-                className={`w-full h-14 bg-primary rounded-lg justify-center items-center mt-8 ${isLoading ? 'bg-primary' : ''}`}
+                className={`w-full py-5 bg-primary rounded-lg  justify-center items-center mt-8 ${isLoading ? 'bg-primary' : ''}`}
                 onPress={handleLogin}
                 disabled={isLoading}
               >
@@ -197,9 +197,10 @@ const Login = () => {
              /*    onPress={() => navigation.navigate("Step")} */
                 disabled={isLoading}
               >
-                <Text className="text-blue-600 text-sm text-center">
-                  Não tem uma conta? Cadastre-se
-                </Text>
+                <View className="flex-row gap-2">
+                <Text className="text-primary">  Não tem uma conta? </Text>
+                <Text className="text-primary underline">Cadastre-se</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
