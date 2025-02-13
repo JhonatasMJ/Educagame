@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import { View, Text, SafeAreaView, Alert } from "react-native";
 import Character from "../../components/Character";
-import RegisterButton from "@/src/components/CustomButton";
+import CustomButton from "@/src/components/CustomButton";
 import Logo from "../../../assets/images/logo.svg";
 
 import Avatar1 from "../../../assets/images/avatar1.svg";
@@ -38,16 +38,16 @@ const Register = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white justify-around">
       <View style={{ alignItems: "center" }}>
         <Logo style={{ width: 315, height: 65, marginTop: "3%" }} />
       </View>
-      <View style={{ alignItems: "center", marginTop: "5%" }}>
+      <View style={{ alignItems: "center"}}>
         <Text className="text-xl font-semibold mb-2 text-primary top-3">Que tal</Text>
         <Text className="text-4xl font-bold mb-4">Escolher um avatar</Text>
       </View>
 
-      <View style={{ alignItems: "center", marginTop: 20 }}>
+      <View style={{ alignItems: "center"}}>
         <View style={{ flexDirection: "row" }}>
           {avatars.slice(0, 2).map((avatar) => (
             <Character
@@ -72,7 +72,8 @@ const Register = () => {
         </View>
       </View>
 
-      <RegisterButton 
+
+      <CustomButton 
         nextStep="/(register)/step1"
         validation={{
           isValid: selectedAvatarId !== null,

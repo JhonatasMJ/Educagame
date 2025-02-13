@@ -10,7 +10,7 @@ import Avatar1 from "../../../assets/images/avatar1.svg";
 import Avatar2 from "../../../assets/images/avatar2.svg";
 import Avatar3 from "../../../assets/images/avatar3.svg";
 import Avatar4 from "../../../assets/images/avatar4.svg";
-import RegisterButton from "@/src/components/CustomButton";
+import CustomButton from "@/src/components/CustomButton";
 
 const avatarMapping: Record<string, React.FC<any>> = {
   avatar1: Avatar1,
@@ -31,7 +31,7 @@ const Step03 = () => {
             <Text>Avatar selecionado: {avatarId}</Text>
       {SelectedAvatar && <SelectedAvatar width={150} height={150} />}
 
-            <RegisterButton 
+            <CustomButton 
                 nextStep="/(register)/step3" // Supondo que haja uma step3
                 params={{ avatarId, avatarSource }} // Continua passando o avatarId adiante
             />
