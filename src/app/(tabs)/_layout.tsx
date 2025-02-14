@@ -1,6 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
+import { StatusBar } from 'react-native';
 
 export default function TabLayout() {
   return (
@@ -30,7 +31,8 @@ export default function TabLayout() {
   }}
 >
 
-
+  
+        <StatusBar barStyle="light-content" backgroundColor="#fff" />
       <Tabs.Screen
         name="home"
         options={{
