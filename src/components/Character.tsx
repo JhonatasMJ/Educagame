@@ -15,27 +15,28 @@ const Character = ({ source: SvgImage, isSelected, onSelect }: CharacterProps) =
       style={[styles.character, isSelected && styles.selectedCharacter]}
       onPress={onSelect}
     >
-      <SvgImage width={150} height={150} />
+      <SvgImage width={160} height={160} />
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   character: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: 160,
+    height: 160,
+    borderRadius: 85,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
-    borderWidth: 3,
+    borderWidth: 5,
+    /* backgroundColor: "#56A6DC", */
     borderColor: "transparent",
     margin: 5,
   },
   selectedCharacter: {
     borderColor: "#1e3a8a",
-    backgroundColor: "rgba(30, 58, 138, 0.1)",
-    borderWidth: 4,
+    backgroundColor: "#1e3a8a",
+    borderWidth: 5,
   },
 });
 

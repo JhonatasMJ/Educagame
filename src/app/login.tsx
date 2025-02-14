@@ -103,9 +103,9 @@ const Login = () => {
                 </TouchableOpacity>
               </View>
 
-              {googleError && <Text className="text-red-500 mt-2">{googleError}</Text>}
+              {/* {googleError && <Text className="text-red-500 mt-2">{googleError}</Text>} */}
 
-              <TouchableOpacity onPress={() => router.push("./register")} className="py-2">
+              <TouchableOpacity onPress={() => router.push("/(register)")} className="py-2">
                 <View className="flex-row gap-2">
                   <Text className="text-primary">Não tem uma conta?</Text>
                   <Text className="text-primary underline">Cadastre-se</Text>
