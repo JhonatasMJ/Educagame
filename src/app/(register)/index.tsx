@@ -74,6 +74,7 @@ const Register = () => {
 
 
       <CustomButton 
+        title="Continuar"
         nextStep="/(register)/step1"
         validation={{
           isValid: selectedAvatarId !== null,

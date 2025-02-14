@@ -9,10 +9,11 @@ interface CustomButtonProps {
         message: string;
     };
     params?: Record<string, any>;
-    onPress?: () => void; // Adiciona a propriedade onPress
+    onPress?: () => void; 
+    title: string;
 }
 
-const CustomButton = ({ nextStep, validation, params, onPress }: CustomButtonProps) => {
+const CustomButton = ({ nextStep, validation, params, onPress, title }: CustomButtonProps) => {
     const goToNextStep = () => {
         if (onPress) {
             // Se uma função onPress for passada, executa ela
@@ -40,7 +41,7 @@ const CustomButton = ({ nextStep, validation, params, onPress }: CustomButtonPro
     return (
         <View style={{ alignItems: "center", justifyContent: "center" }}>
             <TouchableOpacity style={styles.button} onPress={goToNextStep}>
-                <Text style={{ color: 'white', fontSize: 25, fontWeight: 'bold' }}>Continuar</Text>
+                <Text style={{ color: 'white', fontSize: 25, fontWeight: 'bold' }}>{title}</Text>
             </TouchableOpacity>
         </View>
     );

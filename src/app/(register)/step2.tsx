@@ -84,6 +84,7 @@ const Step02 = () => {
 
             <View style={{zIndex: 3}}>
                 <CustomButton
+                    title="Continuar"
                     nextStep="/(register)/step3"
                     params={{ avatarId, avatarSource }}
                 />

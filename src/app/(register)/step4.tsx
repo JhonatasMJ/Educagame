@@ -21,21 +21,14 @@ const bigAvatarMapping: Record<string, React.FC<any>> = {
     avatar4: BigAvatar4,
   };
 const Step03 = () => {
-    const [isFocusedNome, setIsFocusedNome] = useState(false);
-    const [isFocusedSobrenome, setIsFocusedSobrenome] = useState(false);
-    const [termsAccepted, setTermsAccepted] = useState(false);
-    const [lgpdAccepted, setLgpdAccepted] = useState(false);
 
     const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
     const SelectedBigAvatar = avatarSource ? bigAvatarMapping[avatarSource] : null;
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#56A6DC" />
-            
-            <View style={styles.backgroundContainer}>
-                <Cloudsvg width="90%" height="40%" />
-            </View>
+            <StatusBar barStyle="light-content" backgroundColor="#85F995" />
+
 
             {SelectedBigAvatar && (
                 <SelectedBigAvatar 
@@ -46,28 +39,15 @@ const Step03 = () => {
             )}
 
             <View style={styles.formContainer}>
-                <Text style={styles.title}>Vamos criar uma senha!</Text>
-                <View style={styles.inputsContainer}>
-                    <View style={styles.inputArea}>
-                        <Text style={styles.label}>Senha</Text>
-                        <TextInput
-                            style={[styles.input, isFocusedNome && styles.inputFocused]}
-                            placeholder="Digite sua senha"
-                            onFocus={() => setIsFocusedNome(true)}
-                            onBlur={() => setIsFocusedNome(false)}
-                        />
-                    </View>
+                <View style={{ alignItems: "center" }}>
+                    <Text style={styles.title}>
+                        <Text style={{ fontWeight: "bold", color: "#4A90E2" }}>[Nome], </Text>
+                        <Text style={{ fontWeight: "bold" }}>conta criada{"\n"}com sucesso!</Text>
+                    </Text>
+                </View>
+                <View style={styles.text}>
+                    <Text style={{fontSize: 25, textAlign: "center", paddingHorizontal: "19%"}}>Agora é só entrar na sua conta e começar a estudar!</Text>
 
-                    <View style={styles.inputArea}>
-                        <Text style={styles.label}>Confirme sua senha</Text>
-                        <TextInput
-                            style={[styles.input, isFocusedSobrenome && styles.inputFocused]}
-                            placeholder="Confirme sua senha"
-                            keyboardType="numeric"
-                            onFocus={() => setIsFocusedSobrenome(true)}
-                            onBlur={() => setIsFocusedSobrenome(false)}
-                        />
-                    </View>
                 </View>
 
                
@@ -75,8 +55,8 @@ const Step03 = () => {
 
             <View style={{zIndex: 3}}>
                 <CustomButton
-                    title="Continuar"
-                    nextStep="/(register)/step4"
+                    title="Começar!"
+                    nextStep="../(tabs)/home"
                     params={{ avatarId, avatarSource }}
                 />
             </View>
@@ -89,7 +69,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor:"#56A6DC",
+        backgroundColor:"#85F995",
       },
       backgroundContainer: {
         ...StyleSheet.absoluteFillObject, // Faz o SVG cobrir toda a tela
@@ -97,9 +77,10 @@ const styles = StyleSheet.create({
         alignItems: "center",
       },
       title: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: "bold",
-        top: 10,
+        top: 25,
+        textAlign: "center",
       },
       formContainer: {
         width: "100%",
@@ -113,13 +94,14 @@ const styles = StyleSheet.create({
         alignItems: "center",
         zIndex: 3,
       },
-      inputsContainer:{
+      text:{
         flexDirection: "column",
         width: "100%",
         alignItems: "center",
         height: "55%",
-        justifyContent: "space-evenly",
+        justifyContent: "center",
         top: "5%",
+        
       },
       inputArea: {
         flexDirection: "column",
