@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, Touchable, TouchableOpacity } from 'react-native';
 import BigAvatar1 from '../../../assets/images/grande-avatar1.svg';
 import BigAvatar2 from '../../../assets/images/grande-avatar2.svg';
 import BigAvatar3 from '../../../assets/images/grande-avatar3.svg';
 import BigAvatar4 from '../../../assets/images/grande-avatar4.svg';
 import { useLocalSearchParams } from 'expo-router';
+import { AntDesign } from '@expo/vector-icons';
 
 const { height, width } = Dimensions.get('window');
 
@@ -25,7 +26,7 @@ const StatsScreen = () => {
   // Create more dramatic movement for the avatar
   const avatarTranslateY = scrollY.interpolate({
     inputRange: [0, 300],
-    outputRange: [0, -400], // Move much further up to ensure it goes off-screen
+    outputRange: [0, -250], // Move much further up to ensure it goes off-screen
     extrapolate: 'clamp'
   });
   
@@ -44,32 +45,41 @@ const StatsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View 
-        style={[
-          styles.avatarContainer,
-          { 
-            transform: [
-              { translateY: avatarTranslateY },
-              { scale: avatarScale }
-            ],
-            opacity: avatarOpacity
-          }
-        ]}
-      >
-        <BigAvatar1 width={182} height={300} />
-      </Animated.View>
+      pointerEvents="auto" 
+      style={[
+        styles.avatarContainer,
+        { 
+          transform: [
+            { translateY: avatarTranslateY },
+            { scale: avatarScale }
+          ],
+          opacity: avatarOpacity,
+          zIndex: 2
+        }
+      ]}
+    > 
       
-      <Animated.ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-      >
-        <View style={styles.spacer} />
+      <BigAvatar1 style={styles.avatar} width={200} height={350} />
+    </Animated.View>
+    
+    <Animated.ScrollView
+      style={[styles.scrollView, { zIndex: 15 }]} // zIndex menor que o avatarContainer
+      showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+      onScroll={Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: true }
+      )}
+    >
+      <TouchableOpacity onPress={() => { console.log('clicou')}} style={styles.avatarButton}>
+        <AntDesign name="setting" size={45} color="#fff" />
+      </TouchableOpacity>
+        {/* <View style={styles.spacer} /> */}
         <View style={styles.statsContainerWrapper}>
+          <View style={styles.titleContainer}>
+          <Text style={styles.title}>Nome Usuário</Text>
+          <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
+          </View>
           <View style={styles.statsContainer}>
             <View style={styles.statContainer}>
               <Text style={styles.statIconText}>📨</Text>
@@ -87,13 +97,37 @@ const StatsScreen = () => {
               </View>
             </View>
 
-            <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>📆</Text>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Dias Seguidos</Text>
-                <Text style={styles.statValue}>25</Text>
-              </View>
-            </View>
+<View style={styles.statContainer}>
+  <Text style={styles.statIconText}>📆</Text>
+  <View style={styles.statInfo}>
+    <Text style={styles.statLabel}>Dias Seguidos</Text>
+    <Text style={styles.statValue}>25</Text>
+  </View>
+</View>
+
+<View style={styles.statContainer}>
+  <Text style={styles.statIconText}>📆</Text>
+  <View style={styles.statInfo}>
+    <Text style={styles.statLabel}>Dias Seguidos</Text>
+    <Text style={styles.statValue}>25</Text>
+  </View>
+</View>
+
+<View style={styles.statContainer}>
+  <Text style={styles.statIconText}>📆</Text>
+  <View style={styles.statInfo}>
+    <Text style={styles.statLabel}>Dias Seguidos</Text>
+    <Text style={styles.statValue}>25</Text>
+  </View>
+</View>
+
+<View style={styles.statContainer}>
+  <Text style={styles.statIconText}>📆</Text>
+  <View style={styles.statInfo}>
+    <Text style={styles.statLabel}>Dias Seguidos</Text>
+    <Text style={styles.statValue}>25</Text>
+  </View>
+</View>
             
             <View style={styles.statContainer}>
               <Text style={styles.statIconText}>🏆</Text>
@@ -148,35 +182,54 @@ const StatsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#56A6DC',
   },
   avatarContainer: {
+    width: '100%',
     position: 'absolute',
     top: 0, // Aumentado significativamente para dar mais margem para subir
-    alignSelf: 'center',
-    zIndex: 2,
-    // Eliminando quaisquer limitações que possam impedir o movimento completo
-    overflow: 'visible',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   scrollView: {
-    flex: 1,
+    zIndex: 3,
   },
-  scrollViewContent: {
-    flexGrow: 1,
+  avatarButton:{
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 999,
+
   },
-  spacer: {
-    height: 320, // Aumentado para compensar a nova posição inicial do avatar
-    zIndex: 1,
+  avatar:{
+    marginTop: '6.7%',
+    zIndex: 2
+  },
+  titleContainer:{
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingHorizontal: 20
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#EAAE00',
   },
   statsContainerWrapper: {
     flex: 1,
     width: '100%',
+    top: height * 0.32,
     minHeight: height * 0.7,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#444343',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    zIndex: 999,
-    elevation: 999, // Garante a sobreposição no Android
   },
   statsContainer: {
     width: '100%',
