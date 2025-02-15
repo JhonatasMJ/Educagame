@@ -17,7 +17,7 @@ export default function TabLayout() {
       borderWidth: 5,
       borderColor: '#606060',
       backgroundColor: '#606060',
-      height: 86,
+      height: 72,
       overflow: 'hidden',
       position: 'absolute',
       left: 0,

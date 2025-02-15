@@ -10,10 +10,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
 } from "react-native";
-import ImagemAdaptativa from "../components/ImagemAdaptativa";
+
 import { FontAwesome } from "@expo/vector-icons";
 import { useLogin } from "../hooks/UseLogin";
-/* import { useGoogleAuth } from "../hooks/useGoogle"; // Importe o hook de autenticação do Google */
+import Logo from "../../assets/images/logo.svg"; 
 
 interface Errors {
   email?: string;
@@ -45,7 +45,10 @@ const Login = () => {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
         <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} className="flex-1">
           <View className="p-5 flex-1 justify-center">
-            <ImagemAdaptativa nome="logo" className="text-center justify-center my-10" />
+           <View className="mb-6 mt-4">
+              <Logo />
+
+           </View>
             <View>
               <Text className="text-xl font-semibold mb-2 text-primary">Bem-vindo (a) 👋</Text>
               <Text className="text-4xl font-bold mb-4">Entre na sua conta</Text>
@@ -55,7 +58,7 @@ const Login = () => {
               <View>
                 <Text className="text-lg font-medium text-gray-800 mb-2">E-mail:</Text>
                 <TextInput
-                  className={`w-full border-2 rounded-lg px-4 py-5 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-primary'}`}
+                  className={`w-full border-2 rounded-lg px-4 py-4 text-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-primary'}`}
                   placeholder="E-mail"
                   value={formData.email}
                   onChangeText={(value: string) => updateFormField("email", value)}
@@ -68,10 +71,10 @@ const Login = () => {
                 {errors.email && <Text className="text-red-500 text-sm mt-1 ml-1">{errors.email}</Text>}
               </View>
 
-              <View className="mb-5">
+              <View className="mb-5 mt-2">
                 <Text className="text-lg font-medium text-gray-800 mb-2">Senha:</Text>
                 <TextInput
-                  className={`w-full border-2 rounded-lg px-4 py-5 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-primary'}`}
+                  className={`w-full border-2 rounded-lg px-4 py-4 text-lg bg-gray-100 ${errors.password ? 'border-red-500' : 'border-primary'}`}
                   placeholder="Senha"
                   value={formData.password}
                   onChangeText={(value: string) => updateFormField("password", value)}

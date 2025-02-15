@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-/* import { GoogleSignin } from "@react-native-google-signin/google-signin"; */
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyBsF-15bEYrtjYJNNuvaqdhSvnfEzesjcA",
@@ -14,8 +14,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-/* GoogleSignin.configure({
-  webClientId: "350984709613-aiinat07rkrcc02ll397j80fhan1cak6.apps.googleusercontent.com",
-}); */
 
-export { auth, GoogleAuthProvider,/*  GoogleSignin */ };
+export { auth, GoogleAuthProvider};
