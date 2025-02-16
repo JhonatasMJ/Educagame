@@ -2,11 +2,11 @@ import React from 'react';
 import { Image } from 'react-native';
 
 const imagensMap = {
-  logo: require('../../assets/images/logo.png'),
-  avatar1: require('../../assets/images/avatar1.png'),
-  avatar2: require('../../assets/images/avatar2.png'),
-  avatar3: require('../../assets/images/avatar3.png'),
-  avatar4: require('../../assets/images/avatar4.png'),
+  logo: require('../../assets/images/logo.svg'),
+  avatar1: require('../../assets/images/avatar1.svg'),
+  avatar2: require('../../assets/images/avatar2.svg'),
+  avatar3: require('../../assets/images/avatar3.svg'),
+  avatar4: require('../../assets/images/avatar4.svg'),
 };
 
 interface ImagemAdaptativaProps {
@@ -40,3 +40,7 @@ const ImagemAdaptativa = ({
 };
 
 export default ImagemAdaptativa;
+
+ 
+
+

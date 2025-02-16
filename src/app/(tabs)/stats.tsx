@@ -1,26 +1,101 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import StatsContainer from '../../components/StatsContainer';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, Touchable, TouchableOpacity } from 'react-native';
+import BigAvatar1 from '../../../assets/images/grande-avatar1.svg';
+import BigAvatar2 from '../../../assets/images/grande-avatar2.svg';
+import BigAvatar3 from '../../../assets/images/grande-avatar3.svg';
+import BigAvatar4 from '../../../assets/images/grande-avatar4.svg';
+import { useLocalSearchParams } from 'expo-router';
+import { AntDesign } from '@expo/vector-icons';
+
+const { height, width } = Dimensions.get('window');
+
+const bigAvatarMapping: Record<string, React.FC<any>> = {
+  avatar1: BigAvatar1,
+  avatar2: BigAvatar2,
+  avatar3: BigAvatar3,
+  avatar4: BigAvatar4,
+};
 
 const StatsScreen = () => {
+  const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
+  const SelectedBigAvatar = avatarSource ? bigAvatarMapping[avatarSource] : null;
+  
+  // Animated scroll value
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
+  // Create more dramatic movement for the avatar
+  const avatarTranslateY = scrollY.interpolate({
+    inputRange: [0, 300],
+    outputRange: [0, -250], // Move much further up to ensure it goes off-screen
+    extrapolate: 'clamp'
+  });
+  
+  const avatarScale = scrollY.interpolate({
+    inputRange: [0, 300],
+    outputRange: [1, 0.7],
+    extrapolate: 'clamp'
+  });
+  
+  const avatarOpacity = scrollY.interpolate({
+    inputRange: [0, 300],
+    outputRange: [1, 0.4],
+    extrapolate: 'clamp'
+  });
+
   return (
-    <View style={styles.container}>
-      <StatsContainer>
-        <View style={styles.statContainer}>
-          <Text style={styles.statIconText}>📨</Text>
-          <View style={styles.statInfo}>
-            <Text style={styles.statLabel}>Onocash</Text>
-            <Text style={styles.statValue}>2800</Text>
+    <SafeAreaView style={styles.container}>
+      <Animated.View 
+      pointerEvents="auto" 
+      style={[
+        styles.avatarContainer,
+        { 
+          transform: [
+            { translateY: avatarTranslateY },
+            { scale: avatarScale }
+          ],
+          opacity: avatarOpacity,
+          zIndex: 2
+        }
+      ]}
+    > 
+      
+      <BigAvatar1 style={styles.avatar} width={200} height={350} />
+    </Animated.View>
+    
+    <Animated.ScrollView
+      style={[styles.scrollView, { zIndex: 15 }]} // zIndex menor que o avatarContainer
+      showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+      onScroll={Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: true }
+      )}
+    >
+      <TouchableOpacity onPress={() => { console.log('clicou')}} style={styles.avatarButton}>
+        <AntDesign name="setting" size={45} color="#fff" />
+      </TouchableOpacity>
+        {/* <View style={styles.spacer} /> */}
+        <View style={styles.statsContainerWrapper}>
+          <View style={styles.titleContainer}>
+          <Text style={styles.title}>Nome Usuário</Text>
+          <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
           </View>
-        </View>
-        
-        <View style={styles.statContainer}>
-          <Text style={styles.statIconText}>⏰</Text>
-          <View style={styles.statInfo}>
-            <Text style={styles.statLabel}>Horas</Text>
-            <Text style={styles.statValue}>520</Text>
-          </View>
-        </View>
+          <View style={styles.statsContainer}>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>⏰</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Horas</Text>
+                <Text style={styles.statValue}>520</Text>
+              </View>
+            </View>
 
 <View style={styles.statContainer}>
   <Text style={styles.statIconText}>📆</Text>
@@ -29,16 +104,138 @@ const StatsScreen = () => {
     <Text style={styles.statValue}>25</Text>
   </View>
 </View>
-      </StatsContainer>
-    </View>
+
+<View style={styles.statContainer}>
+  <Text style={styles.statIconText}>📆</Text>
+  <View style={styles.statInfo}>
+    <Text style={styles.statLabel}>Dias Seguidos</Text>
+    <Text style={styles.statValue}>25</Text>
+  </View>
+</View>
+
+<View style={styles.statContainer}>
+  <Text style={styles.statIconText}>📆</Text>
+  <View style={styles.statInfo}>
+    <Text style={styles.statLabel}>Dias Seguidos</Text>
+    <Text style={styles.statValue}>25</Text>
+  </View>
+</View>
+
+<View style={styles.statContainer}>
+  <Text style={styles.statIconText}>📆</Text>
+  <View style={styles.statInfo}>
+    <Text style={styles.statLabel}>Dias Seguidos</Text>
+    <Text style={styles.statValue}>25</Text>
+  </View>
+</View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>🏆</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Conquistas</Text>
+                <Text style={styles.statValue}>42</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>🌟</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Nível</Text>
+                <Text style={styles.statValue}>15</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>👥</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Amigos</Text>
+                <Text style={styles.statValue}>73</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>👥</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Amigos</Text>
+                <Text style={styles.statValue}>73</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>👥</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Amigos</Text>
+                <Text style={styles.statValue}>73</Text>
+              </View>
+            </View>
+            
+            <View style={{
+             height: 100 
+            }}/>
+          </View>
+        </View>
+      </Animated.ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'flex-end',
+    backgroundColor: '#56A6DC',
+  },
+  avatarContainer: {
+    width: '100%',
+    position: 'absolute',
+    top: 0, // Aumentado significativamente para dar mais margem para subir
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  scrollView: {
+    zIndex: 3,
+  },
+  avatarButton:{
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 999,
+
+  },
+  avatar:{
+    marginTop: '6.7%',
+    zIndex: 2
+  },
+  titleContainer:{
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingHorizontal: 20
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#EAAE00',
+  },
+  statsContainerWrapper: {
+    flex: 1,
+    width: '100%',
+    top: height * 0.32,
+    minHeight: height * 0.7,
+    backgroundColor: '#444343',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  statsContainer: {
+    width: '100%',
+    paddingTop: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
   statContainer: {
     flexDirection: 'row',

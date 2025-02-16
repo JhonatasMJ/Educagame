@@ -1,75 +1,88 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Trilha } from '../types/types';
+import { MaterialIcons } from '@expo/vector-icons';
+
 
 type TrilhaCardProps = {
   trilha: Trilha;
   onNext: () => void;
-  fadeAnim: Animated.Value;
-  slideAnim: Animated.Value;
+  onPrevious?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 };
 
-const TrilhaCard = ({ trilha, onNext, fadeAnim, slideAnim }: TrilhaCardProps) => {
+
+
+const TrilhaCard = ({ trilha, onNext, onPrevious, isFirst = false, isLast = false }: TrilhaCardProps) => {
+
+
   return (
     <View style={styles.cardWrapper}>
-      <View style={styles.cardContainer}>
-        <Animated.View 
-          style={[
-            styles.card,
-            { 
-              opacity: fadeAnim,
-              transform: [{ translateX: slideAnim }] 
-            }
-          ]}
-        >
-          <Text style={styles.nome}>{trilha.nome}</Text>
-        </Animated.View>
-        <TouchableOpacity onPress={onNext} style={styles.nextButton}>
-          <Text style={styles.arrowText}>→</Text>
+      {!isFirst && onPrevious && (
+        <TouchableOpacity onPress={onPrevious} style={styles.previousButton}>
+          <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
+      )}
+      
+      <View style={styles.cardContainer}>
+        <View style={styles.card}>
+          <Text style={styles.nome}>{trilha.nome}</Text>
+
+        </View>
       </View>
+      
+      {!isLast && (
+        <TouchableOpacity onPress={onNext} style={styles.nextButton}>
+          <MaterialIcons name="arrow-forward" size={24} color="#000" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   cardWrapper: {
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    paddingBottom: 60, // Espaço para o tab navigator
+    bottom: '12%',
+    flexDirection: 'row',
   },
   cardContainer: {
-    flexDirection: 'row',
+    width: '50%',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#4A90E2', // Cor azul para o card
   },
   card: {
-    flex: 1,
     backgroundColor: '#4A90E2',
     borderRadius: 8,
     paddingVertical: 8,
-    alignItems: 'center', // Centraliza o texto
+    paddingHorizontal: 16,
+    width: '100%',
+    alignItems: 'center',
   },
   nome: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#fff', // Texto branco para contrastar
-    textAlign: 'center', // Garante que o texto fique centralizado
+    color: '#fff',
+    textAlign: 'center',
   },
   nextButton: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
+    position: 'absolute',
+    right: '10%',
   },
-  arrowText: {
-    fontSize: 24,
-    color: '#fff', // Seta branca para contrastar
+  previousButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    left: '10%',
   }
 });
 

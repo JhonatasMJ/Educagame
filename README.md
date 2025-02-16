@@ -1,6 +1,11 @@
 # Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+gerar build pra web:
+npx expo export --platform web
+
+npx eas build --platform android --profile production (gera .aab)
+
+npx eas build --platform android --profile release (gera .apk)
 
 ## Get started
 
