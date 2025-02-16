@@ -1,29 +1,52 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Dimensions, ScrollView, Animated } from "react-native";
-import { ChevronLeft, ChevronRight, Plane } from "lucide-react-native"; 
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, Dimensions, Animated, Platform } from "react-native"; // Importando o módulo Platform
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { trilhas } from "../../dados";
-
+import BtnTrilha from "../../components/BtnTrilha";  // Importando o novo componente
 
 const { width, height } = Dimensions.get("window");
 
 const Home = () => {
-  const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0); 
-  const [etapaAtualIndex, setEtapaAtualIndex] = useState(0); 
+  const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0);
+  const [etapaAtualIndex, setEtapaAtualIndex] = useState(0);
 
-  // Variáveis de animação
-  const translateY = new Animated.Value(0); 
+  const translateY = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      // Inicia animação apenas se não for web
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [trilhaAtualIndex]);
 
   const handleNextTrilha = () => {
     if (trilhaAtualIndex < trilhas.length - 1) {
       setTrilhaAtualIndex(trilhaAtualIndex + 1);
-      setEtapaAtualIndex(0); 
+      setEtapaAtualIndex(0);
+      fadeAnim.setValue(0);
+      slideAnim.setValue(20);
     }
   };
 
   const handlePreviousTrilha = () => {
     if (trilhaAtualIndex > 0) {
       setTrilhaAtualIndex(trilhaAtualIndex - 1);
-      setEtapaAtualIndex(0); 
+      setEtapaAtualIndex(0);
+      fadeAnim.setValue(0);
+      slideAnim.setValue(20);
     }
   };
 
@@ -33,69 +56,64 @@ const Home = () => {
     }
   };
 
-  const handlePreviousEtapa = () => {
-    if (etapaAtualIndex > 0) {
-      setEtapaAtualIndex(etapaAtualIndex - 1);
-    }
-  };
-
-
-  const marginBottom = trilhas[trilhaAtualIndex].etapas.length > 3 ? 140 : 60;
-
   return (
     <View className="flex-1 bg-gray-100">
-     
+      {/* Fundo da tela */}
       <Animated.Image
-        source={require('../../../assets/images/fundo.png')}
-        style={{ 
-          position: 'absolute', 
-          bottom: 0,  
-          left: 0, 
-          right: 0, 
-          height: height + 100,  
-          width: width,  
-          resizeMode: 'cover', 
-          transform: [
-            { translateY }   
-          ]
+        className={"absolute bottom-0 left-0 right-0 "}
+        source={require("../../../assets/images/fundo.png")}
+        style={{
+          height: height + 100,
+          width: width,
+          resizeMode: "cover",
+          transform: [{ translateY }],
         }}
       />
 
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Animated.ScrollView
+          contentContainerStyle={{
+            justifyContent: "flex-start",
+            alignItems: "center",
+            flexDirection: "column-reverse",
+            paddingBottom: 100,
+            paddingTop: 50,
+          }}
+          className="px-6"
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: translateY } } }], {
+            useNativeDriver: false,
+          })}
+          showsVerticalScrollIndicator={false}
+        >
+          {trilhas[trilhaAtualIndex].etapas.map((exercicio, exerIndex) => (
+            <BtnTrilha
+              key={exercicio.id}
+              etapa={exerIndex + 1}
+              isConcluido={exerIndex <= etapaAtualIndex}
+              onPress={() => exerIndex <= etapaAtualIndex && handleNextEtapa()}
+            />
+          ))}
+        </Animated.ScrollView>
+      </Animated.View>
 
-      <Animated.ScrollView 
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginBottom,  
-        }}
-        className="px-6"
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: translateY } } }],  
-          { useNativeDriver: false }
-        )}
-      >
-        {trilhas[trilhaAtualIndex].etapas.map((exercicio, exerIndex) => (
-          <TouchableOpacity
-            key={exercicio.id}
-            className="bg-secondary p-10 rounded-full mb-6 max-w-xs"
-            onPress={() => exerIndex <= etapaAtualIndex && handleNextEtapa()}
-          >
-            <View className="flex-row items-center justify-between">
-              <Plane color="#111" size={32} />
-            
-
-            </View>
-          </TouchableOpacity>
-        ))}
-      </Animated.ScrollView>
-
+      {/* Botões de navegação */}
       <View className="absolute bottom-24 left-0 right-0 flex-row justify-between px-6 items-center">
-        <TouchableOpacity onPress={handlePreviousTrilha} className="bg-blue-500 p-3 rounded-full">
+        {/* Removendo a animação se a plataforma for web */}
+        <TouchableOpacity
+          onPress={handlePreviousTrilha}
+          className={`bg-blue-500 p-3 rounded-full ${Platform.OS === 'web' ? '' : 'transform-gpu'}`}
+        >
           <ChevronLeft size={24} color="white" />
         </TouchableOpacity>
-        <Text className="text-xl font-semibold text-white p-4 bg-primary rounded-lg">{trilhas[trilhaAtualIndex].nome}</Text>
-        <TouchableOpacity onPress={handleNextTrilha} className="bg-blue-500 p-3 rounded-full">
+
+        <Text className="text-xl font-semibold text-white p-4 bg-primary rounded-lg">
+          {trilhas[trilhaAtualIndex].nome}
+        </Text>
+
+        <TouchableOpacity
+          onPress={handleNextTrilha}
+          className={`bg-blue-500 p-3 rounded-full ${Platform.OS === 'web' ? '' : 'transform-gpu'}`}
+        >
           <ChevronRight size={24} color="white" />
         </TouchableOpacity>
       </View>
