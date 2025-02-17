@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
 } from "react-native";
+import { showCustomNotification } from "../services/firebaseFCM";
 
 import { FontAwesome } from "@expo/vector-icons";
 import { useLogin } from "../hooks/UseLogin";
@@ -94,6 +95,18 @@ const Login = () => {
               >
                 <Text className="text-white text-lg font-semibold">
                   {isLoading ? "Carregando..." : "Entrar"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className={`w-full py-5 bg-primary rounded-lg justify-center items-center mt-8 `}
+                onPress={() => showCustomNotification({
+                  username: 'Carlos',
+                  message: 'Esta é uma notificação de teste!',
+                })}
+                disabled={isLoading}
+              >
+                <Text className="text-white text-lg font-semibold">
+                  Notificação
                 </Text>
               </TouchableOpacity>
 

@@ -3,8 +3,14 @@ import PlatformWrapper from '@/PlataformWrapper';
 import { ConversationProvider } from '../context/ContextIa';
 import { StatusBar } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { registerForPushNotificationsAsync } from '../services/firebaseFCM';
+import { useEffect } from 'react';
 
 export default function Layout() {
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
   return (
     <ConversationProvider>
     
