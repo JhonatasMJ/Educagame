@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import ConversationField from "../../components/ConversationIa";
 import MessageBubble from "../../components/MessageBuble";
-import conversationAi from "../(tabs)/IaController";
+import conversationAi from "../../context/IaController";
 import { useConversation } from "../../context/ContextIa";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -27,7 +27,7 @@ const AiAssistent = () => {
     }, [markAsRead])
   );
 
-  const handleSendMessage = async (message) => {
+  const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
 
     // Adiciona a mensagem do usuário
@@ -83,7 +83,7 @@ const AiAssistent = () => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : null}
+      behavior="padding"
       enabled
     >
       <SafeAreaView
@@ -139,7 +139,7 @@ const AiAssistent = () => {
             scrollViewRef.current?.scrollToEnd({ animated: true });
           }}
         >
-          {messages.map((msg) => (
+          {messages.map((msg: any) => (
             <MessageBubble
               key={msg.id}
               text={msg.text}

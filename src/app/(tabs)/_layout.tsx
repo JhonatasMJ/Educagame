@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { ChevronLeft, ChevronRight, Plane } from "lucide-react-native"; 
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'react-native';
 

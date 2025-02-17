@@ -5,7 +5,7 @@ import BigAvatar2 from '../../../assets/images/grande-avatar2.svg';
 import BigAvatar3 from '../../../assets/images/grande-avatar3.svg';
 import BigAvatar4 from '../../../assets/images/grande-avatar4.svg';
 import { useLocalSearchParams } from 'expo-router';
-import { AntDesign } from '@expo/vector-icons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const { height, width } = Dimensions.get('window');
 
@@ -72,12 +72,12 @@ const StatsScreen = () => {
       )}
     >
       <TouchableOpacity onPress={() => { console.log('clicou')}} style={styles.avatarButton}>
-        <AntDesign name="setting" size={45} color="#fff" />
+        <FontAwesome size={45} name="gear" color='#fff' />
       </TouchableOpacity>
         {/* <View style={styles.spacer} /> */}
         <View style={styles.statsContainerWrapper}>
           <View style={styles.titleContainer}>
-          <Text style={styles.title}>Nome Usuário</Text>
+          <Text style={styles.title}>Nome UsuárioA222AA</Text>
           <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
           </View>
           <View style={styles.statsContainer}>

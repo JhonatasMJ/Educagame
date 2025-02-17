@@ -7,6 +7,7 @@
     "icon": "./assets/images/logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
@@ -38,7 +39,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#030303"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
