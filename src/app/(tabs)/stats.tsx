@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   statsContainerWrapper: {
     flex: 1,
     width: '100%',
-    top: '50%',
+    top: height <= 708 ?  '20%' : '45%',
     minHeight: height * 0.7,
     backgroundColor: '#444343',
     borderTopLeftRadius: 16,
