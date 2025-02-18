@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
 
   },
   avatar:{
-    marginTop: '7.7%',
+    marginTop: marginTopDoAvatar(),
     zIndex: 2
   },
   titleContainer:{
@@ -219,9 +219,9 @@ const styles = StyleSheet.create({
     color: '#EAAE00',
   },
   statsContainerWrapper: {
-    flex: 1,
+    height: '100%',
     width: '100%',
-    top: height <= 708 ?  '20%' : '45%',
+    top: topDoContainerDosResultados(),
     minHeight: height * 0.7,
     backgroundColor: '#444343',
     borderTopLeftRadius: 16,
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    paddingBottom: '115%',
+    paddingBottom: tamanhoLevantaResultados(),
   },
   statContainer: {
     flexDirection: 'row',
@@ -264,3 +264,47 @@ const styles = StyleSheet.create({
 });
 
 export default StatsScreen;
+
+function topDoContainerDosResultados(): any {
+    if (width >= 1280){
+      return '25%';
+    } else if (width <= 405){ //para celular bemmm pequeno
+      return '22%'
+    } else if (width >= 680){ // para tablets
+      return '20%';
+    } else {
+      return '20%'; //qualquer outra coisa, celular grande
+    }
+  
+}
+
+function marginTopDoAvatar(): any {
+  if (width >= 1280){ //monitores grandes
+    return '3.5%';
+  } else if (height <= 708){ //para celulares pequenos
+    return '6.75%'
+  } else if (width <= 405){ //para celular bemmm pequeno
+    return '3.5%'
+  } else if (width >= 680){ // para tablets
+    return '3%';
+  } else if (width == 1024) {
+    return '0%';
+  } else { //nos que não se encaixam em nenhum dos dois (celular grande)
+    return '6%';
+  }
+
+}
+
+
+function tamanhoLevantaResultados(): any {
+  if (width >= 1280){ //monitores de desktop
+    return '25%';
+  } else if (width >= 680){ // para tablets
+    return '50%';
+  } else if (width <= 405){ //para celular bemmm pequeno
+    return '55%'
+  } else {
+    return '95%'; //para qualquer outro celular
+  }
+
+}
