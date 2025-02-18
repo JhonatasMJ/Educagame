@@ -1,24 +1,21 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Animated,
   Dimensions,
-  Platform,
-  Touchable,
-  TouchableOpacity,
 } from "react-native";
 import BigAvatar1 from "../../../assets/images/grande-avatar1.svg";
 import BigAvatar2 from "../../../assets/images/grande-avatar2.svg";
 import BigAvatar3 from "../../../assets/images/grande-avatar3.svg";
 import BigAvatar4 from "../../../assets/images/grande-avatar4.svg";
 import { useLocalSearchParams } from "expo-router";
-import { AntDesign } from "@expo/vector-icons";
 
-const { height, width } = Dimensions.get("window");
+import TextInputLabel from "@/src/components/TextInputLabel";
+import Button from "@/src/components/Button";
+import { FontAwesome } from "@expo/vector-icons";
 
 const bigAvatarMapping: Record<string, React.FC<any>> = {
   avatar1: BigAvatar1,
@@ -28,6 +25,7 @@ const bigAvatarMapping: Record<string, React.FC<any>> = {
 };
 
 const Profile = () => {
+  const [editar, setEditar] = useState('')
   const { avatarId, avatarSource } = useLocalSearchParams<{
     avatarId: string;
     avatarSource: string;
@@ -36,91 +34,61 @@ const Profile = () => {
     ? bigAvatarMapping[avatarSource]
     : null;
 
-  // Animated scroll value
-  const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Create more dramatic movement for the avatar
-  const avatarTranslateY = scrollY.interpolate({
-    inputRange: [0, 300],
-    outputRange: [0, -250], // Move much further up to ensure it goes off-screen
-    extrapolate: "clamp",
-  });
+    const handleEdit = () => {
+        if (editar) {
+          console.log("editando")
+        }
 
-  const avatarScale = scrollY.interpolate({
-    inputRange: [0, 300],
-    outputRange: [1, 0.7],
-    extrapolate: "clamp",
-  });
-
-  const avatarOpacity = scrollY.interpolate({
-    inputRange: [0, 300],
-    outputRange: [1, 0.4],
-    extrapolate: "clamp",
-  });
+        setEditar(!editar)
+    }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        pointerEvents="auto"
-        style={[
-          styles.avatarContainer,
-          {
-            transform: [
-              { translateY: avatarTranslateY },
-              { scale: avatarScale },
-            ],
-            opacity: avatarOpacity,
-            zIndex: 2,
-          },
-        ]}
-      >
-        <BigAvatar1 style={styles.avatar} width={200} height={350} />
-      </Animated.View>
+    <ScrollView showsVerticalScrollIndicator={false}>
+      <SafeAreaView className="flex-1 bg-primary">
+        <View className="text-center justify-center mx-auto ">
+          <BigAvatar1 width={200} className="z-50  " />
+        </View>
 
-      <Animated.ScrollView
-        style={[styles.scrollView, { zIndex: 15 }]} 
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-      >
-        <View
-          style={styles.statsContainerWrapper}
-          className="flex-1 w-full  rounded-3xl bg-zinc-700 "
-        ></View>
-      </Animated.ScrollView>
-    </SafeAreaView>
+        <View className="flex-1 w-full  rounded-3xl bg-zinc-700 p-6 h-1/2 pb-32 pt-12  ">
+          <View>
+            <Text className="text-white text-4xl font-bold">Perfil</Text>
+            <Text className="text-xl font-semibold text-secondary">
+              Faça alterações do seu perfil:
+            </Text>
+            <View className="mt-4">
+              <TextInputLabel label="Nome" placeholder="Digite seu nome" />
+              <TextInputLabel label="Email" placeholder="Digite seu email" />
+              <TextInputLabel
+                label="Celular"
+                placeholder="Digite seu celular"
+              />
+              <TextInputLabel
+                label="Senha"
+                placeholder="Digite sua senha"
+                isLoading={false}
+                secureTextEntry={true}
+              />
+            </View>
+            <View className="flex-row items-center relative">
+              <Button
+                className={`p-4 rounded-lg flex-1 ${editar ? "bg-primary" : "bg-secondary"}`} 
+                text={editar ? "Salvar" : "Editar"}  
+                onPress={handleEdit}  
+              />
+              <FontAwesome
+                name={editar ? "save" : "edit"}  
+                className="absolute right-6"
+                size={24}
+                color="#111"
+              />
+            </View>
+           
+          </View>
+        </View>
+      </SafeAreaView>
+    </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#56A6DC",
-  },
-  avatarContainer: {
-    width: "100%",
-    position: "absolute",
-    top: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  scrollView: {
-    zIndex: 3,
-  },
-
-  avatar: {
-    marginTop: "6.7%",
-    zIndex: 2,
-  },
-
-  statsContainerWrapper: {
-    top: height * 0.32,
-    minHeight: height * 0.7,
-  },
-});
 
 export default Profile;

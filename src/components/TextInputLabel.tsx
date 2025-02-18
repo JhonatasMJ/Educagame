@@ -1,37 +1,38 @@
-import { View, Text, TextInput } from "react-native";
+import { View, Text, TextInput, TextInputProps as RNTextInputProps, KeyboardTypeOptions } from "react-native";
 
-
-interface TextInputProps {
-    placeholder: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    label: string;
-    isLoading: boolean;
-    color: string;
-    keyboardType?: string
+interface TextInputProps extends RNTextInputProps {
+  label: string;
+  isLoading?: boolean;
+  secureTextEntry?: boolean;
+  keyboardType?: KeyboardTypeOptions;
 }
 
 const TextInputLabel = ({
   label,
-  color,
-  isLoading,
+  isLoading = false,
   value,
-  onChangeText,
   placeholder,
-  keyboardType,
+  keyboardType = "default",
+  secureTextEntry = false,
+  ...props
 }: TextInputProps) => {
   return (
-    <View >
-      <Text >{label}</Text>
+    <View>
+      <Text className="text-xl font-bold text-white mb-2">{label}:</Text>
       <TextInput
+        className="bg-inputBg border-2 border-inputBor rounded-lg py-4 px-4 focus-visible:border-primary mb-4"
         value={value}
         autoCapitalize="none"
         autoCorrect={false}
-        editable={isLoading}
+        editable={!isLoading} 
         placeholder={placeholder}
-        onChangeText={onChangeText}
-        cursorColor={color}
+      
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
+        {...props}
       />
     </View>
   );
 };
+
+export default TextInputLabel;

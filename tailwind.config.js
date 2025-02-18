@@ -9,7 +9,9 @@ module.exports = {
             primary: '#3185BE',
             secondary: '#F6A608',
             background: '#030303',
-            placeholder: '#8391A1'
+            placeholder: '#8391A1',
+            inputBg: '#F7F8F9',
+            inputBor: '#E8ECF4'
         }
         
      
