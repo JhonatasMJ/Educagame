@@ -14,7 +14,7 @@ Notifications.setNotificationHandler({
 // Função para solicitar permissão de notificações e obter o token push (se necessário)
 export async function registerForPushNotificationsAsync() {
   let token;
-  if (Constants.isDevice) {
+  try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== 'granted') {
@@ -25,10 +25,12 @@ export async function registerForPushNotificationsAsync() {
       alert('Falha ao obter permissão para notificações push!');
       return;
     }
-    token = (await Notifications.getExpoPushTokenAsync()).data;
+    token = (await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId,
+    })).data;
     console.log('Token de notificação:', token);
-  } else {
-    alert('É necessário um dispositivo físico para notificações push');
+  } catch (error) {
+    console.log('Erro ao registrar para notificações:', error);
   }
 
   // Configura canal de notificação para Android
@@ -47,11 +49,12 @@ export async function registerForPushNotificationsAsync() {
 export async function showCustomNotification(data: { username: string; message: string }) {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: `Olá, ${data.username}!`, // Exemplo de variável personalizada
+      title: `Olá, ${data.username}!`,
       body: data.message,
-      data: data, // Dados extras, se necessário
+      data: data,
+      sound: 'notification.wav'  // Especifica o som a ser usado
     },
-    trigger: null, // Dispara imediatamente
+    trigger: null,
   });
 }
 

@@ -3,6 +3,14 @@
 gerar build pra web:
 npx expo export --platform web
 
+
+fazer build local usando expo-dev:
+
+cd android && ./gradlew app:bundleRelease
+
+
+fazer build usando eas:
+
 npx eas build --platform android --profile production (gera .aab)
 
 npx eas build --platform android --profile release (gera .apk)
