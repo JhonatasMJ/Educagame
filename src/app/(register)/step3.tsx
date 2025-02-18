@@ -1,25 +1,18 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
-import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar } from "react-native";
+import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions } from "react-native";
 import CustomButton from "@/src/components/CustomButton";
 import Checkbox from "@/src/components/Checkbox"; // Adjust the import path as needed
 
-// Importando os avatares grandes
-import BigAvatar1 from "../../../assets/images/grande-avatar1.svg";
-import BigAvatar2 from "../../../assets/images/grande-avatar2.svg";
-import BigAvatar3 from "../../../assets/images/grande-avatar3.svg";
-import BigAvatar4 from "../../../assets/images/grande-avatar4.svg";
+
+const {width, height} = Dimensions.get("window");
 
 // Importando o background SVG
 import Cloudsvg from "../../../assets/images/cloud.svg"; 
+import BigAvatar from "@/src/components/BigAvatar";
+import ProgressDots from "@/src/components/ProgressDots";
 
-// Mapeamento dos avatares grandes
-const bigAvatarMapping: Record<string, React.FC<any>> = {
-    avatar1: BigAvatar1,
-    avatar2: BigAvatar2,
-    avatar3: BigAvatar3,
-    avatar4: BigAvatar4,
-  };
+
 const Step03 = () => {
     const [isFocusedNome, setIsFocusedNome] = useState(false);
     const [isFocusedSobrenome, setIsFocusedSobrenome] = useState(false);
@@ -27,7 +20,16 @@ const Step03 = () => {
     const [lgpdAccepted, setLgpdAccepted] = useState(false);
 
     const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
-    const SelectedBigAvatar = avatarSource ? bigAvatarMapping[avatarSource] : null;
+
+    const getAvatarTop = () => {
+      if (width >= 1024) {
+        return "2%"; 
+      } else if (height <= 708) {
+        return "0%";
+      } else {
+        return "10%";
+      }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -37,12 +39,12 @@ const Step03 = () => {
                 <Cloudsvg width="90%" height="40%" />
             </View>
 
-            {SelectedBigAvatar && (
-                <SelectedBigAvatar 
-                    width={182} 
-                    height={300} 
-                    style={{ marginBottom: "65%", position: "relative", zIndex: 2 }} 
-                />
+            {/* Renderizando o BigAvatar */}
+            {avatarSource && (
+              <BigAvatar
+                avatarSource={avatarSource}
+                style={{ position: "absolute", zIndex: 2, top: getAvatarTop()}}
+              />
             )}
 
             <View style={styles.formContainer}>
@@ -70,16 +72,18 @@ const Step03 = () => {
                     </View>
                 </View>
 
-               
+                <View style={{ zIndex: 3, position: "absolute", bottom: "8%", justifyContent: "space-between", height: "20%" }}>
+        <CustomButton
+          title="Continuar"
+          nextStep="/(register)/step4"
+          params={{ avatarId, avatarSource }}
+        />
+
+      <ProgressDots currentStep={3} />
+      
+      </View>
             </View>
 
-            <View style={{zIndex: 3}}>
-                <CustomButton
-                    title="Continuar"
-                    nextStep="/(register)/step4"
-                    params={{ avatarId, avatarSource }}
-                />
-            </View>
         </SafeAreaView>
     );
 };
@@ -99,11 +103,11 @@ const styles = StyleSheet.create({
       title: {
         fontSize: 24,
         fontWeight: "bold",
-        top: 10,
+        top: "4%",
       },
       formContainer: {
         width: "100%",
-        height: "60%",
+        height: height <= 708 ? "60%" : "55%",
         marginTop: 20,
         backgroundColor: "#fff",
         position: "absolute",
@@ -117,9 +121,9 @@ const styles = StyleSheet.create({
         flexDirection: "column",
         width: "100%",
         alignItems: "center",
-        height: "55%",
+        height: "45%",
         justifyContent: "space-evenly",
-        top: "5%",
+        top: "8%",
       },
       inputArea: {
         flexDirection: "column",

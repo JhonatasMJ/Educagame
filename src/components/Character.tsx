@@ -15,15 +15,15 @@ const Character = ({ source: SvgImage, isSelected, onSelect }: CharacterProps) =
       style={[styles.character, isSelected && styles.selectedCharacter]}
       onPress={onSelect}
     >
-      <SvgImage width={160} height={160} />
+      <SvgImage width={170} height={170} />
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   character: {
-    width: 160,
-    height: 160,
+    width: 170,
+    height: 170,
     borderRadius: 85,
     justifyContent: "center",
     alignItems: "center",

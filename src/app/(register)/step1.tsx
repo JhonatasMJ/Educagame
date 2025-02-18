@@ -1,37 +1,31 @@
 import { useLocalSearchParams } from "expo-router";
-import React,{ useState } from "react";
-import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar } from "react-native";
+import React, { useState } from "react";
+import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions } from "react-native";
 import CustomButton from "@/src/components/CustomButton";
+import BigAvatar from "@/src/components/BigAvatar"; // Importando o componente criado para renderizar os avatares grandes
+import Cloudsvg from "../../../assets/images/cloud.svg";  // Background SVG
+import ProgressDots from '../../components/ProgressDots';
 
-// Importando os avatares grandes
-import BigAvatar1 from "../../../assets/images/grande-avatar1.svg";
-import BigAvatar2 from "../../../assets/images/grande-avatar2.svg";
-import BigAvatar3 from "../../../assets/images/grande-avatar3.svg";
-import BigAvatar4 from "../../../assets/images/grande-avatar4.svg";
-
-// Importando o background SVG
-import Cloudsvg from "../../../assets/images/cloud.svg"; 
-
-
-// Mapeamento dos avatares grandes
-const bigAvatarMapping: Record<string, React.FC<any>> = {
-  avatar1: BigAvatar1,
-  avatar2: BigAvatar2,
-  avatar3: BigAvatar3,
-  avatar4: BigAvatar4,
-};
+const {width, height} = Dimensions.get("window");
 
 const Step01 = () => {
-
   const [isFocusedNome, setIsFocusedNome] = useState(false);
   const [isFocusedSobrenome, setIsFocusedSobrenome] = useState(false);
   const [isFocusedEmail, setIsFocusedEmail] = useState(false);
 
-  // Pegando os parâmetros da navegação
+
   const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
 
-  // Obtendo o componente correto do avatar grande
-  const SelectedBigAvatar = avatarSource ? bigAvatarMapping[avatarSource] : null;
+  const getAvatarTop = () => {
+    if (width >= 1024) {
+      return "2%"; 
+    } else if (height <= 708) {
+      return "0%";
+    } else {
+      return "10%";
+    }
+  };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,50 +35,59 @@ const Step01 = () => {
         <Cloudsvg width="90%" height="40%" />
       </View>
 
-      {/* Renderizando o avatar grande */}
-      {SelectedBigAvatar && <SelectedBigAvatar width={182} height={300} style={{ marginBottom: "65%", position: "relative", zIndex: 2 }} />}
-
+      {/* Renderizando o BigAvatar */}
+      {avatarSource && (
+        <BigAvatar
+        avatarSource={avatarSource}
+        style={{ position: "absolute", zIndex: 2, top: getAvatarTop() }}
+      />
+      
+      )}
       {/* Campos de entrada */}
       <View style={styles.formContainer}>
-      <Text style={styles.title}>Vamos criar sua conta!</Text>
+        <Text style={styles.title}>Vamos criar sua conta!</Text>
         <View style={styles.inputsContainer}>
-
           <Text style={styles.label}>Nome</Text>
           <TextInput 
-          style={[styles.input, isFocusedNome && styles.inputFocused]} 
-          placeholder="Digite seu nome"
-          onFocus={() => setIsFocusedNome(true)}
-          onBlur={() => setIsFocusedNome(false)}
-          ></TextInput> 
+            style={[styles.input, isFocusedNome && styles.inputFocused]} 
+            placeholder="Digite seu nome"
+            onFocus={() => setIsFocusedNome(true)}
+            onBlur={() => setIsFocusedNome(false)}
+          /> 
 
           <Text style={styles.label}>Sobrenome</Text>
           <TextInput 
-          style={[styles.input, isFocusedSobrenome && styles.inputFocused]} 
-          placeholder="Digite seu sobrenome"
-          onFocus={() => setIsFocusedSobrenome(true)}
-          onBlur={() => setIsFocusedSobrenome(false)}
-          ></TextInput>
+            style={[styles.input, isFocusedSobrenome && styles.inputFocused]} 
+            placeholder="Digite seu sobrenome"
+            onFocus={() => setIsFocusedSobrenome(true)}
+            onBlur={() => setIsFocusedSobrenome(false)}
+          />
 
           <Text style={styles.label}>Email</Text>
           <TextInput 
-          keyboardType="email-address"
-          style={[styles.input, isFocusedEmail && styles.inputFocused]} 
-          placeholder="Digite seu email"
-          onFocus={() => setIsFocusedEmail(true)}
-          onBlur={() => setIsFocusedEmail(false)}
-          ></TextInput>
+            keyboardType="email-address"
+            style={[styles.input, isFocusedEmail && styles.inputFocused]} 
+            placeholder="Digite seu email"
+            onFocus={() => setIsFocusedEmail(true)}
+            onBlur={() => setIsFocusedEmail(false)}
+          />
         </View>
-      </View>
-
-      {/* Botão de continuar */}
-      <View style={{zIndex: 3}}>
+        <View style={{ zIndex: 3, position: "absolute", bottom: "8%", justifyContent: "space-between", height: "20%" }}>
         <CustomButton
           title="Continuar"
           nextStep="/(register)/step2"
           params={{ avatarId, avatarSource }}
         />
+
+      <ProgressDots currentStep={1} />
+      
       </View>
+      </View>
+
+      {/* Botão de continuar */}
+ 
     </SafeAreaView>
+    
   );
 };
 
@@ -94,7 +97,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor:"#56A6DC",
+    backgroundColor: "#56A6DC",
   },
   backgroundContainer: {
     ...StyleSheet.absoluteFillObject, // Faz o SVG cobrir toda a tela
@@ -108,7 +111,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: "100%",
-    height: "60%",
+    height: height <= 708 ? "60%" : "55%",
     marginTop: 20,
     backgroundColor: "#fff",
     position: "absolute",
@@ -118,22 +121,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 3,
   },
-  inputsContainer:{
+  inputsContainer: {
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
-    height: "60%",
+    height: "55%",
     justifyContent: "space-evenly",
-    top: "5%"
+    top: "5%",
   },
-  inputFocused:{
+  inputFocused: {
     borderColor: "#56A6DC",
     borderWidth: 2,
   },
   label: {
     fontSize: 16,
     marginBottom: 4,
-    width: "80%"
+    width: "80%",
   },
   input: {
     width: "80%",
@@ -142,7 +145,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     marginBottom: 10,
-    
   },
 });
 

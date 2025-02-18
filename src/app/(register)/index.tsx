@@ -4,11 +4,13 @@ import { View, Text, SafeAreaView, Alert } from "react-native";
 import Character from "../../components/Character";
 import CustomButton from "@/src/components/CustomButton";
 import Logo from "../../../assets/images/logo.svg";
+import ProgressDots from '../../components/ProgressDots';
 
 import Avatar1 from "../../../assets/images/avatar1.svg";
 import Avatar2 from "../../../assets/images/avatar2.svg";
 import Avatar3 from "../../../assets/images/avatar3.svg";
 import Avatar4 from "../../../assets/images/avatar4.svg";
+import Toast from "react-native-toast-message";
 
 const avatars = [
   { id: 1, source: Avatar1, sourceName: "avatar1" },
@@ -33,7 +35,12 @@ const Register = () => {
         params: { avatarId: selectedAvatarId.toString(), avatarSource: sourceAvatar },
       });
     } else {
-      Alert.alert("Por favor, selecione um avatar para continuar");
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Erro",
+        text2: "Por favor, selecione um avatar para continuar",
+      })
     }
   };
 
@@ -84,8 +91,8 @@ const Register = () => {
         onPress={handleContinue}
       />
 
-      <View style={{ justifyContent: "center", alignItems: "center" }}>
-        <Text>o o o o o</Text>
+      <View style={{ justifyContent: "center", alignItems: "center", marginBottom: "3%" }}>
+        <ProgressDots currentStep={0} />
       </View>
     </SafeAreaView>
   );
