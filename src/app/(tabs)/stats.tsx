@@ -77,7 +77,7 @@ const StatsScreen = () => {
         {/* <View style={styles.spacer} /> */}
         <View style={styles.statsContainerWrapper}>
           <View style={styles.titleContainer}>
-          <Text style={styles.title}>Nome UsuárioA222AA</Text>
+          <Text style={styles.title}>Nome Usuário</Text>
           <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
           </View>
           <View style={styles.statsContainer}>
@@ -168,10 +168,6 @@ const StatsScreen = () => {
                 <Text style={styles.statValue}>73</Text>
               </View>
             </View>
-            
-            <View style={{
-             height: 100 
-            }}/>
           </View>
         </View>
       </Animated.ScrollView>
@@ -197,13 +193,13 @@ const styles = StyleSheet.create({
   },
   avatarButton:{
     position: 'absolute',
-    top: 20,
+    top: '2%',
     right: 20,
     zIndex: 999,
 
   },
   avatar:{
-    marginTop: '6.7%',
+    marginTop: '7.7%',
     zIndex: 2
   },
   titleContainer:{
@@ -225,7 +221,7 @@ const styles = StyleSheet.create({
   statsContainerWrapper: {
     flex: 1,
     width: '100%',
-    top: height * 0.32,
+    top: '50%',
     minHeight: height * 0.7,
     backgroundColor: '#444343',
     borderTopLeftRadius: 16,
@@ -236,6 +232,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
+    paddingBottom: '115%',
   },
   statContainer: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, Dimensions, Animated, Platform } from "react-native"; // Importando o módulo Platform
+import { View, Text, TouchableOpacity, Dimensions, Animated, Platform, StatusBar } from "react-native"; // Importando o módulo Platform
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { trilhas } from "../../dados";
 import BtnTrilha from "../../components/BtnTrilha";  // Importando o novo componente
@@ -58,6 +58,7 @@ const Home = () => {
 
   return (
     <View className="flex-1 bg-gray-100">
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       {/* Fundo da tela */}
       <Animated.Image
         className={"absolute bottom-0 left-0 right-0 "}

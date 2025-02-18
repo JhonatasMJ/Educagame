@@ -31,9 +31,6 @@ export default function TabLayout() {
     },
   }}
 >
-
-  
-        <StatusBar barStyle="light-content" backgroundColor="#fff" />
       <Tabs.Screen
         name="home"
         options={{
