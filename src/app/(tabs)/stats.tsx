@@ -51,13 +51,7 @@ const StatsContent = ({ navigation }: any) => {
         <BigAvatar1 style={styles.avatar} width={200} height={350} />
       </Animated.View>
       
-      <TouchableOpacity 
-        onPress={() => navigation.openDrawer()} 
-        style={styles.avatarButton}
-      >
-        <FontAwesome size={45} name="gear" color='#fff' />
-      </TouchableOpacity>
-
+    
       <Animated.ScrollView
         style={[styles.scrollView, { zIndex: 15 }]}
         showsVerticalScrollIndicator={false}
@@ -67,6 +61,13 @@ const StatsContent = ({ navigation }: any) => {
           { useNativeDriver: true }
         )}
       >
+          <TouchableOpacity 
+        onPress={() => navigation.openDrawer()} 
+        style={styles.avatarButton}
+      >
+        <FontAwesome size={45} name="gear" color='#fff' />
+      </TouchableOpacity>
+
         <View style={styles.statsContainerWrapper}>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Nome Usuário</Text>
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
   scrollView: {
     zIndex: 3,
   },
-  avatarButton: {
+  avatarButton:{
     position: 'absolute',
     top: '2%',
     right: 20,
