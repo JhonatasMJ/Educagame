@@ -22,8 +22,7 @@ export async function registerForPushNotificationsAsync() {
       finalStatus = status;
     }
     if (finalStatus !== 'granted') {
-      alert('Falha ao obter permissão para notificações push!');
-      return;
+      return console.log('Falha ao obter permissão para notificações push!');
     }
     token = (await Notifications.getExpoPushTokenAsync({
       projectId: Constants.expoConfig?.extra?.eas?.projectId,

@@ -1,32 +1,22 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, Touchable, TouchableOpacity } from 'react-native';
-import BigAvatar1 from '../../../assets/images/grande-avatar1.svg';
-import BigAvatar2 from '../../../assets/images/grande-avatar2.svg';
-import BigAvatar3 from '../../../assets/images/grande-avatar3.svg';
-import BigAvatar4 from '../../../assets/images/grande-avatar4.svg';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, TouchableOpacity } from 'react-native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-
+import BigAvatar1 from '../../../assets/images/grande-avatar1.svg';
+import { CustomDrawerContent } from '@/src/components/CustomDrawerContent';
+import useDeviceType from '@/useDeviceType';
+import { MOBILE_WIDTH } from '@/PlataformWrapper';
 const { height, width } = Dimensions.get('window');
+const Drawer = createDrawerNavigator();
 
-const bigAvatarMapping: Record<string, React.FC<any>> = {
-  avatar1: BigAvatar1,
-  avatar2: BigAvatar2,
-  avatar3: BigAvatar3,
-  avatar4: BigAvatar4,
-};
-
-const StatsScreen = () => {
-  const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
-  const SelectedBigAvatar = avatarSource ? bigAvatarMapping[avatarSource] : null;
-  
-  // Animated scroll value
+console.log(width, height);
+// Stats Content Component
+const StatsContent = ({ navigation }: any) => {
   const scrollY = useRef(new Animated.Value(0)).current;
   
-  // Create more dramatic movement for the avatar
   const avatarTranslateY = scrollY.interpolate({
     inputRange: [0, 300],
-    outputRange: [0, -250], // Move much further up to ensure it goes off-screen
+    outputRange: [0, -250],
     extrapolate: 'clamp'
   });
   
@@ -45,40 +35,42 @@ const StatsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View 
-      pointerEvents="auto" 
-      style={[
-        styles.avatarContainer,
-        { 
-          transform: [
-            { translateY: avatarTranslateY },
-            { scale: avatarScale }
-          ],
-          opacity: avatarOpacity,
-          zIndex: 2
-        }
-      ]}
-    > 
+        pointerEvents="auto" 
+        style={[
+          styles.avatarContainer,
+          { 
+            transform: [
+              { translateY: avatarTranslateY },
+              { scale: avatarScale }
+            ],
+            opacity: avatarOpacity,
+            zIndex: 2
+          }
+        ]}
+      > 
+        <BigAvatar1 style={styles.avatar} width={200} height={350} />
+      </Animated.View>
       
-      <BigAvatar1 style={styles.avatar} width={200} height={350} />
-    </Animated.View>
-    
-    <Animated.ScrollView
-      style={[styles.scrollView, { zIndex: 15 }]} // zIndex menor que o avatarContainer
-      showsVerticalScrollIndicator={false}
-      scrollEventThrottle={16}
-      onScroll={Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: true }
-      )}
-    >
-      <TouchableOpacity onPress={() => { console.log('clicou')}} style={styles.avatarButton}>
+      <TouchableOpacity 
+        onPress={() => navigation.openDrawer()} 
+        style={styles.avatarButton}
+      >
         <FontAwesome size={45} name="gear" color='#fff' />
       </TouchableOpacity>
-        {/* <View style={styles.spacer} /> */}
+
+      <Animated.ScrollView
+        style={[styles.scrollView, { zIndex: 15 }]}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+      >
         <View style={styles.statsContainerWrapper}>
           <View style={styles.titleContainer}>
-          <Text style={styles.title}>Nome Usuário</Text>
-          <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
+            <Text style={styles.title}>Nome Usuário</Text>
+            <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
           </View>
           <View style={styles.statsContainer}>
             <View style={styles.statContainer}>
@@ -88,86 +80,42 @@ const StatsScreen = () => {
                 <Text style={styles.statValue}>2800</Text>
               </View>
             </View>
-            
             <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>⏰</Text>
+              <Text style={styles.statIconText}>📨</Text>
               <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Horas</Text>
-                <Text style={styles.statValue}>520</Text>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
               </View>
             </View>
-
-<View style={styles.statContainer}>
-  <Text style={styles.statIconText}>📆</Text>
-  <View style={styles.statInfo}>
-    <Text style={styles.statLabel}>Dias Seguidos</Text>
-    <Text style={styles.statValue}>25</Text>
-  </View>
-</View>
-
-<View style={styles.statContainer}>
-  <Text style={styles.statIconText}>📆</Text>
-  <View style={styles.statInfo}>
-    <Text style={styles.statLabel}>Dias Seguidos</Text>
-    <Text style={styles.statValue}>25</Text>
-  </View>
-</View>
-
-<View style={styles.statContainer}>
-  <Text style={styles.statIconText}>📆</Text>
-  <View style={styles.statInfo}>
-    <Text style={styles.statLabel}>Dias Seguidos</Text>
-    <Text style={styles.statValue}>25</Text>
-  </View>
-</View>
-
-<View style={styles.statContainer}>
-  <Text style={styles.statIconText}>📆</Text>
-  <View style={styles.statInfo}>
-    <Text style={styles.statLabel}>Dias Seguidos</Text>
-    <Text style={styles.statValue}>25</Text>
-  </View>
-</View>
-            
             <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>🏆</Text>
+              <Text style={styles.statIconText}>📨</Text>
               <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Conquistas</Text>
-                <Text style={styles.statValue}>42</Text>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
               </View>
             </View>
-            
             <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>🌟</Text>
+              <Text style={styles.statIconText}>📨</Text>
               <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Nível</Text>
-                <Text style={styles.statValue}>15</Text>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
               </View>
             </View>
-            
             <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>👥</Text>
+              <Text style={styles.statIconText}>📨</Text>
               <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Amigos</Text>
-                <Text style={styles.statValue}>73</Text>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
               </View>
             </View>
-            
             <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>👥</Text>
+              <Text style={styles.statIconText}>📨</Text>
               <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Amigos</Text>
-                <Text style={styles.statValue}>73</Text>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
               </View>
             </View>
-            
-            <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>👥</Text>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Amigos</Text>
-                <Text style={styles.statValue}>73</Text>
-              </View>
-            </View>
+            {/* Add other stat containers here */}
           </View>
         </View>
       </Animated.ScrollView>
@@ -175,7 +123,72 @@ const StatsScreen = () => {
   );
 };
 
+// Main Stats Screen with Drawer
+const StatsScreen = () => {
+  const { isDesktop, isMobileDevice } = useDeviceType();
+  
+  // Calculate drawer width based on device type and platform
+  const getDrawerWidth = () => {
+    if (Platform.OS === 'web' && isDesktop) {
+      return Math.min(320, MOBILE_WIDTH * 0.7);
+    }
+    return width * 0.8;
+  };
+
+  // Calculate the correct right position for the drawer
+  const getDrawerPosition = () => {
+    if (Platform.OS === 'web' && isDesktop) {
+      const windowWidth = Dimensions.get('window').width;
+      const simulatorPosition = ((windowWidth - MOBILE_WIDTH) / 2) + MOBILE_WIDTH * 1.34;
+      return simulatorPosition;
+    }
+    return 0;
+  };
+
+  return (
+    <View style={styles.navigatorContainer}>
+      <Drawer.Navigator
+        screenOptions={{
+          drawerPosition: 'right',
+          drawerType: 'slide',
+          overlayColor: 'rgba(0,0,0,0.7)',
+          drawerStyle: {
+            backgroundColor: '#fff',
+           //width: getDrawerWidth(),
+            ...(Platform.OS === 'web' && isDesktop && {
+              height: '100%',
+              width: 320,
+              position: 'absolute',
+              right:  getDrawerPosition() - 5,
+              top: 0,
+            }),
+          },
+          headerShown: false,
+          swipeEdgeWidth: Platform.OS === 'web' && isDesktop ? 
+            MOBILE_WIDTH : undefined,
+        }}
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
+      >
+        <Drawer.Screen 
+          name="StatsContent" 
+          component={StatsContent}
+          options={{
+            drawerLabel: 'Stats',
+          }}
+        />
+      </Drawer.Navigator>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
+  navigatorContainer: {
+    flex: 1,
+    position: 'relative',
+    ...(Platform.OS === 'web' && {
+      overflow: 'hidden', // Prevent drawer from breaking mobile simulator bounds
+    }),
+  },
   container: {
     flex: 1,
     backgroundColor: '#56A6DC',
@@ -183,7 +196,7 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: '100%',
     position: 'absolute',
-    top: 0, // Aumentado significativamente para dar mais margem para subir
+    top: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -191,18 +204,17 @@ const styles = StyleSheet.create({
   scrollView: {
     zIndex: 3,
   },
-  avatarButton:{
+  avatarButton: {
     position: 'absolute',
     top: '2%',
     right: 20,
     zIndex: 999,
-
   },
-  avatar:{
+  avatar: {
     marginTop: marginTopDoAvatar(),
     zIndex: 2
   },
-  titleContainer:{
+  titleContainer: {
     alignItems: 'flex-start',
     justifyContent: 'center',
     marginTop: 12,
@@ -263,48 +275,51 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StatsScreen;
-
 function topDoContainerDosResultados(): any {
-    if (width >= 1280){
-      return '25%';
-    } else if (width <= 405){ //para celular bemmm pequeno
-      return '22%'
-    } else if (width >= 680){ // para tablets
-      return '20%';
-    } else {
-      return '20%'; //qualquer outra coisa, celular grande
-    }
-  
+  if (width >= 1280){
+    return '25%';
+  } else if (width >= 1300){
+    return '50%';
+  } else if (width <= 405){ //para celular bemmm pequeno
+    return '22%'
+  } else if (width >= 680){ // para tablets
+    return '20%';
+  } else {
+    return '20%'; //qualquer outra coisa, celular grande
+  }
+
 }
 
 function marginTopDoAvatar(): any {
-  if (width >= 1280){ //monitores grandes
-    return '3.5%';
-  } else if (height <= 708){ //para celulares pequenos
-    return '6.75%'
-  } else if (width <= 405){ //para celular bemmm pequeno
-    return '3.5%'
-  } else if (width >= 680){ // para tablets
-    return '3%';
-  } else if (width == 1024) {
-    return '0%';
-  } else { //nos que não se encaixam em nenhum dos dois (celular grande)
-    return '6%';
-  }
+if (width >= 1280){ //monitores grandes
+  return '3.5%';
+} else if (width >= 1300 ){
+  return '0.5%';
+} else if (height <= 708){ //para celulares pequenos
+  return '6.75%'
+} else if (width <= 405){ //para celular bemmm pequeno
+  return '3.5%'
+} else if (width >= 680){ // para tablets
+  return '3%';
+} else if (width == 1024) {
+  return '0%';
+} else { //nos que não se encaixam em nenhum dos dois (celular grande)
+  return '6%';
+}
 
 }
 
 
 function tamanhoLevantaResultados(): any {
-  if (width >= 1280){ //monitores de desktop
-    return '25%';
-  } else if (width >= 680){ // para tablets
-    return '50%';
-  } else if (width <= 405){ //para celular bemmm pequeno
-    return '55%'
-  } else {
-    return '95%'; //para qualquer outro celular
-  }
-
+if (width >= 1280){ //monitores de desktop
+  return '25%';
+} else if (width >= 680){ // para tablets
+  return '50%';
+} else if (width <= 405){ //para celular bemmm pequeno
+  return '55%'
+} else {
+  return '95%'; //para qualquer outro celular
 }
+}
+
+export default StatsScreen;

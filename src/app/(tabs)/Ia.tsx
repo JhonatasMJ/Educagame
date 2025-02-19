@@ -82,7 +82,7 @@ const AiAssistent = () => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: "#3185BE" }}
       behavior="padding"
       enabled
     >
@@ -90,6 +90,7 @@ const AiAssistent = () => {
         style={{
           padding: 15,
           paddingTop: 35,
+          paddingBottom: 86,
           backgroundColor: "#3185BE",
           flex: 1,
         }}
@@ -129,7 +130,7 @@ const AiAssistent = () => {
               fontWeight: "700",
             }}
           >
-            Assistente Virtual Banco Votorantim
+            Assistente Virtual Espaço Aéreo
           </Text>
         </View>
 
