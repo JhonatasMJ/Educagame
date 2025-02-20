@@ -1,7 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ChevronLeft, ChevronRight, Plane } from "lucide-react-native"; 
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'react-native';
 
@@ -51,18 +50,18 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: 'Ranking',
-          tabBarIcon: ({ color }) => <FontAwesome size={32} name="star" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome size={32} name="user" color={color} />,
         }}
       />
-            <Tabs.Screen
-        name="ia"
+      
+      <Tabs.Screen
+        name="Ia"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color }) => 
-          <Ionicons name="chatbubbles" size={32} color={color} />
-         
+          tabBarIcon: ({ color }) => <Ionicons name="chatbubbles-sharp" size={32} color={color} />,
         }}
       />
+           
     </Tabs>
 
   );

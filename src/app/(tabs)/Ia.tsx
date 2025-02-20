@@ -18,7 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 const AiAssistent = () => {
   const { messages, addMessage, markAsRead } = useConversation();
   const [isLoading, setIsLoading] = useState(false);
-  const scrollViewRef = useRef(null);
+  const scrollViewRef = useRef<any>(null);
 
   // Quando a tela entrar em foco, marque as mensagens como lidas
   useFocusEffect(
@@ -108,9 +108,9 @@ const AiAssistent = () => {
           <View
             style={{
               backgroundColor: "#fefefe",
-              width: 20,
-              height: 20,
-              borderRadius: 10,
+              width: 25,
+              height: 25,
+              borderRadius: 30,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -118,7 +118,7 @@ const AiAssistent = () => {
             <Image
               source={require("../../../assets/images/icon.png")}
               resizeMode="contain"
-              style={{ width: 15, height: 15 }}
+              style={{ width: 23.5, height: 23.5, borderRadius: 30 }}
             />
           </View>
           <Text

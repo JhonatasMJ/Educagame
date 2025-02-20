@@ -9,7 +9,7 @@ import {
 import { Ionicons} from "@expo/vector-icons";
 import colors from "../colors";
 
-const ConversationField = ({ onSendMessage }) => {
+const ConversationField = ({ onSendMessage } : { onSendMessage: (message: string) => void }) => {
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
@@ -48,9 +48,10 @@ const ConversationField = ({ onSendMessage }) => {
               source={require("../../assets/images/icon.png")}
           style={{
             position: "absolute",
-            left: 10,
-            width: 10* 2,
-            height: 10* 2,
+            left: 4,
+            width: 28,
+            height: 28,
+            borderRadius: 28
           }}
           resizeMode="contain"
         />

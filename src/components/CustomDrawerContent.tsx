@@ -7,6 +7,7 @@ import Foundation from '@expo/vector-icons/Foundation';
 import ModalComponent from './modalComponent';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
 import useDeviceType from '@/useDeviceType';
+import AcionarChamado from './AcionarChamado';
 
 export const CustomDrawerContent = (props: any) => {
   const router = useRouter();
@@ -82,12 +83,12 @@ export const CustomDrawerContent = (props: any) => {
               onPress={() => setOpen(false)}
               style={styles.closeButton}
             >
-              <MaterialIcons name="close" size={24} color="#000" />
+              <MaterialIcons name="close" size={24} color="#fff" />
             </Pressable>
           </View>
           
           <View style={styles.modalBody}>
-            <Text>Conteúdo do seu modal aqui</Text>
+           <AcionarChamado setOpen={setOpen}/>
           </View>
         </View>
       </ModalComponent>
@@ -120,17 +121,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#fefefe',
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
     shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 4.84,
+    elevation: 6,
     position: Platform.OS === 'web' ? 'fixed' : 'absolute',
     top: '50%',
     transform: [{ translateY: Platform.OS === 'web' ? -200 : -150 }], // Ajuste a altura conforme necessário
@@ -144,11 +145,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   closeButton: {
-    padding: 8,
+    backgroundColor: '#56A6DC',
+    width: 30,
+    height: 30,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalBody: {
     flex: 1,
