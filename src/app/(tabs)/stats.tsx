@@ -136,11 +136,27 @@ const StatsScreen = () => {
     return width * 0.8;
   };
 
+  function drawerRight (){
+    const { width } = Dimensions.get('window');
+    if(width >= 1400 && width < 1499){
+      return '240%' as string
+    } else if (width >= 1500 && width < 1599){
+      return '240%' as string
+    } else if (width >= 1600 && width < 1699){
+      return '240%' as string 
+    } else if (width >= 1700 && width < 1899){
+      return '240%' as string
+    } else if (width >= 1900){
+      return '240%' as string
+    } else {
+      return '240%' as string
+    }
+  } 
+
   // Calculate the correct right position for the drawer
   const getDrawerPosition = () => {
     if (Platform.OS === 'web' && isDesktop) {
-      const windowWidth = Dimensions.get('window').width;
-      const simulatorPosition = ((windowWidth - MOBILE_WIDTH) / 2) + MOBILE_WIDTH * 1.34;
+      const simulatorPosition = drawerRight();
       return simulatorPosition;
     }
     return 0;
@@ -160,7 +176,7 @@ const StatsScreen = () => {
               height: '100%',
               width: 320,
               position: 'absolute',
-              right:  getDrawerPosition() - 5,
+              right:  getDrawerPosition(),
               top: 0,
             }),
           },
