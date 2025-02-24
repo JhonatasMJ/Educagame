@@ -7,13 +7,18 @@ import { CustomDrawerContent } from '@/src/components/CustomDrawerContent';
 import useDeviceType from '@/useDeviceType';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
 import CustomWebDrawer from '@/src/components/CustomWebDrawer';
+import { useAuth } from '@/src/context/AuthContext';
 const { height, width } = Dimensions.get('window');
 const Drawer = createDrawerNavigator();
+
 
 const StatsContent = ({ navigation, onOpenDrawer }: any) => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const { isDesktop } = useDeviceType();
-  
+  const { userData, authUser } = useAuth()
+
+  console.log(userData, authUser?.email)
+
   const handleOpenDrawer = () => {
     if (Platform.OS === 'web' && isDesktop) {
       onOpenDrawer?.(); // Usa a função customizada para web
@@ -82,6 +87,71 @@ const StatsContent = ({ navigation, onOpenDrawer }: any) => {
             <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
           </View>
           <View style={styles.statsContainer}>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
+            <View style={styles.statContainer}>
+              <Text style={styles.statIconText}>📨</Text>
+              <View style={styles.statInfo}>
+                <Text style={styles.statLabel}>Onocash</Text>
+                <Text style={styles.statValue}>2800</Text>
+              </View>
+            </View>
             <View style={styles.statContainer}>
               <Text style={styles.statIconText}>📨</Text>
               <View style={styles.statInfo}>

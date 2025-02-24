@@ -5,6 +5,7 @@ import { StatusBar } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { registerForPushNotificationsAsync } from '../services/firebaseFCM';
 import { useEffect } from 'react';
+import { AuthProvider } from '../context/AuthContext';
 
 export default function Layout() {
   useEffect(() => {
@@ -13,7 +14,7 @@ export default function Layout() {
 
   return (
     <ConversationProvider>
-    
+    <AuthProvider>
     <PlatformWrapper>
    
     <StatusBar barStyle="dark-content" backgroundColor="transparent" />
@@ -25,7 +26,7 @@ export default function Layout() {
    
     </PlatformWrapper>
     <Toast/>
-  
+    </AuthProvider>
     </ConversationProvider>
   );
 }

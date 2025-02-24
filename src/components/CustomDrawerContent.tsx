@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, Platform, TouchableOpacity } from 'react-native';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -79,12 +79,12 @@ export const CustomDrawerContent = (props: any) => {
         >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Acionar Chamado</Text>
-            <Pressable 
+            <TouchableOpacity 
               onPress={() => setOpen(false)}
               style={styles.closeButton}
             >
               <MaterialIcons name="close" size={24} color="#fff" />
-            </Pressable>
+            </TouchableOpacity>
           </View>
           
           <View style={styles.modalBody}>

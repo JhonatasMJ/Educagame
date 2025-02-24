@@ -11,6 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
+import Toast from 'react-native-toast-message';
+import { useAuth } from '../context/AuthContext';
 
 const OpenTicket = () => {
   const [title, setTitle] = useState('');
@@ -18,21 +20,58 @@ const OpenTicket = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ticketNumber] = useState('2024' + Math.floor(Math.random() * 100000));
+  const { userData, authUser } = useAuth()
 
   const handleOpenTicket = () => {
     if (title.trim() && description.trim()) {
       setLoading(true);
       // Simulando abertura do chamado
-      setTimeout(() => {
-        setShowConfirmation(true);
-        setLoading(false);
-      }, 1000);
+      fetch('https://workflow.educagame.com.br/webhook-test/open-chamado', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          userData,
+          authUser,
+        }),
+      }
+      
+    ).then(response => {
+        if (response.ok) {
+          setShowConfirmation(true);
+          setLoading(false);
+          console.log(response);
+        } else {
+          Toast.show({
+            type: 'error',
+            position: 'top',
+            text1: 'Erro',
+            text2: 'Ocorreu um erro ao abrir o chamado. Por favor, tente novamente.'+ response.status,
+          });
+        }
+      })
+      .catch(error => {
+       Toast.show({
+        type: 'error',
+        position: 'top',
+        text1: 'Erro',
+        text2: 'Ocorreu um erro ao abrir o chamado. Por favor, tente novamente. ' + error,
+      });
+      })
     }
   };
 
   const copyTicketNumber = async () => {
     await Clipboard.setStringAsync(ticketNumber);
-    Alert.alert('✨ Sucesso!', 'Número do chamado copiado para a área de transferência');
+    Toast.show({
+      type: 'success',
+      position: 'top',
+      text1: '✨ Sucesso!',
+      text2: 'Número do chamado copiado para a área de transferência',
+    });
   };
 
   return (
@@ -126,8 +165,17 @@ const OpenTicket = () => {
                 setShowConfirmation(false);
                 setTitle('');
                 setDescription('');
-              }}>
-                <Ionicons name="close" size={24} color="#000" />
+              }}
+              style={{
+                  backgroundColor: '#56A6DC',
+                  width: 30,
+                  height: 30,
+                  borderRadius: 30,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+              }}
+              >
+                <Ionicons name="close" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
             
