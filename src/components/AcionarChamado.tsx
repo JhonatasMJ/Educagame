@@ -12,7 +12,7 @@ const AcionarChamado = ({ setOpen }: AcionarChamadoProps) => {
     const handleNavigation = (route: string) => {
         setOpen(false); // Fecha o modal
         setTimeout(() => {
-            router.push("/searchTicket"); // Navega após um pequeno delay
+            router.push(route as any); // Navega após um pequeno delay
         }, 100);
     };
 
@@ -24,7 +24,7 @@ const AcionarChamado = ({ setOpen }: AcionarChamadoProps) => {
             
             <TouchableOpacity 
                 style={styles.button}
-                onPress={() => handleNavigation("/newTicket")}
+                onPress={() => handleNavigation("/openTicket")}
             >
                 <Text style={styles.buttonText}>Novo Chamado</Text>
             </TouchableOpacity>

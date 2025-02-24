@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, TouchableOpacity } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -6,13 +6,21 @@ import BigAvatar1 from '../../../assets/images/grande-avatar1.svg';
 import { CustomDrawerContent } from '@/src/components/CustomDrawerContent';
 import useDeviceType from '@/useDeviceType';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
+import CustomWebDrawer from '@/src/components/CustomWebDrawer';
 const { height, width } = Dimensions.get('window');
 const Drawer = createDrawerNavigator();
 
-console.log(width, height);
-// Stats Content Component
-const StatsContent = ({ navigation }: any) => {
+const StatsContent = ({ navigation, onOpenDrawer }: any) => {
   const scrollY = useRef(new Animated.Value(0)).current;
+  const { isDesktop } = useDeviceType();
+  
+  const handleOpenDrawer = () => {
+    if (Platform.OS === 'web' && isDesktop) {
+      onOpenDrawer?.(); // Usa a função customizada para web
+    } else {
+      navigation?.openDrawer(); // Usa a função do navigation para mobile
+    }
+  };
   
   const avatarTranslateY = scrollY.interpolate({
     inputRange: [0, 300],
@@ -62,7 +70,7 @@ const StatsContent = ({ navigation }: any) => {
         )}
       >
           <TouchableOpacity 
-        onPress={() => navigation.openDrawer()} 
+        onPress={handleOpenDrawer} 
         style={styles.avatarButton}
       >
         <FontAwesome size={45} name="gear" color='#fff' />
@@ -81,41 +89,7 @@ const StatsContent = ({ navigation }: any) => {
                 <Text style={styles.statValue}>2800</Text>
               </View>
             </View>
-            <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>📨</Text>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Onocash</Text>
-                <Text style={styles.statValue}>2800</Text>
-              </View>
-            </View>
-            <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>📨</Text>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Onocash</Text>
-                <Text style={styles.statValue}>2800</Text>
-              </View>
-            </View>
-            <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>📨</Text>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Onocash</Text>
-                <Text style={styles.statValue}>2800</Text>
-              </View>
-            </View>
-            <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>📨</Text>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Onocash</Text>
-                <Text style={styles.statValue}>2800</Text>
-              </View>
-            </View>
-            <View style={styles.statContainer}>
-              <Text style={styles.statIconText}>📨</Text>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>Onocash</Text>
-                <Text style={styles.statValue}>2800</Text>
-              </View>
-            </View>
+         
             {/* Add other stat containers here */}
           </View>
         </View>
@@ -126,41 +100,29 @@ const StatsContent = ({ navigation }: any) => {
 
 // Main Stats Screen with Drawer
 const StatsScreen = () => {
-  const { isDesktop, isMobileDevice } = useDeviceType();
+  const { isDesktop } = useDeviceType();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
-  // Calculate drawer width based on device type and platform
-  const getDrawerWidth = () => {
-    if (Platform.OS === 'web' && isDesktop) {
-      return Math.min(320, MOBILE_WIDTH * 0.7);
-    }
-    return width * 0.8;
-  };
+  // In StatsScreen component:
+if (Platform.OS === 'web' && isDesktop) {
+  return (
+    <View style={[styles.navigatorContainer, { overflow: 'hidden' }]}>
+      <StatsContent 
+        onOpenDrawer={() => setIsDrawerOpen(true)}
+      />
+      <CustomWebDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        drawerWidth={Math.min(320, MOBILE_WIDTH * 0.8)} // Limit drawer width
+      >
+        <CustomDrawerContent 
+          closeDrawer={() => setIsDrawerOpen(false)}
+        />
+      </CustomWebDrawer>
+    </View>
+  );
+}
 
-  function drawerRight (){
-    const { width } = Dimensions.get('window');
-    if(width >= 1400 && width < 1499){
-      return '240%' as string
-    } else if (width >= 1500 && width < 1599){
-      return '240%' as string
-    } else if (width >= 1600 && width < 1699){
-      return '240%' as string 
-    } else if (width >= 1700 && width < 1899){
-      return '240%' as string
-    } else if (width >= 1900){
-      return '240%' as string
-    } else {
-      return '240%' as string
-    }
-  } 
-
-  // Calculate the correct right position for the drawer
-  const getDrawerPosition = () => {
-    if (Platform.OS === 'web' && isDesktop) {
-      const simulatorPosition = drawerRight();
-      return simulatorPosition;
-    }
-    return 0;
-  };
 
   return (
     <View style={styles.navigatorContainer}>
@@ -171,18 +133,9 @@ const StatsScreen = () => {
           overlayColor: 'rgba(0,0,0,0.7)',
           drawerStyle: {
             backgroundColor: '#fff',
-           //width: getDrawerWidth(),
-            ...(Platform.OS === 'web' && isDesktop && {
-              height: '100%',
-              width: 320,
-              position: 'absolute',
-              right:  getDrawerPosition(),
-              top: 0,
-            }),
+            width: width * 0.8,
           },
           headerShown: false,
-          swipeEdgeWidth: Platform.OS === 'web' && isDesktop ? 
-            MOBILE_WIDTH : undefined,
         }}
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >

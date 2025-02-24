@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View, Modal, SafeAreaView, TextInput, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { MOBILE_WIDTH } from '@/PlataformWrapper';
 
 const SearchTicket = () => {
   const [ticketNumber, setTicketNumber] = useState('');
@@ -44,10 +45,15 @@ const SearchTicket = () => {
         visible={showFeedback}
         transparent={true}
         animationType="fade"
+        statusBarTranslucent={true}
         onRequestClose={() => setShowFeedback(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 15, padding: 20, width: '85%', alignItems: 'center' }}>
+          <View style={{ 
+            backgroundColor: '#fff', 
+            borderRadius: 15, padding: 20, 
+                    
+                    width: MOBILE_WIDTH * 0.85, alignItems: 'center' }}>
             <View style={{ alignItems: 'flex-end', width: '100%' }}>
               <TouchableOpacity onPress={() => setShowFeedback(false)}>
                 <Ionicons name="close" size={24} color="#000" />
