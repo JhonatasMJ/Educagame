@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
 import Toast from 'react-native-toast-message';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'expo-router';
 
 const OpenTicket = () => {
@@ -28,7 +28,7 @@ const OpenTicket = () => {
     if (title.trim() && description.trim()) {
       setLoading(true);
       // Simulando abertura do chamado
-      fetch('https://workflow.educagame.com.br/webhook-test/open-chamado', {
+      fetch('https://workflow.educagame.com.br/webhook/open-chamado', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

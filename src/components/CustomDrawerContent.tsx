@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
   modal: {
     margin: 0,
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', // Centers vertically
+    alignItems: 'center', // Centers horizontally
   },
   webModal: {
     position: 'fixed',
@@ -132,9 +132,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4.84,
     elevation: 6,
-    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
-    top: '50%',
-    transform: [{ translateY: Platform.OS === 'web' ? -200 : -150 }], // Ajuste a altura conforme necessário
+    position: 'absolute',
+    left: '50%', // Centers horizontally
+    top: '50%', // Centers vertically
+    transform: [
+      { translateX: Platform.OS === 'web' ? -200 : -150 }, // Half of the modal width
+      { translateY: -200 }, // Half of the modal height
+    ],
     minHeight: 300, // Altura fixa para formato quadrado
     maxHeight: 400, // Altura máxima
   },
@@ -158,5 +162,7 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
