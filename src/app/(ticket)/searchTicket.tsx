@@ -36,7 +36,7 @@ const SearchTicket = () => {
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                   </TouchableOpacity>
                
-        <View style={{ flexDirection: 'row', width: MOBILE_WIDTH * 0.8, justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10, paddingHorizontal: 15 }}>
+        <View style={{ flexDirection: 'row', width: '92.5%', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10, paddingHorizontal: 15 }}>
           <Ionicons name="search-outline" size={24} color="#56A6DC" />
           <TextInput
             style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 10, fontSize: 16, color: '#000' }}
