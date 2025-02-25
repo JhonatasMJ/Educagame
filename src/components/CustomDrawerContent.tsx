@@ -122,6 +122,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fefefe',
+    zIndex: 1000,
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -136,8 +137,8 @@ const styles = StyleSheet.create({
     left: '50%', // Centers horizontally
     top: '50%', // Centers vertically
     transform: [
-      { translateX: Platform.OS === 'web' ? -200 : -150 }, // Half of the modal width
-      { translateY: -200 }, // Half of the modal height
+      { translateX: Platform.OS === 'web' ? 0 : 25}, // Half of the modal width
+      { translateY: Platform.OS === 'web' ? -200 : 270 }, // Half of the modal height
     ],
     minHeight: 300, // Altura fixa para formato quadrado
     maxHeight: 400, // Altura máxima
