@@ -5,6 +5,8 @@ import CustomButton from "@/src/components/CustomButton";
 import BigAvatar from "@/src/components/BigAvatar"; // Importando o componente criado para renderizar os avatares grandes
 import Cloudsvg from "../../../assets/images/cloud.svg";  // Background SVG
 import ProgressDots from '../../components/ProgressDots';
+import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers";
+
 
 const {width, height} = Dimensions.get("window");
 
@@ -15,16 +17,6 @@ const Step01 = () => {
 
 
   const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
-
-  const getAvatarTop = () => {
-    if (width >= 1024) {
-      return "2%"; 
-    } else if (height <= 732) {
-      return "0%";
-    } else {
-      return "10%";
-    }
-  };
   
 
   return (
@@ -72,7 +64,7 @@ const Step01 = () => {
             onBlur={() => setIsFocusedEmail(false)}
           />
         </View>
-        <View style={{ zIndex: 3, position: "absolute", bottom: "8%", justifyContent: "space-between", height: "20%" }}>
+        <View style={{ zIndex: 3, position: "absolute", bottom: bottomHeight(), justifyContent: "space-between", height: "20%" }}>
         <CustomButton
           title="Continuar"
           nextStep="/(register)/step2"

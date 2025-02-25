@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions } from "react-native";
 import CustomButton from "@/src/components/CustomButton";
 import Checkbox from "@/src/components/Checkbox"; // Adjust the import path as needed
+import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers";
 
 const {width, height} = Dimensions.get("window");
 
@@ -20,16 +21,6 @@ const Step02 = () => {
 
     const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
 
-    const getAvatarTop = () => {
-      if (width >= 1024) {
-        return "2%"; 
-      } else if (height <= 732) {
-        return "0%";
-      } else {
-        return "10%";
-      }
-    };
-    
 
     return (
         <SafeAreaView style={styles.container}>
@@ -81,7 +72,7 @@ const Step02 = () => {
                 </View>
                 </View>
 
-                <View style={{ zIndex: 3, position: "absolute", bottom: "8%", justifyContent: "space-between", height: "20%" }}>
+                <View style={{ zIndex: 3, position: "absolute", bottom: bottomHeight(), justifyContent: "space-between", height: "20%" }}>
         <CustomButton
           title="Continuar"
           nextStep="/(register)/step3"

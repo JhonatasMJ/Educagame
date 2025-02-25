@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions } from "react-native";
 import CustomButton from "@/src/components/CustomButton";
-import Checkbox from "@/src/components/Checkbox"; // Adjust the import path as needed
+import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers";
 
 const {width, height} = Dimensions.get("window");
 
@@ -15,16 +15,6 @@ import ProgressDots from "@/src/components/ProgressDots";
 const Step03 = () => {
 
     const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
-
-    const getAvatarTop = () => {
-      if (width >= 1024) {
-        return "2%"; 
-      } else if (height <= 732) {
-        return "0%";
-      } else {
-        return "10%";
-      }
-    };
     
 
     return (
@@ -51,7 +41,7 @@ const Step03 = () => {
                     <Text style={{fontSize: 25, textAlign: "center", paddingHorizontal: "19%"}}>Agora é só entrar na sua conta e começar a estudar!</Text>
 
                 </View>
-          <View style={{ zIndex: 3, position: "absolute", bottom: "8%", justifyContent: "space-between", height: "20%" }}>
+          <View style={{ zIndex: 3, position: "absolute", bottom: bottomHeight(), justifyContent: "space-between", height: "20%" }}>
 
           <CustomButton
           title="Começar!"
