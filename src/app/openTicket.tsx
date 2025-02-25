@@ -45,6 +45,7 @@ const OpenTicket = () => {
           setLoading(false);
           console.log(response);
         } else {
+          setLoading(false);
           Toast.show({
             type: 'error',
             position: 'top',
@@ -54,6 +55,7 @@ const OpenTicket = () => {
         }
       })
       .catch(error => {
+        setLoading(false);
        Toast.show({
         type: 'error',
         position: 'top',
