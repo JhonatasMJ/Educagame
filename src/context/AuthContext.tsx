@@ -13,7 +13,7 @@ interface AuthContextData {
   refreshUserData: () => Promise<void>;
 }
 
-// Criando o contexto com tipo explícito
+
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
 
 interface AuthProviderProps {
