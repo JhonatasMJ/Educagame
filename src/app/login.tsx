@@ -42,11 +42,11 @@ const Login = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+    <SafeAreaView className="flex-1 bg-white justify-between">
+      <KeyboardAvoidingView className="flex-1">
         <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} className="flex-1">
           <View className="p-5 flex-1 justify-center">
-           <View className="mb-6 mt-4">
+           <View className="mb-6">
               <Logo />
 
            </View>
@@ -97,7 +97,7 @@ const Login = () => {
                   {isLoading ? "Carregando..." : "Entrar"}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
+{/*               <TouchableOpacity
                 className={`w-full py-5 bg-primary rounded-lg justify-center items-center mt-8 `}
                 onPress={() => showCustomNotification({
                   username: 'Carlos',
@@ -109,7 +109,7 @@ const Login = () => {
                   Notificação
                 </Text>
               </TouchableOpacity>
-
+ */}
               <View className="flex-row gap-24 mt-4">
                 <TouchableOpacity
                   className="bg-primary p-2 rounded-lg"
@@ -121,7 +121,7 @@ const Login = () => {
 
               {/* {googleError && <Text className="text-red-500 mt-2">{googleError}</Text>} */}
 
-              <TouchableOpacity onPress={() => router.push("/(register)")} className="py-2">
+              <TouchableOpacity onPress={() => router.push("/(register)")} >
                 <View className="flex-row gap-2">
                   <Text className="text-primary">Não tem uma conta?</Text>
                   <Text className="text-primary underline">Cadastre-se</Text>

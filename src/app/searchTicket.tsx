@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Text, View, Modal, SafeAreaView, TextInput, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
-
+import { useRouter } from 'expo-router';
 const SearchTicket = () => {
   const [ticketNumber, setTicketNumber] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
   const handleSearch = () => {
     if (ticketNumber.trim()) {
@@ -23,7 +24,19 @@ const SearchTicket = () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* Header search area */}
       <View style={{ padding: 20, backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10, paddingHorizontal: 15 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity onPress={() => router.back()}  style={{
+                          backgroundColor: '#56A6DC',
+                          width: 30,
+                          height: 30,
+                          borderRadius: 30,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }} >
+                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                  </TouchableOpacity>
+               
+        <View style={{ flexDirection: 'row', width: MOBILE_WIDTH * 0.8, justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10, paddingHorizontal: 15 }}>
           <Ionicons name="search-outline" size={24} color="#56A6DC" />
           <TextInput
             style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 10, fontSize: 16, color: '#000' }}
@@ -37,6 +50,7 @@ const SearchTicket = () => {
               <Ionicons name="close-circle" size={24} color="#56A6DC" />
             </TouchableOpacity>
           )}
+        </View>
         </View>
       </View>
 

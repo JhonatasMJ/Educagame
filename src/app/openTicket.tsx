@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Text, 
-  View, 
-  Modal, 
-  SafeAreaView, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  Text,
+  View,
+  Modal,
+  SafeAreaView,
+  TextInput,
+  TouchableOpacity,
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,14 +13,16 @@ import * as Clipboard from 'expo-clipboard';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'expo-router';
 
 const OpenTicket = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [ticketNumber] = useState('2024' + Math.floor(Math.random() * 100000));
+  const [ticketNumber, setTicketNumber] = useState('');
   const { userData, authUser } = useAuth()
+  const router = useRouter();
 
   const handleOpenTicket = () => {
     if (title.trim() && description.trim()) {
@@ -38,31 +40,38 @@ const OpenTicket = () => {
           authUser,
         }),
       }
-      
-    ).then(response => {
+
+      ).then(response => {
         if (response.ok) {
+          return response.text();
+        } else {
+          throw new Error(response.status.toString());
+        }
+      })
+        .then(data => {
+          const ticketData = JSON.parse(data);
           setShowConfirmation(true);
           setLoading(false);
-          console.log(response);
-        } else {
+          setTicketNumber(ticketData.return);
+        })
+        .catch(error => {
           setLoading(false);
           Toast.show({
             type: 'error',
             position: 'top',
             text1: 'Erro',
-            text2: 'Ocorreu um erro ao abrir o chamado. Por favor, tente novamente.'+ response.status,
+            text2: 'Ocorreu um erro ao abrir o chamado. Por favor, tente novamente. ' + error.message,
           });
-        }
-      })
-      .catch(error => {
-        setLoading(false);
-       Toast.show({
-        type: 'error',
-        position: 'top',
-        text1: 'Erro',
-        text2: 'Ocorreu um erro ao abrir o chamado. Por favor, tente novamente. ' + error,
-      });
-      })
+        })
+        .catch(error => {
+          setLoading(false);
+          Toast.show({
+            type: 'error',
+            position: 'top',
+            text1: 'Erro',
+            text2: 'Ocorreu um erro ao abrir o chamado. Por favor, tente novamente. ' + error,
+          });
+        })
     }
   };
 
@@ -80,32 +89,44 @@ const OpenTicket = () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* Header area */}
       <View style={{ padding: 20, backgroundColor: '#fff' }}>
-        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#000', marginBottom: 20 }}>
-          📝 Abrir Chamado
-        </Text>
-        
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 20 }}>
+          <TouchableOpacity onPress={() => router.back()}  style={{
+                  backgroundColor: '#56A6DC',
+                  width: 30,
+                  height: 30,
+                  borderRadius: 30,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }} >
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#000'}}>
+            📝 Abrir Chamado
+          </Text>
+        </View>
+
         {/* Title Input */}
         <View style={{ marginBottom: 15 }}>
           <Text style={{ marginBottom: 8, color: '#666', fontWeight: '500' }}>
             Título do Chamado
           </Text>
-          <View style={{ 
-            flexDirection: 'row', 
-            alignItems: 'center', 
-            backgroundColor: '#f5f5f5', 
-            borderRadius: 10, 
-            paddingHorizontal: 15 
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#f5f5f5',
+            borderRadius: 10,
+            paddingHorizontal: 15
           }}>
             <Ionicons name="document-text-outline" size={24} color="#56A6DC" />
             <TextInput
-              style={{ 
-                flex: 1, 
-                paddingVertical: 12, 
-                paddingHorizontal: 10, 
-                fontSize: 16, 
-                color: '#000' 
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+                fontSize: 16,
+                color: '#000'
               }}
-              placeholder="Ex: Dúvidas ou Denuncias"	
+              placeholder="Ex: Dúvidas ou Denuncias"
               value={title}
               onChangeText={setTitle}
             />
@@ -117,19 +138,19 @@ const OpenTicket = () => {
           <Text style={{ marginBottom: 8, color: '#666', fontWeight: '500' }}>
             Descrição
           </Text>
-          <View style={{ 
-            backgroundColor: '#f5f5f5', 
-            borderRadius: 10, 
-            paddingHorizontal: 15 
+          <View style={{
+            backgroundColor: '#f5f5f5',
+            borderRadius: 10,
+            paddingHorizontal: 15
           }}>
             <TextInput
-              style={{ 
-                paddingVertical: 12, 
-                paddingHorizontal: 10, 
-                fontSize: 16, 
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+                fontSize: 16,
                 color: '#000',
-                height: 220, 
-                textAlignVertical: 'top' 
+                height: 220,
+                textAlignVertical: 'top'
               }}
               placeholder="Descreva seu motivo de abertura de chamado detalhadamente..."
               value={description}
@@ -149,18 +170,18 @@ const OpenTicket = () => {
         statusBarTranslucent={true}
         onRequestClose={() => setShowConfirmation(false)}
       >
-        <View style={{ 
-          flex: 1, 
-          backgroundColor: 'rgba(0,0,0,0.5)', 
-          justifyContent: 'center', 
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
           alignItems: 'center'
         }}>
-          <View style={{ 
-            backgroundColor: '#fff', 
-            borderRadius: 15, 
-            padding: 20, 
-            width:MOBILE_WIDTH * 0.85, 
-            alignItems: 'center' 
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 15,
+            padding: 20,
+            width: MOBILE_WIDTH * 0.85,
+            alignItems: 'center'
           }}>
             <View style={{ alignItems: 'flex-end', width: '100%' }}>
               <TouchableOpacity onPress={() => {
@@ -168,49 +189,49 @@ const OpenTicket = () => {
                 setTitle('');
                 setDescription('');
               }}
-              style={{
+                style={{
                   backgroundColor: '#56A6DC',
                   width: 30,
                   height: 30,
                   borderRadius: 30,
                   justifyContent: 'center',
                   alignItems: 'center',
-              }}
+                }}
               >
                 <Ionicons name="close" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
-            
+
             <Ionicons name="checkmark-circle" size={50} color="#4CAF50" />
-            <Text style={{ 
-              fontSize: 22, 
-              fontWeight: 'bold', 
-              marginTop: 15, 
+            <Text style={{
+              fontSize: 22,
+              fontWeight: 'bold',
+              marginTop: 15,
               color: '#000',
-              textAlign: 'center' 
+              textAlign: 'center'
             }}>
               🎉 Chamado Aberto com Sucesso!
             </Text>
-            
-            <Text style={{ 
-              marginTop: 20, 
-              fontSize: 16, 
+
+            <Text style={{
+              marginTop: 20,
+              fontSize: 16,
               color: '#666',
-              textAlign: 'center' 
+              textAlign: 'center'
             }}>
               Seu número de chamado é:
             </Text>
-            <Text style={{ 
-              fontSize: 24, 
-              fontWeight: 'bold', 
+            <Text style={{
+              fontSize: 24,
+              fontWeight: 'bold',
               color: '#56A6DC',
-              marginTop: 10 
+              marginTop: 10
             }}>
               #{ticketNumber}
             </Text>
-            
-            <TouchableOpacity 
-              style={{ 
+
+            <TouchableOpacity
+              style={{
                 backgroundColor: '#56A6DC',
                 paddingVertical: 12,
                 paddingHorizontal: 30,
@@ -227,11 +248,11 @@ const OpenTicket = () => {
               </Text>
             </TouchableOpacity>
 
-            <Text style={{ 
-              marginTop: 15, 
-              fontSize: 14, 
+            <Text style={{
+              marginTop: 15,
+              fontSize: 14,
               color: '#666',
-              textAlign: 'center' 
+              textAlign: 'center'
             }}>
               ℹ️ Guarde este número para consultas futuras
             </Text>
