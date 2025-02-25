@@ -22,13 +22,14 @@ const Step02 = () => {
 
     const getAvatarTop = () => {
       if (width >= 1024) {
-        return "12%"; 
+        return "2%"; 
       } else if (height <= 732) {
         return "0%";
       } else {
         return "10%";
       }
     };
+    
 
     return (
         <SafeAreaView style={styles.container}>
