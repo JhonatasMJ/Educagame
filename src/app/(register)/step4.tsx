@@ -19,12 +19,13 @@ const Step03 = () => {
     const getAvatarTop = () => {
       if (width >= 1024) {
         return "2%"; 
-      } else if (height <= 708) {
+      } else if (height <= 732) {
         return "0%";
       } else {
         return "10%";
       }
     };
+    
 
     return (
         <SafeAreaView style={styles.container}>
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
       },
       formContainer: {
         width: "100%",
-        height: "55%",
+        height: height <= 732 ? "60%" : "55%",
         marginTop: 20,
         backgroundColor: "#fff",
         position: "absolute",
