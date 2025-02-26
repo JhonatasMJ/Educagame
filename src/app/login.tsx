@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Image,
+  StatusBar,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLogin } from "../hooks/UseLogin";
@@ -29,9 +30,10 @@ const Login = () => {
   const [formData, setFormData] = useState<FormData>({ email: "", password: "" });
   const [errors, setErrors] = useState<Errors>({});
   const [rememberMe, setRememberMe] = useState(false);
-  // Estados para controlar o foco dos inputs
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Add this line
+
 
   const updateFormField = (field: keyof FormData, value: string): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -60,7 +62,6 @@ const Login = () => {
       setErrors(newErrors);
       return;
     }
-    
     // Se não houver erros, continua com o login
     handleLogin(formData.email, formData.password);
   };
@@ -78,6 +79,7 @@ const Login = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
+        
         <ScrollView 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false} 
@@ -131,33 +133,52 @@ const Login = () => {
               </View>
 
               <View className="mb-2">
-                <Text className="text-base font-medium text-gray-700 mb-2">Senha:</Text>
-                <TextInput
-                  style={{
-                    width: '100%',
-                    height: 64,
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    fontSize: 16,
-                    backgroundColor: '#F7F8F9',
-                    borderColor: getBorderColor('password', passwordFocused),
-                  }}
-                  placeholder="Digite sua senha"
-                  value={formData.password}
-                  onChangeText={(value: string) => updateFormField("password", value)}
-                  secureTextEntry
-                  cursorColor="#3B82F6"
-                  editable={!isLoading}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                />
-                {errors.password && <Text style={{ color: '#FF0000', fontSize: 14, marginTop: 4 }}>{errors.password}</Text>}
-              </View>
+  <Text className="text-base font-medium text-gray-700 mb-2">Senha:</Text>
+  <View style={{ position: 'relative' }}>
+    <TextInput
+      style={{
+        width: '100%',
+        height: 64,
+        borderWidth: 2,
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        backgroundColor: '#F7F8F9',
+        borderColor: getBorderColor('password', passwordFocused),
+        paddingRight: 50, // Add space for the eye icon
+      }}
+      placeholder="Digite sua senha"
+      value={formData.password}
+      onChangeText={(value: string) => updateFormField("password", value)}
+      secureTextEntry={!showPassword}
+      cursorColor="#3B82F6"
+      editable={!isLoading}
+      onFocus={() => setPasswordFocused(true)}
+      onBlur={() => setPasswordFocused(false)}
+    />
+    <TouchableOpacity
+      style={{
+        position: 'absolute',
+        right: 16,
+        height: '100%',
+        justifyContent: 'center',
+      }}
+      onPress={() => setShowPassword(!showPassword)}
+    >
+      <FontAwesome
+        name={showPassword ? "eye" : "eye-slash"}
+        size={24}
+        color="#666"
+      />
+    </TouchableOpacity>
+  </View>
+  {errors.password && <Text style={{ color: '#FF0000', fontSize: 14, marginTop: 4 }}>{errors.password}</Text>}
+</View>
+
               
               {/* Remember Me and Forgot Password */}
-              <View className="flex-row justify-between items-center mt-2 mb-6">
+              <View className="flex-row justify-between items-center mt-5 mb-6">
                 <TouchableOpacity 
                   className="flex-row items-center" 
                   onPress={() => setRememberMe(!rememberMe)}
@@ -171,7 +192,7 @@ const Login = () => {
             </View>
 
             {/* Bottom Section - Login Button and Alternatives */}
-            <View className="mb-20">
+            <View className="mb-2">
               {/* Login Button */}
               <TouchableOpacity
                 className={`w-full py-4 bg-primary rounded-lg justify-center items-center mb-6 ${
@@ -189,7 +210,7 @@ const Login = () => {
               <View className="flex-row justify-center mb-8">
                 <Text className="text-gray-600">Não tem uma conta? </Text>
                 <TouchableOpacity onPress={() => router.push("/(register)")}>
-                  <Text className="text-primary font-medium">Criar conta</Text>
+                  <Text className="text-primary font-medium underline">Criar conta</Text>
                 </TouchableOpacity>
               </View>
 
@@ -205,11 +226,11 @@ const Login = () => {
                   <TouchableOpacity className="w-12 h-12 bg-blue-800 rounded-full items-center justify-center">
                     <FontAwesome name="facebook" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity className="w-12 h-12 bg-pink-600 rounded-full items-center justify-center">
-                    <FontAwesome name="instagram" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
                   <TouchableOpacity className="w-12 h-12 bg-red-500 rounded-full items-center justify-center">
                     <FontAwesome name="google" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity className="w-12 h-12 bg-pink-600 rounded-full items-center justify-center">
+                    <FontAwesome name="instagram" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
               </View>

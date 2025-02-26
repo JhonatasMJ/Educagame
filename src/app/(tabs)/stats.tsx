@@ -15,7 +15,8 @@ const Drawer = createDrawerNavigator();
 const StatsContent = ({ navigation, onOpenDrawer }: any) => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const { isDesktop } = useDeviceType();
-  const { userData, authUser } = useAuth()
+  const { userData, authUser } = useAuth();
+  const [nome, setNome] = useState(userData?.nome || "");
 
   console.log(userData, authUser?.email)
 
@@ -83,7 +84,7 @@ const StatsContent = ({ navigation, onOpenDrawer }: any) => {
 
         <View style={styles.statsContainerWrapper}>
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Nome Usuário</Text>
+            <Text style={styles.title}>{nome}</Text>
             <Text style={styles.subtitle}>Assinante desde abril de 2024</Text>
           </View>
           <View style={styles.statsContainer}>

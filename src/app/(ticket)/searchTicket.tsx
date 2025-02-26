@@ -23,7 +23,7 @@ const SearchTicket = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* Header search area */}
-      <View style={{ padding: 20, backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }}>
+      <View style={{ padding: 20, paddingTop: 40, backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,  }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity onPress={() => router.back()}  style={{
                           backgroundColor: '#56A6DC',
@@ -36,7 +36,7 @@ const SearchTicket = () => {
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                   </TouchableOpacity>
                
-        <View style={{ flexDirection: 'row', width: '92.5%', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10, paddingHorizontal: 15 }}>
+        <View style={{ flexDirection: 'row', width: '90%', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10, paddingHorizontal: 15 }}>
           <Ionicons name="search-outline" size={24} color="#56A6DC" />
           <TextInput
             style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 10, fontSize: 16, color: '#000' }}

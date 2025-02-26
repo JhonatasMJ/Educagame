@@ -86,10 +86,10 @@ const OpenTicket = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff', paddingTop: 20 }}>
       {/* Header area */}
       <View style={{ padding: 20, backgroundColor: '#fff' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 30, gap: 20 }}>
           <TouchableOpacity onPress={() => router.back()}  style={{
                   backgroundColor: '#56A6DC',
                   width: 30,

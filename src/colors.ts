@@ -32,4 +32,5 @@ export const colors = {
     white: "#fff",
     white_less: "#eeee",
     "white-smoke": "#b5b5b5",
+    blue: "#56A6DC"
   };

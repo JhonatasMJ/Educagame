@@ -38,7 +38,7 @@ const Profile = () => {
 
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-      <SafeAreaView className="flex-1 bg-primary">
+      <SafeAreaView className="flex-1 bg-primary bg-blue">
         <View className="text-center justify-center mx-auto">
           <BigAvatar1 width={200} />
         </View>

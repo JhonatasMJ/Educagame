@@ -22,20 +22,9 @@ export const CustomDrawerContent = (props: any) => {
     }
     return Math.min(windowWidth * 0.9, 400); // Max width of 400px on mobile
   };
-
-  // Calculate position to center modal in simulator
-  const getModalPosition = () => {
-    if (Platform.OS === 'web' && isDesktop) {
-      const simulatorLeft = (windowWidth - MOBILE_WIDTH) / 2;
-      return {
-        left: simulatorLeft + (MOBILE_WIDTH - getModalWidth()) / 2,
-      };
-    }
-    return {};
-  };
   
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <DrawerContentScrollView {...props}>
         <View style={styles.drawerHeader}>
           <Text style={styles.drawerTitle}>Recursos Adicionais</Text>
@@ -58,6 +47,15 @@ export const CustomDrawerContent = (props: any) => {
             /* router.push('/settings'); */
           }}
         />
+        <DrawerItem
+          label="Sair da Conta"
+          icon={({ color, size }) => (
+            <MaterialIcons name="logout" size={size} color={color} />
+          )}
+          onPress={() => {
+            router.push('/login');
+          }}
+        />
       </DrawerContentScrollView>
       
       <ModalComponent 
@@ -73,7 +71,6 @@ export const CustomDrawerContent = (props: any) => {
             styles.modalContent,
             {
               width: getModalWidth(),
-              ...getModalPosition(),
             }
           ]}
         >
@@ -92,7 +89,7 @@ export const CustomDrawerContent = (props: any) => {
           </View>
         </View>
       </ModalComponent>
-    </>
+    </View>
   );
 };
 
@@ -136,10 +133,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: '50%', // Centers horizontally
     top: '50%', // Centers vertically
-    transform: [
-      { translateX: Platform.OS === 'web' ? 0 : 25}, // Half of the modal width
-      { translateY: Platform.OS === 'web' ? -200 : 270 }, // Half of the modal height
-    ],
+    ...Platform.select({
+      web: {
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        transform: [
+          { translateX: -195 },
+          { translateY: -200 },
+        ],
+      },
+      default: {
+        
+        transform: [
+          { translateX: -170 },
+          { translateY: -180 },
+        ],
+      }
+    }),
     minHeight: 300, // Altura fixa para formato quadrado
     maxHeight: 400, // Altura máxima
   },

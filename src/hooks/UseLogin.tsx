@@ -32,7 +32,9 @@ export const useLogin = () => {
       // Navega para a home
       router.push('../(tabs)/home');
     } catch (error: any) {
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email' || error.code === 'auth/invalid-credential') {
+        console.log(error);
+        console.log(error.code);
         Toast.show({
           type: 'error',
           position: 'top',
@@ -40,6 +42,8 @@ export const useLogin = () => {
           text2: 'Email ou senha inválidos!',
         });
       } else {
+        console.log(error);
+        console.log(error.code);
         Toast.show({
           type: 'error',
           position: 'top',
