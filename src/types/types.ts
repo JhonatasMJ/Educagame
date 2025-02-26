@@ -15,6 +15,8 @@ export interface Etapa  {
   
   export interface User {
     id?: string;
-    displayName?: string;
+    nome?: string;
     email?: string;
+    celular?: string;
+    sobrenome?: string;
   }

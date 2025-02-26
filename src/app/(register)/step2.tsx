@@ -1,184 +1,191 @@
-import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
-import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions } from "react-native";
-import CustomButton from "@/src/components/CustomButton";
-import Checkbox from "@/src/components/Checkbox"; // Adjust the import path as needed
-import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers";
+"use client"
 
-const {width, height} = Dimensions.get("window");
+import { useState } from "react"
+import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions } from "react-native"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { getDatabase, ref, set } from "firebase/database"
+import { auth } from "@/src/services/firebaseConfig"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import Toast from "react-native-toast-message"
+import CustomButton from "@/src/components/CustomButton"
+import Checkbox from "@/src/components/Checkbox"
+import Cloudsvg from "../../../assets/images/cloud.svg"
+import BigAvatar from "@/src/components/BigAvatar"
+import ProgressDots from "@/src/components/ProgressDots"
+import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
 
-// Importando o background SVG
-import Cloudsvg from "../../../assets/images/cloud.svg"; 
-import BigAvatar from "@/src/components/BigAvatar";
-import ProgressDots from "@/src/components/ProgressDots";
-
+const { height } = Dimensions.get("window")
 
 const Step02 = () => {
-    const [isFocusedNome, setIsFocusedNome] = useState(false);
-    const [isFocusedSobrenome, setIsFocusedSobrenome] = useState(false);
-    const [termsAccepted, setTermsAccepted] = useState(false);
-    const [lgpdAccepted, setLgpdAccepted] = useState(false);
+  const router = useRouter()
 
-    const { avatarId, avatarSource } = useLocalSearchParams<{ avatarId: string; avatarSource: string }>();
+  const { nome, sobrenome, email, avatarId, avatarSource } = useLocalSearchParams<{
+    nome: string
+    sobrenome: string
+    email: string
+    avatarId: string
+    avatarSource: string
+  }>()
 
+  const [birthDate, setBirthDate] = useState("")
+  const [phone, setPhone] = useState("")
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [lgpdAccepted, setLgpdAccepted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#56A6DC" />
-            
-            <View style={styles.backgroundContainer}>
-                <Cloudsvg width="90%" height="40%" />
-            </View>
+  const handleContinue = async () => {
+    if (!birthDate || !phone || !termsAccepted || !lgpdAccepted) {
+      Toast.show({ type: "error", text1: "Erro", text2: "Preencha todos os campos!" })
+      return
+    }
 
-            {/* Renderizando o BigAvatar */}
-            {avatarSource && (
-              <BigAvatar
-                avatarSource={avatarSource}
-                style={{  position: "absolute", zIndex: 2, top: getAvatarTop() }}
-              />
-            )}
+    setIsLoading(true)
 
-            <View style={styles.formContainer}>
-                <Text style={styles.title}>[Nome], falta pouco!</Text>
-                <View style={styles.inputsContainer}>
-                    <Text style={styles.label}>Data Nascimento</Text>
-                    <TextInput 
-                        style={[styles.input, isFocusedNome && styles.inputFocused]} 
-                        placeholder="DD/MM/AAAA"
-                        keyboardType="numeric"
-                        onFocus={() => setIsFocusedNome(true)}
-                        onBlur={() => setIsFocusedNome(false)}
-                    />
+    try {
+      // Generate a random password
+      const password = Math.random().toString(36).slice(-8)
 
-                    <Text style={styles.label}>Celular</Text>
-                    <TextInput 
-                        style={[styles.input, isFocusedSobrenome && styles.inputFocused]} 
-                        placeholder="Digite seu celular"
-                        keyboardType="numeric"
-                        onFocus={() => setIsFocusedSobrenome(true)}
-                        onBlur={() => setIsFocusedSobrenome(false)}
-                    />
-                     <View style={styles.checkboxesContainer}>
-                    <Checkbox
-                        title="Termos de uso"
-                        isChecked={termsAccepted}
-                        onCheck={setTermsAccepted}
-                    />
-                    <Checkbox
-                        title="LGPD"
-                        isChecked={lgpdAccepted}
-                        onCheck={setLgpdAccepted}
-                    />
-                </View>
-                </View>
+      // Create user in Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const uid = userCredential.user.uid
 
-                <View style={{ zIndex: 3, position: "absolute", bottom: bottomHeight(), justifyContent: "space-between", height: "20%" }}>
-        <CustomButton
-          title="Continuar"
-          nextStep="/(register)/step3"
-          params={{ avatarId, avatarSource }}
-        />
+      // Save user data to Firebase Realtime Database
+      const db = getDatabase()
+      await set(ref(db, `users/${uid}`), {
+        nome,
+        sobrenome,
+        email,
+        avatarId,
+        birthDate,
+        phone,
+        termsAccepted,
+        lgpdAccepted,
+        createdAt: new Date().toISOString(),
+      })
 
-      <ProgressDots currentStep={2} />
-      
+      Toast.show({ type: "success", text1: "Sucesso", text2: "Cadastro completo!" })
+
+      // Navigate to the next step (Step 3)
+      router.push("/step3")
+    } catch (error: any) {
+      Toast.show({ type: "error", text1: "Erro", text2: error.message || "Falha ao salvar dados!" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#56A6DC" />
+      <View style={styles.backgroundContainer}>
+        <Cloudsvg width="90%" height="40%" />
       </View>
-            </View>
+      {avatarSource && (
+        <BigAvatar avatarSource={avatarSource} style={{ position: "absolute", zIndex: 2, top: getAvatarTop() }} />
+      )}
 
-        </SafeAreaView>
-    );
-};
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>{nome}, falta pouco!</Text>
+
+        <View style={styles.inputsContainer}>
+          <Text style={styles.label}>Data Nascimento</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="DD/MM/AAAA"
+            value={birthDate}
+            onChangeText={setBirthDate}
+            keyboardType="numeric"
+          />
+
+          <Text style={styles.label}>Celular</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Digite seu celular"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="numeric"
+          />
+
+          <View style={styles.checkboxesContainer}>
+            <Checkbox title="Termos de uso" isChecked={termsAccepted} onCheck={setTermsAccepted} />
+            <Checkbox title="LGPD" isChecked={lgpdAccepted} onCheck={setLgpdAccepted} />
+          </View>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <CustomButton title="Continuar" onPress={handleContinue} isLoading={isLoading} />
+          <ProgressDots currentStep={2} />
+        </View>
+      </View>
+    </SafeAreaView>
+  )
+}
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor:"#56A6DC",
-      },
-      backgroundContainer: {
-        ...StyleSheet.absoluteFillObject, // Faz o SVG cobrir toda a tela
-        zIndex: 1, // Coloca atrás de tudo
-        alignItems: "center",
-      },
-      title: {
-        fontSize: 24,
-        fontWeight: "bold",
-        top: 10,
-      },
-      formContainer: {
-        width: "100%",
-        height: height <= 732 ? "60%" : "55%",
-        marginTop: 20,
-        backgroundColor: "#fff",
-        position: "absolute",
-        bottom: 0,
-        borderTopRightRadius: 30,
-        borderTopLeftRadius: 30,
-        alignItems: "center",
-        zIndex: 3,
-      },
-      inputsContainer:{
-        flexDirection: "column",
-        width: "100%",
-        alignItems: "center",
-        height: "50%",
-        justifyContent: "space-between",
-        top: "5%",
-      },
-      inputFocused:{
-        borderColor: "#56A6DC",
-        borderWidth: 2,
-      },
-      label: {
-        fontSize: 16,
-        marginBottom: 4,
-        width: "80%"
-      },
-      input: {
-        width: "80%",
-        borderWidth: 2,
-        borderColor: "#ccc",
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 10,
-      },
-    
-    checkboxesContainer: {
-        width: "100%",
-        alignItems: "center",
-        height: "25%",
-        justifyContent: "space-between",
-        top: "5%"
-    },
-    checkboxContainer: {
-        width: "80%",
-        marginTop: 20,
-      },
-      checkboxRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 10,
-      },
-      checkbox: {
-        width: 20,
-        height: 20,
-        borderWidth: 2,
-        borderColor: "#56A6DC",
-        borderRadius: 4,
-        justifyContent: "center",
-        alignItems: "center",
-      },
-      checkboxChecked: {
-        backgroundColor: "#56A6DC",
-      },
-      checkmark: {
-        color: "white",
-        fontSize: 14,
-      },
-      checkboxLabel: {
-        fontSize: 16,
-        color: "#333",
-      },
-});
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#56A6DC",
+  },
+  backgroundContainer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    top: 10,
+  },
+  formContainer: {
+    width: "100%",
+    height: height <= 732 ? "60%" : "55%",
+    marginTop: 20,
+    backgroundColor: "#fff",
+    position: "absolute",
+    bottom: 0,
+    borderTopRightRadius: 30,
+    borderTopLeftRadius: 30,
+    alignItems: "center",
+    zIndex: 3,
+  },
+  inputsContainer: {
+    flexDirection: "column",
+    width: "100%",
+    alignItems: "center",
+    height: "50%",
+    justifyContent: "space-between",
+    top: "5%",
+  },
+  input: {
+    width: "80%",
+    borderWidth: 2,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 4,
+    width: "80%",
+  },
+  checkboxesContainer: {
+    width: "100%",
+    alignItems: "center",
+    height: "25%",
+    justifyContent: "space-between",
+    top: "5%",
+  },
+  buttonContainer: {
+    zIndex: 3,
+    position: "absolute",
+    bottom: bottomHeight(),
+    justifyContent: "space-between",
+    height: "20%",
+  },
+})
 
-export default Step02;
+export default Step02
+
