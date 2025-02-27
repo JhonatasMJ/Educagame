@@ -3,22 +3,39 @@ import { Text, View, Modal, SafeAreaView, TextInput, TouchableOpacity, Dimension
 import { Ionicons } from '@expo/vector-icons';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/src/context/AuthContext';
 const SearchTicket = () => {
   const [ticketNumber, setTicketNumber] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { userData, authUser } = useAuth()
 
-  const handleSearch = () => {
-    if (ticketNumber.trim()) {
-      setLoading(true);
-      // Simulando uma busca
-      setTimeout(() => {
-        setShowFeedback(true);
-        setLoading(false);
-      }, 1000);
-    }
-  };
+    const handleSearch = () => {
+      if (ticketNumber.trim()) {
+        setLoading(true);
+        const ticketLastDigits = ticketNumber.slice(-2);
+        
+        fetch(`https://workflow.educagame.com.br/webhook-test/consulta?ticketLastDigits=${ticketLastDigits}&userData=${userData}&authUser=${authUser}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          setShowFeedback(true);
+          setLoading(false);
+          console.log(data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          setLoading(false);
+        });
+      }
+      
+    };
+    
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
