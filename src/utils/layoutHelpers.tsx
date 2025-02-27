@@ -21,8 +21,8 @@ export const getAvatarTop = () => {
 
 export const bottomHeight = () => {
   if (width >= 940) {
-    return "4%"; 
+    return "7%"; 
   } else {
-    return "8%";
+    return "5%";
   }
 };

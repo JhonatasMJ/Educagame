@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions } from "react-native"
+import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions, Platform } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { getDatabase, ref, set } from "firebase/database"
 import { auth } from "@/src/services/firebaseConfig"
@@ -26,17 +26,33 @@ const Step02 = () => {
     avatarId: string
     avatarSource: string
   }>()
-
   const [birthDate, setBirthDate] = useState("")
   const [phone, setPhone] = useState("")
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [lgpdAccepted, setLgpdAccepted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<{birthDate?: boolean;phone?: boolean;}>({});
+
+  const [field1Focused, setField1Focused] = useState(false)
+  const [field2Focused, setField2Focused] = useState(false)
+
+  const getBorderColor = (field: 'birthDate' | 'phone', isFocused: boolean) => {
+    if (errors[field]) return '#FF0000';
+    if (isFocused) return '#56A6DC';
+    return '#E8ECF4';
+  };
+  
 
   const handleContinue = async () => {
-    if (!birthDate || !phone || !termsAccepted || !lgpdAccepted) {
-      Toast.show({ type: "error", text1: "Erro", text2: "Preencha todos os campos!" })
-      return
+    const newErrors: {birthDate?: boolean; phone?: boolean} = {};
+    
+    if (!birthDate) newErrors.birthDate = true;
+    if (!phone) newErrors.phone = true;
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      Toast.show({ type: "error", text1: "Erro", text2: "Preencha todos os campos!" });
+      return;
     }
 
     setIsLoading(true)
@@ -90,7 +106,16 @@ const Step02 = () => {
         <View style={styles.inputsContainer}>
           <Text style={styles.label}>Data Nascimento</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              { borderColor: getBorderColor('birthDate', field1Focused) },
+              Platform.select({
+                web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+              })
+            ]}
+            onFocus={() => setField1Focused(true)}
+            onBlur={() => setField1Focused(false)}
+            
             placeholder="DD/MM/AAAA"
             value={birthDate}
             onChangeText={setBirthDate}
@@ -99,7 +124,15 @@ const Step02 = () => {
 
           <Text style={styles.label}>Celular</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              { borderColor: getBorderColor('phone', field2Focused) },
+              Platform.select({
+                web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+              })
+            ]}
+            onFocus={() => setField2Focused(true)}
+            onBlur={() => setField2Focused(false)}
             placeholder="Digite seu celular"
             value={phone}
             onChangeText={setPhone}
@@ -158,13 +191,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     top: "5%",
   },
-  input: {
-    width: "80%",
-    borderWidth: 2,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+  input: { 
+    width: "80%", 
+    height: "20%", // Altura fixa em pixels
+    borderWidth: 2, 
+    borderRadius: 8, 
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: "#F7F8F9",
+    color: "#000000",
+    marginBottom: 8
   },
   label: {
     fontSize: 16,

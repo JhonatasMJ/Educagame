@@ -14,7 +14,7 @@ const Step01 = () => {
   const [nome, setNome] = useState("");
   const [sobrenome, setSobrenome] = useState("");
   const [email, setEmail] = useState("");
-  const [errors, setErrors] = useState<{nome?: string; sobrenome?: string; email?: string}>({});
+  const [errors, setErrors] = useState<{nome?: boolean; sobrenome?: boolean; email?: boolean}>({});
   const [nomeFocused, setNomeFocused] = useState(false);
   const [sobrenomeFocused, setSobrenomeFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
@@ -34,23 +34,27 @@ const Step01 = () => {
     if (field === 'email') setEmail(value);
 
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
   const validateAndContinue = () => {
-    const newErrors: {nome?: string; sobrenome?: string; email?: string} = {};
+    const newErrors: {nome?: boolean; sobrenome?: boolean; email?: boolean} = {};
     
     if (!nome.trim()) {
-      newErrors.nome = "O nome é obrigatório";
+      newErrors.nome = true;
     }
     
     if (!sobrenome.trim()) {
-      newErrors.sobrenome = "O sobrenome é obrigatório";
+      newErrors.sobrenome = true;
     }
     
     if (!email.trim()) {
-      newErrors.email = "O e-mail é obrigatório";
+      newErrors.email = true;
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -63,7 +67,7 @@ const Step01 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#56A6DC" />
+      <StatusBar barStyle="light-content" translucent/>
       
       <View style={styles.backgroundContainer}>
         <Cloudsvg width="90%" height="40%" />
@@ -93,7 +97,6 @@ const Step01 = () => {
             onBlur={() => setNomeFocused(false)}
             placeholderTextColor="#999"
           />
-          {errors.nome && <Text style={styles.errorText}>{errors.nome}</Text>}
 
           <Text style={styles.label}>Sobrenome</Text>
           <TextInput 
@@ -113,7 +116,6 @@ const Step01 = () => {
             onBlur={() => setSobrenomeFocused(false)}
             placeholderTextColor="#999"
           />
-          {errors.sobrenome && <Text style={styles.errorText}>{errors.sobrenome}</Text>}
 
           <Text style={styles.label}>Email</Text>
           <TextInput 
@@ -136,7 +138,6 @@ const Step01 = () => {
             onBlur={() => setEmailFocused(false)}
             placeholderTextColor="#999"
           />
-          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
         </View>
 
         <View style={styles.buttonContainer}>
@@ -198,23 +199,15 @@ const styles = StyleSheet.create({
   },
   input: { 
     width: "80%", 
-    height: 56,
+    height: "20%", // Altura fixa em pixels
     borderWidth: 2, 
     borderRadius: 8, 
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: "#F7F8F9",
-    color: "#000000", 
-    marginBottom: 16
-  },
-  errorText: {
-    color: "#FF0000",
-    fontSize: 14,
-    marginTop: -12,
-    marginBottom: 8,
-    alignSelf: "flex-start",
-    marginLeft: "10%"
+    color: "#000000",
+    marginBottom: 8
   },
   buttonContainer: { 
     zIndex: 3, 
