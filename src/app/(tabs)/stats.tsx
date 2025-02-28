@@ -16,7 +16,7 @@ const StatsContent = ({ navigation, onOpenDrawer }: any) => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const { isDesktop } = useDeviceType();
   const { userData, authUser } = useAuth();
-  const [nome, setNome] = useState(userData?.nome || "");
+  const nome = `${userData?.nome} ${userData?.sobrenome}`;
 
   console.log(userData, authUser?.email)
 

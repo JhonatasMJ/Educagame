@@ -9,7 +9,13 @@ import {
 import { Ionicons} from "@expo/vector-icons";
 import colors from "../colors";
 
-const ConversationField = ({ onSendMessage } : { onSendMessage: (message: string) => void }) => {
+interface ConversationFieldProps {
+  onSendMessage: (message: string) => void;
+  placeholder?: string;
+  color?: string;
+}
+
+const ConversationField = ({ onSendMessage, placeholder, color }: ConversationFieldProps) => {
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
@@ -20,7 +26,7 @@ const ConversationField = ({ onSendMessage } : { onSendMessage: (message: string
   };
 
   return (
-    <View style={{ borderRadius: 10, overflow: "hidden", backgroundColor: '#fefefe' }}>
+    <View style={{ borderRadius: 10, overflow: "hidden", backgroundColor: '#fefefe', borderColor: color ? '#56A6DC' : 'none', borderWidth: color ? 2 : 0 }}>
       <View
         style={{
           alignItems: "center",
@@ -39,7 +45,7 @@ const ConversationField = ({ onSendMessage } : { onSendMessage: (message: string
             paddingRight: 10* 3.75,
           }}
           value={message}
-          placeholder="Tire suas dúvidas com nosso assistente!"
+          placeholder={placeholder}
           placeholderTextColor={'#171B1E'}
           onChangeText={setMessage}
           onSubmitEditing={handleSend}

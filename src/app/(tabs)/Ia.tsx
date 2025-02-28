@@ -9,16 +9,19 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import ConversationField from "../../components/ConversationIa";
+import ConversationField from "../../components/ConversationField";
 import MessageBubble from "../../components/MessageBuble";
 import conversationAi from "../../context/IaController";
 import { useConversation } from "../../context/ContextIa";
+import { useAuth } from "@/src/context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
 
 const AiAssistent = () => {
   const { messages, addMessage, markAsRead } = useConversation();
   const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<any>(null);
+    const { userData, authUser } = useAuth();
+    const nome = `${userData?.nome} ${userData?.sobrenome}`;
 
   // Quando a tela entrar em foco, marque as mensagens como lidas
   useFocusEffect(
@@ -29,7 +32,7 @@ const AiAssistent = () => {
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
-
+  
     // Adiciona a mensagem do usuário
     const userMessage = {
       id: `user_${Date.now()}`,
@@ -40,30 +43,36 @@ const AiAssistent = () => {
         minute: "2-digit",
       }),
     };
-
+  
     addMessage(userMessage);
-
+  
     try {
       setIsLoading(true);
-      const aiResponse = await conversationAi.sendMessage(message);
-
-      // Se a resposta for um array (como nos logs que você mostrou), trate-a assim:
-      const responses = Array.isArray(aiResponse)
-        ? aiResponse
-        : [{ response: aiResponse }];
-
-      responses.forEach((item) => {
-        const aiMessage = {
-          id: `ai_${Date.now()}`,
-          text: item.response,
-          type: "ai",
-          timestamp: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        };
-        addMessage(aiMessage);
-      });
+      
+      // Aqui você pode obter userData e authUser do contexto de autenticação
+      // const { userData, authUser } = useAuth(); - se estiver usando um hook de autenticação
+      // OU usando props se os valores vierem de um componente pai
+      
+      // Passando os parâmetros opcionais para o método sendMessage
+      const aiResponse = await conversationAi.sendMessage(
+        message,
+        nome, // fonte real de userData
+        userData,
+        authUser  //fonte real de authUser
+      );
+  
+      // Como a nova implementação retorna uma string diretamente, você pode simplificar:
+      const aiMessage = {
+        id: `ai_${Date.now()}`,
+        text: aiResponse, // aiResponse já é a string de resposta
+        type: "ai",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+      
+      addMessage(aiMessage);
     } catch (error) {
       const errorMessage = {
         id: `error_${Date.now()}`,
@@ -161,7 +170,7 @@ const AiAssistent = () => {
           )}
         </ScrollView>
 
-        <ConversationField onSendMessage={handleSendMessage} />
+        <ConversationField onSendMessage={handleSendMessage} placeholder="Tire suas dúvidas com nosso assistente!"/>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
