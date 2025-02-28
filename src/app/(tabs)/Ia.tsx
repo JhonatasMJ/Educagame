@@ -170,7 +170,7 @@ const AiAssistent = () => {
           )}
         </ScrollView>
 
-        <ConversationField onSendMessage={handleSendMessage} placeholder="Tire suas dúvidas com nosso assistente!"/>
+        <ConversationField onSendMessage={handleSendMessage} placeholder="Tire suas dúvidas com nosso assistente!" color="#241f1f" />
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

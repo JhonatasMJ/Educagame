@@ -5,6 +5,7 @@ import {
   View,
   TouchableOpacity,
   Image,
+  Platform,
 } from "react-native";
 import { Ionicons} from "@expo/vector-icons";
 import colors from "../colors";
@@ -26,7 +27,7 @@ const ConversationField = ({ onSendMessage, placeholder, color }: ConversationFi
   };
 
   return (
-    <View style={{ borderRadius: 10, overflow: "hidden", backgroundColor: '#fefefe', borderColor: color ? '#56A6DC' : 'none', borderWidth: color ? 2 : 0 }}>
+    <View style={{ borderRadius: 10, overflow: "hidden", backgroundColor: '#fefefe', borderColor: color ? color : 'transparent', borderWidth: color ? 1 : 0 }}>
       <View
         style={{
           alignItems: "center",
@@ -36,14 +37,19 @@ const ConversationField = ({ onSendMessage, placeholder, color }: ConversationFi
       >
         <TextInput
           selectionColor={'#3185BE'}
-          style={{
+          style={[{
             width: "100%",
             color: '#121313',
             fontSize: 10* 1.7,
             padding: 10,
             paddingLeft: 10* 3.75,
             paddingRight: 10* 3.75,
-          }}
+          },
+          Platform.select({
+            web: {outlineColor: 'transparent' },
+          })
+          ]}
+                              
           value={message}
           placeholder={placeholder}
           placeholderTextColor={'#171B1E'}
@@ -74,6 +80,4 @@ const ConversationField = ({ onSendMessage, placeholder, color }: ConversationFi
       </View>
     </View>
   );
-};
-
-export default ConversationField;
+};export default ConversationField;
