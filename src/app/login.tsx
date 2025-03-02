@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLogin } from "../hooks/UseLogin";
+import Checkbox from "../components/Checkbox";
 
 interface Errors {
   email?: string;
@@ -33,6 +34,7 @@ const Login = () => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
 
   const updateFormField = (field: keyof FormData, value: string): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -66,63 +68,33 @@ const Login = () => {
     return '#E8ECF4';
   };
 
-  const styles = StyleSheet.create({
-    input: {
-      width: '100%',
-      height: 64,
-      borderWidth: 2,
-      borderRadius: 8,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      fontSize: 16,
-      backgroundColor: '#F7F8F9',
-      color: '#000000', // Garantindo que o texto seja preto em todas as plataformas
-      outlineColor: '#56A6DC', // Para navegadores web
-    },
-    passwordInput: {
-      paddingRight: 50, // Espaço para o ícone de olho
-    },
-    errorText: {
-      color: '#FF0000',
-      fontSize: 14,
-      marginTop: 4,
-    },
-    eyeIconContainer: {
-      position: 'absolute',
-      right: 16,
-      height: '100%',
-      justifyContent: 'center',
-    }
-  });
-
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={styles.keyboardAvoidingView}
       >
         <ScrollView 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false} 
-          contentContainerStyle={{ flexGrow: 1 }}
-          className="flex-1"
+          contentContainerStyle={styles.scrollViewContent}
         >
-          <View className="px-6 py-8 flex-1 justify-between">
-            <View className="items-center mt-10">
+          <View style={styles.mainContainer}>
+            <View style={styles.logoContainer}>
               <Image 
                 source={require('../../assets/images/logo.png')} 
-                className="resizeMode-contain" 
+                style={styles.logo} 
               />
             </View>
             
-            <View className="mt-5">
-              <Text className="text-lg font-medium text-primary mb-1">Bem-vindo (a) 👋</Text>
-              <Text className="text-3xl font-bold mb-4">Entre na sua conta</Text>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeText}>Bem-vindo (a) 👋</Text>
+              <Text style={styles.headerText}>Entre na sua conta</Text>
             </View>
 
-            <View className="justify-center mt-2">
-              <View className="mb-5">
-                <Text className="text-base font-medium text-gray-700 mb-2">E-mail:</Text>
+            <View style={styles.formContainer}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>E-mail:</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -146,9 +118,9 @@ const Login = () => {
                 {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
               </View>
 
-              <View className="mb-2">
-                <Text className="text-base font-medium text-gray-700 mb-2">Senha:</Text>
-                <View style={{ position: 'relative' }}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Senha:</Text>
+                <View style={styles.passwordContainer}>
                   <TextInput
                     style={[
                       styles.input,
@@ -182,54 +154,49 @@ const Login = () => {
                 {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               </View>
 
-              <View className="flex-row justify-between items-center mt-5 mb-6">
-                <TouchableOpacity 
-                  className="flex-row items-center" 
-                  onPress={() => setRememberMe(!rememberMe)}
-                >
-                  <Text className="text-sm text-primary">Lembrar conta</Text>
-                </TouchableOpacity>
+              <View style={styles.rememberForgotContainer}>
+
+                  <Checkbox title="Lembrar conta" isChecked={rememberMe} onCheck={setRememberMe} />
+
                 <TouchableOpacity>
-                  <Text className="text-sm text-primary">Esqueci minha senha</Text>
+                  <Text style={styles.linkText}>Esqueci minha senha</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View className="mb-2">
+            <View style={styles.actionContainer}>
               <TouchableOpacity
-                className={`w-full py-4 bg-primary rounded-lg justify-center items-center mb-6 ${
-                  isLoading ? 'opacity-70' : ''
-                }`}
+                style={[styles.loginButton, isLoading && styles.disabledButton]}
                 onPress={validateAndLogin}
                 disabled={isLoading}
               >
-                <Text className="text-white text-lg font-semibold">
+                <Text style={styles.loginButtonText}>
                   {isLoading ? "Carregando..." : "Entrar"}
                 </Text>
               </TouchableOpacity>
 
-              <View className="flex-row justify-center mb-8">
-                <Text className="text-gray-600">Não tem uma conta? </Text>
+              <View style={styles.signupContainer}>
+                <Text style={styles.grayText}>Não tem uma conta? </Text>
                 <TouchableOpacity onPress={() => router.push("/(register)")}>
-                  <Text className="text-primary font-medium underline">Criar conta</Text>
+                  <Text style={styles.signupText}>Criar conta</Text>
                 </TouchableOpacity>
               </View>
 
-              <View className="mb-6">
-                <View className="flex-row items-center mb-4">
-                  <View className="flex-1 h-px bg-gray-300" />
-                  <Text className="px-4 text-gray-500">ou entre com</Text>
-                  <View className="flex-1 h-px bg-gray-300" />
+              <View style={styles.socialContainer}>
+                <View style={styles.dividerContainer}>
+                  <View style={styles.divider} />
+                  <Text style={styles.dividerText}>ou entre com</Text>
+                  <View style={styles.divider} />
                 </View>
                 
-                <View className="flex-row justify-center gap-7">
-                  <TouchableOpacity className="w-12 h-12 bg-blue-800 rounded-full items-center justify-center">
+                <View style={styles.socialButtonsContainer}>
+                  <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
                     <FontAwesome name="facebook" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity className="w-12 h-12 bg-red-500 rounded-full items-center justify-center">
+                  <TouchableOpacity style={[styles.socialButton, styles.googleButton]}>
                     <FontAwesome name="google" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity className="w-12 h-12 bg-pink-600 rounded-full items-center justify-center">
+                  <TouchableOpacity style={[styles.socialButton, styles.instagramButton]}>
                     <FontAwesome name="instagram" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
@@ -241,5 +208,169 @@ const Login = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+  },
+  mainContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  logo: {
+    resizeMode: 'contain',
+  },
+  welcomeContainer: {
+    marginTop: 20,
+  },
+  welcomeText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#3B82F6',
+    marginBottom: 4,
+  },
+  headerText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  formContainer: {
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  input: {
+    width: '100%',
+    height: 64,
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#F7F8F9',
+    color: '#000000',
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#4B5563',
+    marginBottom: 8,
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 50,
+  },
+  eyeIconContainer: {
+    position: 'absolute',
+    right: 16,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  rememberForgotContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: "10%",
+    width: '80%',
+  },
+  linkText: {
+    fontSize: 14,
+    color: '#3B82F6',
+  },
+  actionContainer: {
+    marginBottom: 8,
+  },
+  loginButton: {
+    width: '100%',
+    paddingVertical: 16,
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 32,
+  },
+  grayText: {
+    color: '#6B7280',
+  },
+  signupText: {
+    color: '#3B82F6',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  },
+  socialContainer: {
+    marginBottom: 24,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#D1D5DB',
+  },
+  dividerText: {
+    paddingHorizontal: 16,
+    color: '#6B7280',
+  },
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 28,
+  },
+  socialButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  facebookButton: {
+    backgroundColor: '#1e40af',
+  },
+  googleButton: {
+    backgroundColor: '#ef4444',
+  },
+  instagramButton: {
+    backgroundColor: '#db2777',
+  },
+});
 
 export default Login;

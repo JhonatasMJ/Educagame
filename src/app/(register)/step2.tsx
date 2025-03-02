@@ -146,7 +146,7 @@ const Step02 = () => {
         </View>
 
         <View style={styles.buttonContainer}>
-          <CustomButton title="Continuar" onPress={handleContinue} isLoading={isLoading} />
+          <CustomButton title="Continuar" onPress={handleContinue} nextStep="/(register)/step3" /* isLoading={isLoading} */ />
           <ProgressDots currentStep={2} />
         </View>
       </View>

@@ -144,7 +144,8 @@ const Step01 = () => {
           <CustomButton
             title="Continuar"
             onPress={validateAndContinue}
-            isLoading={isLoading}
+            nextStep="/(register)/step2"
+            /* isLoading={isLoading} */
           />
           <ProgressDots currentStep={1} />
         </View>
