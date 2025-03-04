@@ -1,0 +1,143 @@
+import { StyleSheet } from 'react-native';
+import { MOBILE_WIDTH } from '@/PlataformWrapper';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: 20,
+  },
+  headerArea: {
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+    gap: 20,
+  },
+  backButton: {
+    backgroundColor: '#56A6DC',
+    width: 30,
+    height: 30,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  inputLabel: {
+    marginBottom: 8,
+    color: '#666',
+    fontWeight: '500',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    paddingLeft: 8,
+  },
+  textInput: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    color: '#000',
+  },
+  descriptionInput: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    color: '#000',
+    height: 220,
+    width: '100%',
+    textAlignVertical: 'top',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    width: MOBILE_WIDTH * 0.85,
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    backgroundColor: '#56A6DC',
+    width: 30,
+    height: 30,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 15,
+    color: '#000',
+    textAlign: 'center',
+  },
+  ticketNumberLabel: {
+    marginTop: 20,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  ticketNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#56A6DC',
+    marginTop: 10,
+  },
+  copyButton: {
+    backgroundColor: '#56A6DC',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copyButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  infoText: {
+    marginTop: 15,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  bottomButton: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+  },
+  submitButton: {
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

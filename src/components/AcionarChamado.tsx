@@ -24,14 +24,14 @@ const AcionarChamado = ({ setOpen }: AcionarChamadoProps) => {
             
             <TouchableOpacity 
                 style={styles.button}
-                onPress={() => handleNavigation("/openTicket")}
+                onPress={() => handleNavigation("/(ticket)/open/openTicket")}
             >
                 <Text style={styles.buttonText}>Novo Chamado</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
                 style={styles.button}
-                onPress={() => handleNavigation("/searchTicket")}
+                onPress={() => handleNavigation("/(ticket)/search/searchTicket")}
             >
                 <Text style={styles.buttonText}>Consultar Chamado</Text>
             </TouchableOpacity>

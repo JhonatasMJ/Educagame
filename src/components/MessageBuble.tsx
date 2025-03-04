@@ -4,16 +4,18 @@ import colors from "../colors";
 
 // MessageBubble component to be used in the conversation
 const MessageBubble = ({
-  text,
+  text = '',
   type = "user",
   timestamp = new Date().toLocaleTimeString(),
 }) => {
+  // Reverse the logic here - 'user' messages will be on the right
   const isUserMessage = type === "user";
 
   return (
     <View
       style={{
-        alignSelf: isUserMessage ? "flex-end" : "flex-start",
+        // This will now correctly align user messages to the right
+        alignSelf: isUserMessage ? "flex-start" : "flex-end",
         maxWidth: "80%",
         marginVertical: 10 / 2,
       }}
@@ -21,8 +23,8 @@ const MessageBubble = ({
       <View
         style={{
           backgroundColor: isUserMessage
-            ? '#fefefe'
-            : '#0B273A',
+            ? '#56A6DC'  // User message background
+            : '#0B273A', // Contact message background
           borderRadius: 10,
           padding: 10,
           paddingHorizontal: 10 * 1.5,
@@ -30,7 +32,7 @@ const MessageBubble = ({
       >
         <Text
           style={{
-            color: isUserMessage ? '#171B1E' : colors.white_less,
+            color: isUserMessage ? '#1E1E1E' : colors.white_less,
             fontSize: 10 * 1.6,
           }}
         >
@@ -50,5 +52,6 @@ const MessageBubble = ({
     </View>
   );
 };
+
 
 export default MessageBubble;
