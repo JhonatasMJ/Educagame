@@ -1,11 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions, Platform } from "react-native"
-import { useLocalSearchParams, useRouter } from "expo-router"
-import { getDatabase, ref, set } from "firebase/database"
-import { auth } from "@/src/services/firebaseConfig"
-import { createUserWithEmailAndPassword } from "firebase/auth"
+import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions } from "react-native"
+import { useLocalSearchParams, router } from "expo-router"
 import Toast from "react-native-toast-message"
 import CustomButton from "@/src/components/CustomButton"
 import Checkbox from "@/src/components/Checkbox"
@@ -17,77 +14,72 @@ import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
 const { height } = Dimensions.get("window")
 
 const Step02 = () => {
-  const router = useRouter()
-
-  const { nome, sobrenome, email, avatarId, avatarSource } = useLocalSearchParams<{
+  // Get params from previous screen
+  const { nome, sobrenome, avatarId, avatarSource } = useLocalSearchParams<{
     nome: string
     sobrenome: string
-    email: string
     avatarId: string
     avatarSource: string
   }>()
+
+  const [email, setEmail] = useState("")
   const [birthDate, setBirthDate] = useState("")
   const [phone, setPhone] = useState("")
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [lgpdAccepted, setLgpdAccepted] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<{birthDate?: boolean;phone?: boolean;}>({});
+  const [errors, setErrors] = useState<{
+    email?: boolean
+    birthDate?: boolean
+    phone?: boolean
+  }>({})
 
+  const [emailFocused, setEmailFocused] = useState(false)
   const [field1Focused, setField1Focused] = useState(false)
   const [field2Focused, setField2Focused] = useState(false)
 
-  const getBorderColor = (field: 'birthDate' | 'phone', isFocused: boolean) => {
-    if (errors[field]) return '#FF0000';
-    if (isFocused) return '#56A6DC';
-    return '#E8ECF4';
-  };
-  
+  const getBorderColor = (field: "email" | "birthDate" | "phone", isFocused: boolean) => {
+    if (errors[field]) return "#FF0000"
+    if (isFocused) return "#56A6DC"
+    return "#E8ECF4"
+  }
 
-  const handleContinue = async () => {
-    const newErrors: {birthDate?: boolean; phone?: boolean} = {};
-    
-    if (!birthDate) newErrors.birthDate = true;
-    if (!phone) newErrors.phone = true;
-    
+  const handleContinue = () => {
+    const newErrors: { email?: boolean; birthDate?: boolean; phone?: boolean } = {}
+
+    if (!email) newErrors.email = true
+    if (!birthDate) newErrors.birthDate = true
+    if (!phone) newErrors.phone = true
+
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      Toast.show({ type: "error", text1: "Erro", text2: "Preencha todos os campos!" });
-      return;
+      setErrors(newErrors)
+      Toast.show({ type: "error", text1: "Erro", text2: "Preencha todos os campos!" })
+      return
     }
 
-    setIsLoading(true)
+    if (!termsAccepted || !lgpdAccepted) {
+      Toast.show({
+        type: "error",
+        text1: "Erro",
+        text2: "Você precisa aceitar os termos para continuar!",
+      })
+      return
+    }
 
-    try {
-      // Generate a random password
-      const password = Math.random().toString(36).slice(-8)
-
-      // Create user in Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      const uid = userCredential.user.uid
-
-      // Save user data to Firebase Realtime Database
-      const db = getDatabase()
-      await set(ref(db, `users/${uid}`), {
+    // Using consistent params format for navigation
+    router.push({
+      pathname: "/(register)/step3",
+      params: {
         nome,
         sobrenome,
         email,
-        avatarId,
         birthDate,
         phone,
-        termsAccepted,
-        lgpdAccepted,
-        createdAt: new Date().toISOString(),
-      })
-
-      Toast.show({ type: "success", text1: "Sucesso", text2: "Cadastro completo!" })
-
-      // Navigate to the next step (Step 3)
-      router.push("/step3")
-    } catch (error: any) {
-      Toast.show({ type: "error", text1: "Erro", text2: error.message || "Falha ao salvar dados!" })
-    } finally {
-      setIsLoading(false)
-    }
+        termsAccepted: termsAccepted.toString(),
+        lgpdAccepted: lgpdAccepted.toString(),
+        avatarId,
+        avatarSource,
+      },
+    })
   }
 
   return (
@@ -104,18 +96,23 @@ const Step02 = () => {
         <Text style={styles.title}>{nome}, falta pouco!</Text>
 
         <View style={styles.inputsContainer}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={[styles.input, { borderColor: getBorderColor("email", emailFocused) }]}
+            onFocus={() => setEmailFocused(true)}
+            onBlur={() => setEmailFocused(false)}
+            placeholder="Digite seu email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
           <Text style={styles.label}>Data Nascimento</Text>
           <TextInput
-            style={[
-              styles.input,
-              { borderColor: getBorderColor('birthDate', field1Focused) },
-              Platform.select({
-                web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-              })
-            ]}
+            style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) }]}
             onFocus={() => setField1Focused(true)}
             onBlur={() => setField1Focused(false)}
-            
             placeholder="DD/MM/AAAA"
             value={birthDate}
             onChangeText={setBirthDate}
@@ -124,13 +121,7 @@ const Step02 = () => {
 
           <Text style={styles.label}>Celular</Text>
           <TextInput
-            style={[
-              styles.input,
-              { borderColor: getBorderColor('phone', field2Focused) },
-              Platform.select({
-                web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-              })
-            ]}
+            style={[styles.input, { borderColor: getBorderColor("phone", field2Focused) }]}
             onFocus={() => setField2Focused(true)}
             onBlur={() => setField2Focused(false)}
             placeholder="Digite seu celular"
@@ -146,7 +137,7 @@ const Step02 = () => {
         </View>
 
         <View style={styles.buttonContainer}>
-          <CustomButton title="Continuar" onPress={handleContinue} nextStep="/(register)/step3" /* isLoading={isLoading} */ />
+          <CustomButton title="Continuar" onPress={handleContinue} />
           <ProgressDots currentStep={2} />
         </View>
       </View>
@@ -187,21 +178,21 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
-    height: "50%",
+    height: "60%",
     justifyContent: "space-between",
     top: "5%",
   },
-  input: { 
-    width: "80%", 
-    height: "20%", // Altura fixa em pixels
-    borderWidth: 2, 
-    borderRadius: 8, 
+  input: {
+    width: "80%",
+    height: 50,
+    borderWidth: 2,
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: "#F7F8F9",
     color: "#000000",
-    marginBottom: 8
+    marginBottom: 8,
   },
   label: {
     fontSize: 16,
@@ -211,9 +202,8 @@ const styles = StyleSheet.create({
   checkboxesContainer: {
     width: "100%",
     alignItems: "center",
-    height: "25%",
     justifyContent: "space-between",
-    top: "5%",
+    marginTop: 10,
   },
   buttonContainer: {
     zIndex: 3,

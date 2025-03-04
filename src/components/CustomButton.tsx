@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { TouchableOpacity, Text, StyleSheet, View, Alert } from 'react-native';
 
 interface CustomButtonProps {
-    nextStep: `/${string}` | (string & {});
+    nextStep?: `/${string}` | (string & {});
     validation?: {
         isValid: boolean;
         message: string;

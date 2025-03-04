@@ -17,6 +17,7 @@ export interface Etapa  {
     id?: string;
     nome?: string;
     email?: string;
-    celular?: string;
+    phone?: string;
     sobrenome?: string;
+    avatarSource?: string;
   }
