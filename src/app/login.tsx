@@ -11,10 +11,12 @@ import {
   KeyboardAvoidingView,
   Image,
   StyleSheet,
+  StatusBar,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLogin } from "../hooks/UseLogin";
 import Checkbox from "../components/Checkbox";
+import Logo from "../../assets/images/logo.svg";
 
 interface Errors {
   email?: string;
@@ -34,6 +36,7 @@ const Login = () => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
 
 
   const updateFormField = (field: keyof FormData, value: string): void => {
@@ -70,21 +73,23 @@ const Login = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
+        
         <ScrollView 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false} 
           contentContainerStyle={styles.scrollViewContent}
+          
         >
           <View style={styles.mainContainer}>
             <View style={styles.logoContainer}>
-              <Image 
-                source={require('../../assets/images/logo.png')} 
-                style={styles.logo} 
-              />
+            <View style={{ alignItems: "center" }}>
+                <Logo style={{ width: 315, height: 65 }} />
+            </View>
             </View>
             
             <View style={styles.welcomeContainer}>
@@ -156,9 +161,9 @@ const Login = () => {
 
               <View style={styles.rememberForgotContainer}>
 
-                  <Checkbox title="Lembrar conta" isChecked={rememberMe} onCheck={setRememberMe} />
+                  <Checkbox title="Lembrar conta" isChecked={rememberMe} onCheck={setRememberMe} colorText="#3B82F6" />
 
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push("/forgotPassword")}>
                   <Text style={styles.linkText}>Esqueci minha senha</Text>
                 </TouchableOpacity>
               </View>
@@ -222,13 +227,12 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     paddingHorizontal: 24,
-    paddingVertical: 32,
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'space-evenly',
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 16,
   },
   logo: {
     resizeMode: 'contain',
@@ -299,6 +303,7 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     color: '#3B82F6',
+    textDecorationLine: 'underline',
   },
   actionContainer: {
     marginBottom: 8,

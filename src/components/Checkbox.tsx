@@ -4,10 +4,11 @@ import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 interface CheckboxProps {
     title: string;
     isChecked: boolean;
+    colorText?: string;
     onCheck: (checked: boolean) => void;
 }
 
-const Checkbox = ({ title, isChecked, onCheck }: CheckboxProps) => {
+const Checkbox = ({ title, isChecked, onCheck, colorText }: CheckboxProps) => {
     return (
         <View style={styles.checkboxContainer}>
             <TouchableOpacity 
@@ -17,7 +18,7 @@ const Checkbox = ({ title, isChecked, onCheck }: CheckboxProps) => {
                 <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
                     {isChecked && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <Text style={styles.checkboxLabel}>{title}</Text>
+                <Text style={[styles.checkboxLabel,{color: colorText ? colorText : '#333'}]}>{title}</Text>
             </TouchableOpacity>
         </View>
     );
@@ -50,7 +51,6 @@ const styles = StyleSheet.create({
     },
     checkboxLabel: {
         fontSize: 16,
-        color: "#333",
     },
 });
 

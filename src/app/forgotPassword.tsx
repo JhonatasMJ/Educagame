@@ -1,209 +1,137 @@
 import React, { useState } from "react";
 import {
   View,
-  TextInput,
-  TouchableOpacity,
   Text,
   StyleSheet,
-  Alert,
-  Platform,
   SafeAreaView,
-  ScrollView,
-  KeyboardAvoidingView,
-  Dimensions,
-  ActivityIndicator,
+  TextInput,
+  Platform,
 } from "react-native";
 
-
-const ForgotPasswordScreen = ({ navigation, route }) => {
-  const { email } = route.params;
-  const [verificationCode, setVerificationCode] = useState([
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  // Referências para os inputs do código
-  const inputRefs = Array(6)
-    .fill(0)
-    .map(() => React.createRef());
-
-  const startResendTimer = () => {
-    setTimeLeft(30); // 30 segundos para poder reenviar
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-  };
-
-  const handleSendCode = async () => {
-    try {
-      setIsLoading(true);
-     
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      setCodeSent(true);
-      startResendTimer();
-      Alert.alert(
-        "Código enviado!",
-        `Um código de verificação foi enviado para ${email}`
-      );
-    } catch (error) {
-      Alert.alert(
-        "Erro",
-        "Ocorreu um erro ao enviar o código. Tente novamente."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    const code = verificationCode.join("");
-    if (code.length !== 6) {
-      Alert.alert("Erro", "Por favor, digite o código completo");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-    
+import Logo from "../../assets/images/logo.svg";
 
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
 
+const ForgotPasswordScreen = () => {
+  const [codeFocused, setCodeFocused] = useState(false)
+  const [codeFocused2, setCodeFocused2] = useState(false)
+  const [codeFocused3, setCodeFocused3] = useState(false)
+  const [codeFocused4, setCodeFocused4] = useState(false)
+  const [codeFocused5, setCodeFocused5] = useState(false)
 
-      navigation.replace("ResetPassword", { email, code });
-    } catch (error) {
-      Alert.alert("Erro", "Código inválido ou expirado. Tente novamente.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCodeChange = (text, index) => {
-
-    const newCode = [...verificationCode];
-    newCode[index] = text;
-    setVerificationCode(newCode);
-
- 
-    if (text && index < 5) {
-      inputRefs[index + 1].current.focus();
-    }
-
-    if (!text && index > 0) {
-      inputRefs[index - 1].current.focus();
-    }
+  const getBorderColor = (isFocused: boolean) => {/* 
+      if (errors) return '#FF0000'; */
+    if (isFocused) return '#56A6DC';
+    return '#E8ECF4';
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : -500}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollViewContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>Recuperar Senha</Text>
+      <View style={{ alignItems: "center" }}>
+        <Logo style={{ width: 315, height: 65, marginTop: 50 }} />
+      </View>
 
-            <Text style={styles.emailText}>{email}</Text>
+      <View style={styles.containerText}>
+        <View >
+          <Text style={styles.attentionText}>Atenção</Text>
+          <Text style={styles.titleText}>Verifique seu email</Text>
+        </View>
+      </View>
 
-            <Text style={styles.description}>
-              {!codeSent
-                ? "Enviaremos um código de 6 dígitos para seu e-mail para confirmar sua identidade."
-                : "Digite o código de 6 dígitos enviado para seu e-mail."}
-            </Text>
+      <View style={styles.containerInput}>
+        <Text style={styles.pleaseText}>Por favor digite o código para verificar o seu email</Text>
+        <View style={styles.inputArea}>
+          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused) },               
+            Platform.select({ web: codeFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+            onFocus={() => setCodeFocused(true)}
+            onBlur={() => setCodeFocused(false)} 
+            keyboardType="numeric" maxLength={1}></TextInput>
 
-            {codeSent ? (
-              <View style={styles.codeContainer}>
-                {verificationCode.map((digit, index) => (
-                  <TextInput
-                    key={index}
-                    ref={inputRefs[index]}
-                    style={styles.codeInput}
-                    maxLength={1}
-                    keyboardType="number-pad"
-                    value={digit}
-                    onChangeText={(text) => handleCodeChange(text, index)}
-                    editable={!isLoading}
-                  />
-                ))}
-              </View>
-            ) : null}
+          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused2) },
+            Platform.select({ web: codeFocused2 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+            onFocus={() => setCodeFocused2(true)}
+            onBlur={() => setCodeFocused2(false)}
+            keyboardType="numeric" maxLength={1}></TextInput>
 
-            {!codeSent ? (
-              <TouchableOpacity
-                style={[styles.sendButton, isLoading && styles.buttonDisabled]}
-                onPress={handleSendCode}
-                disabled={isLoading}
-              >
-                <Text style={styles.sendButtonText}>
-                  {isLoading ? "Enviando..." : "Enviar código"}
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={[
-                    styles.sendButton,
-                    isLoading && styles.buttonDisabled,
-                  ]}
-                  onPress={handleVerifyCode}
-                  disabled={isLoading}
-                >
-                  <Text style={styles.sendButtonText}>
-                    {isLoading ? "Verificando..." : "Verificar código"}
-                  </Text>
-                </TouchableOpacity>
+          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused3) },
+            Platform.select({ web: codeFocused3 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+            onFocus={() => setCodeFocused3(true)}
+            onBlur={() => setCodeFocused3(false)}
+            keyboardType="numeric" maxLength={1}></TextInput>
 
-                <TouchableOpacity
-                  style={[
-                    styles.resendButton,
-                    (timeLeft > 0 || isLoading) && styles.buttonDisabled,
-                  ]}
-                  onPress={handleSendCode}
-                  disabled={timeLeft > 0 || isLoading}
-                >
-                  <Text style={styles.resendButtonText}>
-                    {timeLeft > 0
-                      ? `Reenviar código em ${timeLeft}s`
-                      : "Reenviar código"}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
+          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused4) },
+            Platform.select({ web: codeFocused4 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+            onFocus={() => setCodeFocused4(true)}
+            onBlur={() => setCodeFocused4(false)}
+            keyboardType="numeric" maxLength={1}></TextInput>
 
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-              disabled={isLoading}
-            >
-              <Text style={styles.backButtonText}>Voltar para o login</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused5) },
+            Platform.select({ web: codeFocused5 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+            onFocus={() => setCodeFocused5(true)}
+            onBlur={() => setCodeFocused5(false)}
+            keyboardType="numeric" maxLength={1}></TextInput>
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  containerText: {
+    alignItems: "center",
+    width: "80%",
+    height: "20%",
+    paddingTop: 35,
+  },
+  attentionText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#0072C6",
+    textAlign: "left",
+  },
+  titleText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    textAlign: "left",
+  },
+  containerInput: {
+    alignItems: "center",
+    width: "100%",
+    height: "22%",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    textAlign: "center",
+  },
+  inputArea: {
+    flex: 1,
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
+    alignItems: "center",
+    width: "100%",
+    flexDirection: "row",
+    height: 120,
+  },
+  pleaseText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  input: {
+    width: "18%",
+    height: 110,
+    borderWidth: 4,
+    borderRadius: 10,
+    backgroundColor: "#F7F8F9",
+    fontSize: 32,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+
+
+
+});
 
 export default ForgotPasswordScreen;
