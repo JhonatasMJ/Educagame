@@ -8,6 +8,7 @@ import Toast from 'react-native-toast-message';
 import ConversationField from '@/src/components/ConversationField';
 import { styles } from './styles';
 import MessageBubble from '@/src/components/MessageBuble';
+import RealoadButton from '@/src/components/RealoadButton';
 
 
 interface Message {
@@ -28,13 +29,14 @@ const SearchTicket = () => {
   const [ready, setReady] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   const router = useRouter();
   const { userData, authUser } = useAuth();
 
   const handleSearch = async () => {
     if (!ticketNumber.trim()) return;
-
+    setRefresh(true);
     setLoading(true);
     // Remove the date pattern (DDMMYYYY) and keep the remaining digits
     const ticketLastDigits = ticketNumber.slice(8); // This will get everything after position 8
@@ -96,6 +98,7 @@ const SearchTicket = () => {
       console.error('Error details:', error);
     } finally {
       setLoading(false);
+      setRefresh(false);
     }
   };
 
@@ -235,9 +238,14 @@ const SearchTicket = () => {
       {renderFeedbackModal()}
 
       {ready && (
+        <View style={{position: 'absolute', right: 35, bottom: 95, zIndex: 999}}>
+          <RealoadButton onPress={handleSearch} />
+        </View>
+      )}
+      {ready && (
         <ScrollView style={{ flex: 1, padding: 15, 
           paddingTop: 15, 
-          paddingBottom: 86, }}>
+          paddingBottom: 90, }}>
           {messages.map((message, index) => (
             <MessageBubble
               key={index}
@@ -252,7 +260,13 @@ const SearchTicket = () => {
         {ready ? (
           <ConversationField
             onSendMessage={handleSendMessage}
-            placeholder={sendingMessage ? 'Enviando mensagem...' : 'Digite sua Mensagem'}
+            placeholder={
+              refresh 
+                ? 'Carregando mensagens...' 
+                : sendingMessage 
+                  ? 'Enviando mensagem...' 
+                  : 'Digite sua Mensagem'
+            }
             color='#56A6DC'
           />
         ) : (
