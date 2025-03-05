@@ -92,7 +92,6 @@ const AiAssistent = () => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: "#3185BE" }}
-      behavior="padding"
       enabled
     >
       <SafeAreaView

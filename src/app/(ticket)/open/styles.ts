@@ -9,6 +9,7 @@ export const styles = StyleSheet.create({
   },
   headerArea: {
     padding: 20,
+    paddingTop: 25,
     backgroundColor: '#fff',
   },
   headerRow: {

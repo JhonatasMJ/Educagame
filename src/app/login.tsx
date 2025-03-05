@@ -12,6 +12,7 @@ import {
   Image,
   StyleSheet,
   StatusBar,
+  Dimensions
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useLogin } from "../hooks/UseLogin";
@@ -36,8 +37,6 @@ const Login = () => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-
 
   const updateFormField = (field: keyof FormData, value: string): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -214,6 +213,16 @@ const Login = () => {
   );
 };
 
+function marginTopDaLogo(): any {
+
+  const {width} = Dimensions.get("window");
+  if(width <= 405){ //para celular bemmm pequeno
+    return '18%';
+  } else { //nos que não se encaixam
+    return 16;
+  }
+}  
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -232,7 +241,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: marginTopDaLogo(),
   },
   logo: {
     resizeMode: 'contain',

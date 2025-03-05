@@ -11,7 +11,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#EAAE00',
         headerShown: false,
         tabBarShowLabel: false, // Remove os textos
-        tabBarHideOnKeyboard: true, //faz a tab ficar escondida quando o teclado aparecer
+        /* tabBarHideOnKeyboard: true,  *///faz a tab ficar escondida quando o teclado aparecer
         tabBarStyle: {
           paddingHorizontal: '5%',
           borderTopRightRadius: 15,

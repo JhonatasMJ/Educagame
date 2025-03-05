@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, Modal, SafeAreaView, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView } from 'react-native';
+import { Text, View, Modal, SafeAreaView, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MOBILE_WIDTH } from '@/PlataformWrapper';
 import { useRouter } from 'expo-router';
@@ -230,7 +230,6 @@ const SearchTicket = () => {
   return (
       <KeyboardAvoidingView
         style={{ flex: 1}}
-        behavior="padding"
         enabled
       >
     <SafeAreaView style={styles.container}>
@@ -244,8 +243,7 @@ const SearchTicket = () => {
       )}
       {ready && (
         <ScrollView style={{ flex: 1, padding: 15, 
-          paddingTop: 15, 
-          paddingBottom: 90, }}>
+          paddingTop: 15, }}>
           {messages.map((message, index) => (
             <MessageBubble
               key={index}
@@ -254,6 +252,7 @@ const SearchTicket = () => {
               timestamp={`${message.date} ${message.time}`}
             />
           ))}
+          <View style={{ height: 100 }} />
         </ScrollView>
       )}
       <View style={styles.bottomButton}>
