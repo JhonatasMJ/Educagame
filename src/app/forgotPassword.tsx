@@ -6,9 +6,13 @@ import {
   SafeAreaView,
   TextInput,
   Platform,
+  ScrollView,
+  KeyboardAvoidingView,
+  TouchableOpacity,
 } from "react-native";
 
 import Logo from "../../assets/images/logo.svg";
+import CustomButton from "@/src/components/CustomButton";
 
 
 
@@ -27,51 +31,79 @@ const ForgotPasswordScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={{ alignItems: "center" }}>
-        <Logo style={{ width: 315, height: 65, marginTop: 50 }} />
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}>
 
-      <View style={styles.containerText}>
-        <View >
-          <Text style={styles.attentionText}>Atenção</Text>
-          <Text style={styles.titleText}>Verifique seu email</Text>
-        </View>
-      </View>
+          <View style={{ alignItems: "center" }}>
+            <Logo style={{ width: 315, height: 65, marginTop: 50 }} />
+          </View>
 
-      <View style={styles.containerInput}>
-        <Text style={styles.pleaseText}>Por favor digite o código para verificar o seu email</Text>
-        <View style={styles.inputArea}>
-          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused) },               
-            Platform.select({ web: codeFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
-            onFocus={() => setCodeFocused(true)}
-            onBlur={() => setCodeFocused(false)} 
-            keyboardType="numeric" maxLength={1}></TextInput>
+          <View style={styles.containerText}>
+            <View >
+              <Text style={styles.attentionText}>Atenção</Text>
+              <Text style={styles.titleText}>Verifique seu email</Text>
+            </View>
+          </View>
 
-          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused2) },
-            Platform.select({ web: codeFocused2 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
-            onFocus={() => setCodeFocused2(true)}
-            onBlur={() => setCodeFocused2(false)}
-            keyboardType="numeric" maxLength={1}></TextInput>
+          <View style={styles.containerInput}>
+            <Text style={styles.pleaseText}>Por favor digite o código para verificar o seu email</Text>
+            <View style={styles.inputArea}>
+              <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused) },
+              Platform.select({ web: codeFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+                onFocus={() => setCodeFocused(true)}
+                onBlur={() => setCodeFocused(false)}
+                keyboardType="numeric" maxLength={1}></TextInput>
 
-          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused3) },
-            Platform.select({ web: codeFocused3 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
-            onFocus={() => setCodeFocused3(true)}
-            onBlur={() => setCodeFocused3(false)}
-            keyboardType="numeric" maxLength={1}></TextInput>
+              <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused2) },
+              Platform.select({ web: codeFocused2 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+                onFocus={() => setCodeFocused2(true)}
+                onBlur={() => setCodeFocused2(false)}
+                keyboardType="numeric" maxLength={1}></TextInput>
 
-          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused4) },
-            Platform.select({ web: codeFocused4 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
-            onFocus={() => setCodeFocused4(true)}
-            onBlur={() => setCodeFocused4(false)}
-            keyboardType="numeric" maxLength={1}></TextInput>
+              <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused3) },
+              Platform.select({ web: codeFocused3 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+                onFocus={() => setCodeFocused3(true)}
+                onBlur={() => setCodeFocused3(false)}
+                keyboardType="numeric" maxLength={1}></TextInput>
 
-          <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused5) },
-            Platform.select({ web: codeFocused5 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
-            onFocus={() => setCodeFocused5(true)}
-            onBlur={() => setCodeFocused5(false)}
-            keyboardType="numeric" maxLength={1}></TextInput>
-        </View>
-      </View>
+              <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused4) },
+              Platform.select({ web: codeFocused4 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+                onFocus={() => setCodeFocused4(true)}
+                onBlur={() => setCodeFocused4(false)}
+                keyboardType="numeric" maxLength={1}></TextInput>
+
+              <TextInput style={[styles.input, { borderColor: getBorderColor(codeFocused5) },
+              Platform.select({ web: codeFocused5 ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {} })]}
+                onFocus={() => setCodeFocused5(true)}
+                onBlur={() => setCodeFocused5(false)}
+                keyboardType="numeric" maxLength={1}></TextInput>
+            </View>
+          </View>
+          <View style={styles.containerBottom}>
+            <View style={styles.containerEmailText}>
+              <Text style={styles.codEmail}>Enviamos um código para o email </Text>
+              <Text style={styles.email}>exem***@gmail.com </Text>
+            </View>
+            <View style={styles.buttonArea}>
+              <CustomButton
+                title="Confirmar código"
+              />
+              <View style={styles.textBottomArea}>
+                <Text style={styles.bottomText}>Não recebeu o código?</Text>
+                <TouchableOpacity>
+                  <Text style={styles.bottomText2}>Reenviar código</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -80,12 +112,19 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
+    justifyContent: "center",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
   },
   containerText: {
     alignItems: "center",
     width: "80%",
     height: "20%",
-    paddingTop: 35,
+    paddingTop: 30,
   },
   attentionText: {
     fontSize: 20,
@@ -129,7 +168,51 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-
+  containerBottom: {
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+    justifyContent: "space-evenly",
+    flexDirection: "column",
+  },
+  containerEmailText: {
+    alignItems: "center",
+    width: "100%",
+    height: "10%",
+  },
+  codEmail: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  email: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0072C6",
+  },
+  buttonArea: {
+    height: "80%",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexDirection: "column",
+    width: "100%",
+  },
+  textBottomArea: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: "20%",
+    justifyContent: "space-evenly",
+    width: "70%",
+    position: "absolute",
+  },
+  bottomText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  bottomText2: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#0072C6",
+  },
 
 
 });
