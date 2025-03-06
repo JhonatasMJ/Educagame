@@ -216,10 +216,10 @@ const Login = () => {
 function marginTopDaLogo(): any {
 
   const {width} = Dimensions.get("window");
-  if(width <= 405){ //para celular bemmm pequeno
+  if(width <= 410){ //para celular bemmm pequeno
     return '18%';
   } else { //nos que não se encaixam
-    return 16;
+    return 40;
   }
 }  
 

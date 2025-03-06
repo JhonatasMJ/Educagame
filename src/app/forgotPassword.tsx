@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   TouchableOpacity,
+  Dimensions,
 } from "react-native";
 
 import Logo from "../../assets/images/logo.svg";
@@ -41,7 +42,7 @@ const ForgotPasswordScreen = () => {
           contentContainerStyle={styles.scrollViewContent}>
 
           <View style={{ alignItems: "center" }}>
-            <Logo style={{ width: 315, height: 65, marginTop: 50 }} />
+            <Logo style={{ width: 315, height: 65, marginBottom: marginTopDaLogo(), top: 30, position: 'relative' }} />
           </View>
 
           <View style={styles.containerText}>
@@ -107,6 +108,18 @@ const ForgotPasswordScreen = () => {
     </SafeAreaView>
   );
 };
+
+function marginTopDaLogo(): any {
+
+  const {width, height} = Dimensions.get("window");
+  if(width <= 500 && height < 732){ //para celular bemmm pequeno
+    return '15%';
+  } else if (height >= 732 && width > 409) {
+    return "20%";
+  }else { //nos que não se encaixam
+    return 80;
+  }
+}  
 
 const styles = StyleSheet.create({
   safeArea: {
