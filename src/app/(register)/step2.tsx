@@ -22,31 +22,28 @@ const Step02 = () => {
     avatarSource: string
   }>()
 
-  const [email, setEmail] = useState("")
+  // Email moved to step 3
   const [birthDate, setBirthDate] = useState("")
   const [phone, setPhone] = useState("")
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [lgpdAccepted, setLgpdAccepted] = useState(false)
   const [errors, setErrors] = useState<{
-    email?: boolean
     birthDate?: boolean
     phone?: boolean
   }>({})
 
-  const [emailFocused, setEmailFocused] = useState(false)
   const [field1Focused, setField1Focused] = useState(false)
   const [field2Focused, setField2Focused] = useState(false)
 
-  const getBorderColor = (field: "email" | "birthDate" | "phone", isFocused: boolean) => {
+  const getBorderColor = (field: "birthDate" | "phone", isFocused: boolean) => {
     if (errors[field]) return "#FF0000"
     if (isFocused) return "#56A6DC"
     return "#E8ECF4"
   }
 
   const handleContinue = () => {
-    const newErrors: { email?: boolean; birthDate?: boolean; phone?: boolean } = {}
+    const newErrors: { birthDate?: boolean; phone?: boolean } = {}
 
-    if (!email) newErrors.email = true
     if (!birthDate) newErrors.birthDate = true
     if (!phone) newErrors.phone = true
 
@@ -71,7 +68,6 @@ const Step02 = () => {
       params: {
         nome,
         sobrenome,
-        email,
         birthDate,
         phone,
         termsAccepted: termsAccepted.toString(),
@@ -96,18 +92,6 @@ const Step02 = () => {
         <Text style={styles.title}>{nome}, falta pouco!</Text>
 
         <View style={styles.inputsContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={[styles.input, { borderColor: getBorderColor("email", emailFocused) }]}
-            onFocus={() => setEmailFocused(true)}
-            onBlur={() => setEmailFocused(false)}
-            placeholder="Digite seu email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
           <Text style={styles.label}>Data Nascimento</Text>
           <TextInput
             style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) }]}
