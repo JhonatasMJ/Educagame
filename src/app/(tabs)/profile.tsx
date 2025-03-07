@@ -58,13 +58,14 @@ const Profile = () => {
 
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-      <SafeAreaView className="flex-1 bg-primary bg-blue">
+      <SafeAreaView className="flex-1" style={{
+    backgroundColor: '#56A6DC',}}>
         <TouchableOpacity
           className="text-center justify-center mx-auto relative"
           onPress={() => editar && setShowAvatarModal(true)}
           activeOpacity={editar ? 0.7 : 1}
         >
-          <AvatarComponent width={200} />
+          <AvatarComponent style={{top: '6.25%', position: 'relative'}} width={200} />
           {editar && (
             <View className="absolute bottom-0 right-0 bg-secondary p-2 rounded-full">
               <FontAwesome name="camera" size={20} color="#111" />
