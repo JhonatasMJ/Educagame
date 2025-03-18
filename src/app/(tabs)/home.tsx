@@ -648,46 +648,7 @@ const Home = () => {
         nome={nome}
       />
 
-      {/* Indicador de paginação para trilhas */}
-      <View className="py-2 bg-purple-100">
-        <FlatList
-          ref={flatListRef}
-          data={trilhas}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item, index) => `trilha-${index}`}
-          contentContainerStyle={{ paddingHorizontal: width / 2 - 10 }}
-          renderItem={({ item, index }) => (
-            <TouchableOpacity
-              onPress={() => {
-                if (index < trilhaAtualIndex) {
-                  handlePreviousTrilha();
-                } else if (index > trilhaAtualIndex) {
-                  handleNextTrilha();
-                }
-              }}
-              className={`px-3 py-1 mx-1 rounded-full ${
-                index === trilhaAtualIndex ? "bg-purple-700" : "bg-purple-300"
-              }`}
-            >
-              <Text
-                className={`${
-                  index === trilhaAtualIndex ? "text-white" : "text-purple-800"
-                } font-medium`}
-              >
-                {item.nome}
-              </Text>
-            </TouchableOpacity>
-          )}
-          initialScrollIndex={trilhaAtualIndex}
-          getItemLayout={(data, index) => ({
-            length: 100, // Largura aproximada de cada item
-            offset: 100 * index,
-            index,
-          })}
-        />
-      </View>
-
+   
       {/* Barra de navegação inferior - FIXA na parte inferior */}
       <View
         className="bg-purple-800 px-4 py-2 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20"
