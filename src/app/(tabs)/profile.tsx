@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Modal } from "react-native"
+import { useState, useEffect } from "react"
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Modal, Platform } from "react-native"
 import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
 import BigAvatar2 from "../../../assets/images/grande-avatar2.svg"
 import BigAvatar3 from "../../../assets/images/grande-avatar3.svg"
@@ -11,7 +11,6 @@ import Button from "@/src/components/Button"
 import { FontAwesome } from "@expo/vector-icons"
 import { useAuth } from "@/src/context/AuthContext"
 import { getDatabase, ref, update } from "firebase/database"
-
 
 const avatarComponents = {
   avatar1: BigAvatar1,
@@ -57,49 +56,91 @@ const Profile = () => {
   }
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      <SafeAreaView className="flex-1" style={{
-    backgroundColor: '#56A6DC',}}>
-        <TouchableOpacity
-          className="text-center justify-center mx-auto relative"
-          onPress={() => editar && setShowAvatarModal(true)}
-          activeOpacity={editar ? 0.7 : 1}
-        >
-          <AvatarComponent style={{top: '6.25%', position: 'relative'}} width={200} />
-          {editar && (
-            <View className="absolute bottom-0 right-0 bg-secondary p-2 rounded-full">
-              <FontAwesome name="camera" size={20} color="#111" />
+    <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+      <SafeAreaView className="flex-1" style={{ backgroundColor: '#56A6DC' }}>
+    
+        <View className="h-40"></View>
+        
+  
+        <View className="absolute top-6 left-0 right-0 z-10 items-center">
+          <TouchableOpacity
+            onPress={() => editar && setShowAvatarModal(true)}
+            activeOpacity={editar ? 0.7 : 1}
+            className="relative"
+          >
+            <AvatarComponent className="-z-10" width={200} height={270} />
+            {editar && (
+              <View className="absolute bottom-12 right-0 bg-secondary z-50 p-2 rounded-full shadow-md">
+                <FontAwesome name="camera" size={20} color="#111" />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+    
+        <View className="flex-1 w-full h-screen rounded-t-3xl bg-menu p-6 pb-20 mt-32 z-30">
+          <View className="flex-row justify-between items-center mb-6 pb-2 mt-6 border-b border-zinc-600">
+            <View>
+              <Text className="text-white text-2xl font-bold">Perfil</Text>
+              <Text className="text-secondary text-sm">
+                {editar ? "Editando informações" : "Suas informações pessoais"}
+              </Text>
             </View>
-          )}
-        </TouchableOpacity>
+            
+            <TouchableOpacity
+              className={`flex-row items-center py-2 px-4 rounded-lg ${
+                editar ? "bg-primary" : "bg-secondary"
+              }`}
+              onPress={handleEdit}
+            >
+              <FontAwesome 
+                name={editar ? "save" : "edit"} 
+                size={16} 
+                color="#111" 
+              />
+              <Text className="ml-2 font-medium text-zinc-800">
+                {editar ? "Salvar" : "Editar"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <View className="flex-1 w-full rounded-3xl bg-zinc-700 p-6 h-1/2 pb-32 pt-12">
-          <Text className="text-white text-4xl font-bold">Perfil</Text>
-          <Text className="text-xl font-semibold text-secondary">Faça alterações no seu perfil:</Text>
-
-          <View className="mt-4">
+          {/* Form fields */}
+          <View className="space-y-4">
             <TextInputLabel
               label="Nome"
               placeholder="Digite seu nome"
               value={nome}
               onChangeText={setNome}
               editable={editar}
+
             />
+            
             <TextInputLabel
               label="Sobrenome"
               placeholder="Digite seu Sobrenome"
               value={sobrenome}
               onChangeText={setSobrenome}
               editable={editar}
+
             />
-            <TextInputLabel label="Email" placeholder="Digite seu email" value={email} editable={false} />
+            
+            <TextInputLabel 
+              label="Email" 
+              placeholder="Digite seu email" 
+              value={email} 
+              editable={false}
+        
+            />
+            
             <TextInputLabel
               label="Celular"
               placeholder="Digite seu celular"
               value={celular}
               onChangeText={setCelular}
               editable={editar}
+
             />
+            
             <TextInputLabel
               label="Senha"
               placeholder="Digite sua senha"
@@ -107,20 +148,12 @@ const Profile = () => {
               value={senha}
               onChangeText={setSenha}
               editable={editar}
-            />
-          </View>
 
-          <View className="flex-row items-center relative">
-            <Button
-              className={`p-4 rounded-lg flex-1 ${editar ? "bg-primary" : "bg-secondary"}`}
-              text={editar ? "Salvar" : "Editar"}
-              onPress={handleEdit}
             />
-            <FontAwesome name={editar ? "save" : "edit"} className="absolute right-6" size={24} color="#111" />
           </View>
         </View>
 
-
+      
         <Modal
           visible={showAvatarModal}
           transparent={true}
@@ -128,53 +161,46 @@ const Profile = () => {
           onRequestClose={() => setShowAvatarModal(false)}
         >
           <View className="flex-1 justify-center items-center bg-black/50">
-            <View className="w-4/5 bg-white rounded-3xl p-5 items-center">
-              <Text className="text-xl font-bold mb-5">Escolha seu avatar</Text>
+            <View className="w-4/5 bg-zinc-800 rounded-3xl p-6 items-center">
+              <Text className="text-xl font-bold mb-5 text-white">Escolha seu avatar</Text>
 
               <View className="flex-row flex-wrap justify-center gap-4">
-                <TouchableOpacity
-                  className={`p-2.5 rounded-xl border-2 bg-primary ${
-                    avatarSource === "avatar1" ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent"
-                  }`}
-                  onPress={() => handleAvatarChange("avatar1")}
-                >
-                  <BigAvatar1 width={80} height={80} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className={`p-2.5 rounded-xl border-2 bg-primary ${
-                    avatarSource === "avatar2" ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent"
-                  }`}
-                  onPress={() => handleAvatarChange("avatar2")}
-                >
-                  <BigAvatar2 width={80} height={80} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className={`p-2.5 rounded-xl border-2 bg-primary ${
-                    avatarSource === "avatar3" ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent"
-                  }`}
-                  onPress={() => handleAvatarChange("avatar3")}
-                >
-                  <BigAvatar3 width={80} height={80} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className={`p-2.5 rounded-xl border-2 bg-primary ${
-                    avatarSource === "avatar4" ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent"
-                  }`}
-                  onPress={() => handleAvatarChange("avatar4")}
-                >
-                  <BigAvatar4 width={80} height={80} />
-                </TouchableOpacity>
+                {Object.entries(avatarComponents).map(([key, AvatarComp]) => (
+                  <TouchableOpacity
+                    key={key}
+                    className={`p-3 rounded-xl border-2 relative ${
+                      avatarSource === key 
+                        ? "border-[#56A6DC] bg-[#56A6DC]/10" 
+                        : "border-transparent bg-zinc-700"
+                    }`}
+                    onPress={() => handleAvatarChange(key)}
+                  >
+                    <AvatarComp width={80} height={80} />
+                    
+                    {avatarSource === key && (
+                      <View className="absolute bottom-1 right-1 bg-[#56A6DC] rounded-full w-6 h-6 items-center justify-center">
+                        <FontAwesome name="check" size={12} color="#fff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
               </View>
 
-              <TouchableOpacity 
-                className="mt-5 p-2.5  rounded-xl w-full items-center bg-red-500"
-                onPress={() => setShowAvatarModal(false)}
-              >
-                <Text className="text-white font-semibold  ">Cancelar</Text>
-              </TouchableOpacity>
+              <View className="flex-row w-full gap-3 mt-6">
+                <TouchableOpacity 
+                  className="flex-1 bg-red-500 py-3 rounded-xl items-center"
+                  onPress={() => setShowAvatarModal(false)}
+                >
+                  <Text className="text-white font-semibold">Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  className="flex-1 bg-secondary py-3 rounded-xl items-center"
+                  onPress={() => setShowAvatarModal(false)}
+                >
+                  <Text className="text-zinc-800 font-semibold">Confirmar</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
