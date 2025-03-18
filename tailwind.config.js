@@ -11,7 +11,15 @@ module.exports = {
             background: '#030303',
             placeholder: '#8391A1',
             inputBg: '#F7F8F9',
-            inputBor: '#E8ECF4'
+            inputBor: '#E8ECF4',
+            'coral': {
+              400: '#FF8A75', // lighter coral for bubbles
+              500: '#FF7A61', // darker coral for the line
+            },
+            'purple': {
+              700: '#6A3894', // for the number circles and bottom bar
+              800: '#5D3080', // for the bottom navigation bar
+            },
         }
         
      

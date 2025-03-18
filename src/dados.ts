@@ -11,7 +11,7 @@ export const trilhas: Trilha[] = [
         id: '1-1',
         titulo: 'Introdução ao React Native',
         descricao: 'Conceitos básicos e configuração do ambiente',
-        concluida: false,
+        concluida: true,
       },
       {
         id: '1-2',
