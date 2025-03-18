@@ -3,6 +3,7 @@ export interface Etapa  {
     titulo: string;
     descricao: string;
     concluida: boolean;
+    icone?: string;
   };
   
   export interface Trilha  {
