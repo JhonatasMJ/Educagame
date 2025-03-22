@@ -1,4 +1,5 @@
-import { View, ImageBackground } from "react-native"
+import { View, ImageBackground, type ImageSourcePropType } from "react-native"
+import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
 import React from "react"
 
@@ -15,7 +16,7 @@ interface LearningPathTrackProps {
   currentStage: number
   onStagePress: (index: number) => void
   containerHeight: number
-  backgroundImage?: string
+  backgroundImage?: ImageSourcePropType // Can be a local or remote image
 }
 
 const LearningPathTrack = ({
@@ -35,11 +36,36 @@ const LearningPathTrack = ({
   // Calcular o padding superior para alinhar ao fundo quando há poucos estágios
   const topPadding = Math.max(0, containerHeight - totalContentHeight - 120) // 120 é um ajuste para considerar o espaço da barra inferior
 
+  // Check if the backgroundImage is an SVG (for local SVGs, we need to handle differently)
+  const isSvgImage = typeof backgroundImage === "string" && (backgroundImage as string).endsWith(".svg")
+
+  // Helper function to determine if it's a local or remote image
+  const isLocalImage = backgroundImage && typeof backgroundImage !== "string"
+
   // Render with or without background image
   if (backgroundImage) {
+    // For SVG backgrounds
+    if (isSvgImage) {
+      return (
+        <View className="items-center" style={{ paddingTop: topPadding, width: "100%" }}>
+          <SvgUri
+            uri={backgroundImage as string}
+            style={{
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              opacity: 0.3,
+            }}
+          />
+          {renderTrackContent()}
+        </View>
+      )
+    }
+
+    // For regular image backgrounds
     return (
       <ImageBackground
-        source={{ uri: backgroundImage }}
+        source={backgroundImage} // Works with both require() and {uri: '...'}
         style={{ width: "100%", paddingTop: topPadding }}
         imageStyle={{ opacity: 0.3 }}
         className="items-center"
@@ -49,6 +75,7 @@ const LearningPathTrack = ({
     )
   }
 
+  // No background image
   return (
     <View className="items-center" style={{ paddingTop: topPadding }}>
       {renderTrackContent()}
@@ -109,6 +136,5 @@ const LearningPathTrack = ({
     )
   }
 }
-
 export default LearningPathTrack
 

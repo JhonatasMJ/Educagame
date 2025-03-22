@@ -28,7 +28,7 @@ class ConversationAssistent {
 
   private formatMessage(userMessage: string, name: string, userData: string): { contents: Message[] } {
     //aqui precisa vir o userData pra repassar pra IA os dados do usuario
-    const formattedMessage = `Nome Aluno: ${name}; Nome Trilha Atual: AGORA; Etapa Atual: 01; Mensagem usuário: ${userMessage}`;
+    const formattedMessage = `Nome Aluno: ${name}; Nome Trilha Atual: AGORA; Etapa Atual: 01; Questao 01; Mensagem usuário: ${userMessage}`;
 
     return {
       contents: [

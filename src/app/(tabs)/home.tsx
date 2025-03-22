@@ -22,13 +22,17 @@ import React from "react"
 
 const { width, height } = Dimensions.get("window")
 
-// Mock data for trilhas (courses) - now with image field
+// Mock data for trilhas (courses) - now with local image paths
 const trilhas = [
   {
     id: "1",
     nome: "React Native Básico",
     descricao: "Aprenda os fundamentos do React Native",
-    image: "https://example.com/react-native-path.jpg", // Example image URL
+    // For SVG files, you can use either:
+    // 1. Local SVG (requires react-native-svg-transformer):
+    image: require("@/assets/images/fundo.svg"),
+    // 2. Or remote SVG:
+    // image: 'https://example.com/path/to/fundo.svg',
     etapas: [
       {
         id: "1",
@@ -67,7 +71,7 @@ const trilhas = [
   {
     id: "2",
     nome: "Básico 2",
-    image: "https://example.com/basic-path.jpg", // Example image URL
+    image: "",
     etapas: [
       {
         titulo: "Roupas",
@@ -92,7 +96,7 @@ const trilhas = [
   {
     id: "3",
     nome: "Intermediário",
-    image: "https://example.com/intermediate-path.jpg", // Example image URL
+    image: "",
     etapas: [
       {
         titulo: "Trabalho",
@@ -131,7 +135,7 @@ const Home = () => {
 
   // Estatísticas do usuário para o cabeçalho
   const [userStats, setUserStats] = useState({
-    points: 1250,
+    points: 1430,
     streak: 7,
     gems: 45,
     lives: 5,
@@ -250,8 +254,11 @@ const Home = () => {
     }
   }
 
-  // Handle scroll events for header animation
-  const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })
+  // Handle scroll events for header animation with improved performance
+  const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+    useNativeDriver: false,
+    listener: () => {}, // Empty listener to ensure the event is processed
+  })
 
   return (
     <View className="flex-1 bg-gradient-to-b from-pink-100 to-purple-100">
@@ -349,9 +356,10 @@ const Home = () => {
           contentContainerClassName="items-center px-4 pb-24" // Padding inferior para dar espaço à barra de navegação
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
-          scrollEventThrottle={16} // Important for smooth animation
+          scrollEventThrottle={16} // Standard value for smooth animation
+          decelerationRate="normal" // Smoother deceleration
         >
-          <View style={{ height: 20 }} /> {/* Reduced padding to avoid cutting content */}
+          <View style={{ height: 60 }} /> {/* Increased padding to create more space between header and content */}
           <LearningPathTrack
             stages={stages}
             currentStage={etapaAtualIndex}

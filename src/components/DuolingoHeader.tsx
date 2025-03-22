@@ -15,10 +15,24 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeader
   // Animation values for header transformation
   const titleHeight = 60 // Height of the title section that will hide
 
-  // Calculate opacity and translateY for the title section only
+  // Calculate opacity for the title section
   const titleOpacity = scrollY.interpolate({
     inputRange: [0, 40],
     outputRange: [1, 0],
+    extrapolate: "clamp",
+  })
+
+  // Calculate height for the title section
+  const titleHeight_animated = scrollY.interpolate({
+    inputRange: [0, 40],
+    outputRange: [titleHeight, 0],
+    extrapolate: "clamp",
+  })
+
+  // Calculate margin for spacing
+  const titleMargin = scrollY.interpolate({
+    inputRange: [0, 40],
+    outputRange: [16, 0],
     extrapolate: "clamp",
   })
 
@@ -41,17 +55,12 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeader
       >
         {/* Linha superior com título e configurações - animada para desaparecer */}
         <Animated.View
-          className="flex-row justify-between items-center mb-6"
+          className="flex-row justify-between items-center"
           style={{
             opacity: titleOpacity,
-            height: titleOpacity.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 40],
-            }),
-            marginBottom: titleOpacity.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 16],
-            }),
+            height: titleHeight_animated,
+            marginBottom: titleMargin,
+            overflow: "hidden", // Prevent content from showing outside the animated height
           }}
         >
           <Text className="text-2xl font-bold text-white">{nome}</Text>
