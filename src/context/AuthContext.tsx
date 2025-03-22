@@ -28,10 +28,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const fetchUserData = async (uid: string) => {
     try {
+      setLoading(true); // Adicionado para indicar que está carregando
       const db = getDatabase();
       const userRef = ref(db, 'users/' + uid);
       const snapshot = await get(userRef);
-      
+
       if (snapshot.exists()) {
         setUserData(snapshot.val());
         setError(null);
@@ -43,6 +44,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError('Erro ao buscar dados do usuário.');
       console.error(err);
       setUserData(null);
+    } finally {
+      setLoading(false); // Finaliza o carregamento independente do resultado
     }
   };
 
@@ -52,16 +55,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setAuthUser(user);
-      
+
       if (user) {
         await fetchUserData(user.uid);
       } else {
         setUserData(null);
       }
-      
+
       setLoading(false);
     });
 

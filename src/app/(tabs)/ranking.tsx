@@ -7,10 +7,10 @@ import BigAvatar2 from "../../../assets/images/grande-avatar2.svg"
 import BigAvatar3 from "../../../assets/images/grande-avatar3.svg"
 import BigAvatar4 from "../../../assets/images/grande-avatar4.svg"
 import TextInputLabel from "@/src/components/TextInputLabel"
-import Button from "@/src/components/Button"
 import { FontAwesome } from "@expo/vector-icons"
 import { useAuth } from "@/src/context/AuthContext"
 import { getDatabase, ref, update } from "firebase/database"
+import React from "react"
 
 const avatarComponents = {
   avatar1: BigAvatar1,

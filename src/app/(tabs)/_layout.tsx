@@ -3,6 +3,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
+import React from 'react';
 
 export default function TabLayout() {
   return (
@@ -49,19 +50,19 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <MaterialCommunityIcons name="target" size={32} color={color} />,
         }}
       />
-
       <Tabs.Screen
-        name="profile"
+        name="perfil"
         options={{
-          title: 'Configurações',
-          tabBarIcon: ({ color }) => <FontAwesome size={32} name="gear" color={color} />,
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <FontAwesome size={32} name="user" color={color} />,
         }}
       />
+
       <Tabs.Screen
-        name="stats"
+        name="ranking"
         options={{
           title: 'Ranking',
-          tabBarIcon: ({ color }) => <FontAwesome size={32} name="user" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome size={32} name="gear" color={color} />,
         }}
       />
 

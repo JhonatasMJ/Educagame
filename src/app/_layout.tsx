@@ -6,6 +6,7 @@ import Toast from 'react-native-toast-message';
 import { registerForPushNotificationsAsync } from '../services/firebaseFCM';
 import { useEffect } from 'react';
 import { AuthProvider } from '../context/AuthContext';
+import React from 'react';
 
 export default function Layout() {
   useEffect(() => {
@@ -14,19 +15,19 @@ export default function Layout() {
 
   return (
     <ConversationProvider>
-    <AuthProvider>
-    <PlatformWrapper>
-   
-    <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-    <Stack screenOptions={{headerShown: false}}>
-    <Stack.Screen name="login" options={{ headerShown: false }} />
-    <Stack.Screen name="register" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
-   
-    </PlatformWrapper>
-    <Toast/>
-    </AuthProvider>
+      <AuthProvider>
+        <PlatformWrapper>
+
+          <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="register" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+
+        </PlatformWrapper>
+        <Toast />
+      </AuthProvider>
     </ConversationProvider>
   );
 }
