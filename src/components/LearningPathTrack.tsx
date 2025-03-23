@@ -88,7 +88,7 @@ const LearningPathTrack = ({
       <>
         {/* Trilha de fundo contínua */}
         <View
-          className="absolute bg-purple-300"
+          className="absolute bg-tertiary/80"
           style={{
             width: 8,
             height: "100%",
@@ -98,7 +98,7 @@ const LearningPathTrack = ({
         />
         {/* Trilha de progresso */}
         <View
-          className="absolute bg-purple-700"
+          className="absolute bg-secondary"
           style={{
             width: 8,
             height: `${Math.max((stages.filter((s) => s.completed).length / stages.length) * 100, 10)}%`,

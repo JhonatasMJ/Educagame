@@ -304,7 +304,7 @@ const Home = () => {
               >
                 <View
                   className={`rounded-full ${
-                    trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-purple-300 w-2 h-2"
+                    trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"
                   }`}
                 />
               </TouchableOpacity>
