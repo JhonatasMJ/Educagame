@@ -261,7 +261,7 @@ const Home = () => {
   })
 
   return (
-    <View className="flex-1 bg-gradient-to-b from-pink-100 to-purple-100">
+    <View className="flex-1 bg-gradient-to-b bg-primary to-purple-100">
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Cabeçalho estilo Duolingo com animação de scroll */}
@@ -275,27 +275,14 @@ const Home = () => {
 
       {/* Barra de navegação inferior - FIXA na parte inferior */}
       <View
-        className="bg-purple-800 px-4 py-2 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20"
-        style={{
-          elevation: 8,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 5,
-        }}
+        className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary"
+
       >
         <TouchableOpacity
           onPress={handlePreviousTrilha}
-          className="bg-purple-700 p-3 rounded-full"
+          className="bg-tertiary p-2 rounded-md"
           disabled={trilhaAtualIndex === 0 || isAnimating}
-          style={{
-            opacity: trilhaAtualIndex === 0 || isAnimating ? 0.5 : 1,
-            elevation: 3,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 3,
-          }}
+  
         >
           <ChevronLeft size={24} color="white" />
         </TouchableOpacity>
@@ -327,16 +314,9 @@ const Home = () => {
 
         <TouchableOpacity
           onPress={handleNextTrilha}
-          className="bg-purple-700 p-3 rounded-full"
+          className="bg-tertiary p-2 rounded-md"
           disabled={trilhaAtualIndex === trilhas.length - 1 || isAnimating}
-          style={{
-            opacity: trilhaAtualIndex === trilhas.length - 1 || isAnimating ? 0.5 : 1,
-            elevation: 3,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 3,
-          }}
+
         >
           <ChevronRight size={24} color="white" />
         </TouchableOpacity>

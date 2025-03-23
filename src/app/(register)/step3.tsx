@@ -9,6 +9,7 @@ import Cloudsvg from "../../../assets/images/cloud.svg"
 import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import Toast from "react-native-toast-message"
+import React from "react"
 
 const { height } = Dimensions.get("window")
 

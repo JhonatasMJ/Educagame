@@ -37,7 +37,7 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeader
   })
 
   return (
-    <View
+    <View className="bg-secondary pt-4 pb-4 px-4"
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 6 },
@@ -47,12 +47,7 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeader
         zIndex: 10,
       }}
     >
-      <LinearGradient
-        colors={["#7c3aed", "#6d28d9"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="pt-4 pb-4 px-4"
-      >
+
         {/* Linha superior com título e configurações - animada para desaparecer */}
         <Animated.View
           className="flex-row justify-between items-center"
@@ -111,7 +106,7 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeader
             </View>
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+
     </View>
   )
 }

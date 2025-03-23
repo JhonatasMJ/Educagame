@@ -1,17 +1,19 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, Pressable, Animated, Easing } from "react-native";
-import { Crown, Zap, Target, BookOpen } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
+"use client"
+
+import { useEffect, useRef } from "react"
+import { View, Text, Pressable, Animated, Easing } from "react-native"
+import { Crown, Zap, Target, BookOpen, Lock } from "lucide-react-native"
+import React from "react"
 
 interface LessonBubbleProps {
-  number: number;
-  isActive: boolean;
-  isCompleted: boolean;
-  isNext: boolean;
-  onPress: () => void;
-  title: string;
-  icon: "crown" | "zap" | "target" | "book";
-  description?: string;
+  number: number
+  isActive: boolean
+  isCompleted: boolean
+  isNext: boolean
+  onPress: () => void
+  title: string
+  icon: "crown" | "zap" | "target" | "book"
+  description?: string
 }
 
 const LessonBubble = ({
@@ -24,32 +26,33 @@ const LessonBubble = ({
   icon,
   description,
 }: LessonBubbleProps) => {
-  const bubbleSize = 80;
-  const numberSize = 30;
+  const bubbleSize = 80
+  const numberSize = 30
 
   // Valor de animação apenas para a próxima etapa
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Cores para efeito 3D
-  const baseColor = isCompleted ? "#10b981" : "#f97316"; // Verde para completo, laranja para incompleto
-  const shadowColor = isCompleted ? "#059669" : "#ea580c"; // Sombra mais escura para efeito 3D
-  const highlightColor = isCompleted ? "#34d399" : "#fdba74"; // Destaque mais claro para efeito 3D
+  const pulseAnim = useRef(new Animated.Value(1)).current
 
   // Função para renderizar o ícone correto
   const renderIcon = () => {
+    // If not completed, show lock icon
+    if (!isCompleted && !isActive && !isNext) {
+      return <Lock size={24} color="white" />
+    }
+
+    // Otherwise show the lesson icon
     switch (icon) {
       case "crown":
-        return <Crown size={24} color="white" />;
+        return <Crown size={24} color="white" />
       case "zap":
-        return <Zap size={24} color="white" />;
+        return <Zap size={24} color="white" />
       case "target":
-        return <Target size={24} color="white" />;
+        return <Target size={24} color="white" />
       case "book":
-        return <BookOpen size={24} color="white" />;
+        return <BookOpen size={24} color="white" />
       default:
-        return <Crown size={24} color="white" />;
+        return <Crown size={24} color="white" />
     }
-  };
+  }
 
   // Efeito para iniciar animação de pulso apenas na próxima etapa
   useEffect(() => {
@@ -69,14 +72,38 @@ const LessonBubble = ({
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
-        ])
-      ).start();
+        ]),
+      ).start()
     } else {
       // Parar animação para outras etapas
-      pulseAnim.setValue(1);
-      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1)
+      pulseAnim.stopAnimation()
     }
-  }, [isNext]);
+  }, [isNext])
+
+  // Determine background color based on completion status
+  const getBubbleBackgroundColor = () => {
+    if (isCompleted) {
+      return "bg-[#83AD11]" // Using the exact color provided
+    } else if (isActive || isNext) {
+      return "bg-purple-600" // Purple for active or next
+    } else {
+      return "bg-gray-500" // Gray for locked/uncompleted
+    }
+  }
+
+  // Get border style based on active state and background color
+  const getBorderStyle = () => {
+    if (!isActive) return ""
+
+    if (isCompleted) {
+      return "border-4 border-[#5A7A0C]" // Darker green for completed
+    } else if (isNext) {
+      return "border-4 border-purple-800" // Darker purple for next
+    } else {
+      return "border-4 border-gray-700" // Darker gray for others
+    }
+  }
 
   return (
     <Pressable onPress={onPress} className="stage-bubble">
@@ -87,69 +114,48 @@ const LessonBubble = ({
         }}
       >
         <View className="items-center">
-          {/* Sombra para efeito 3D - centralizada */}
+          {/* 3D effect base layer */}
           <View
+            className={`absolute rounded-full ${isCompleted ? "bg-green" : "bg-gray-700"}`}
             style={{
-              position: "absolute",
-              width: bubbleSize + 16,
-              height: bubbleSize + 16,
-              borderRadius: (bubbleSize + 16) / 2,
-              backgroundColor: "rgba(0,0,0,0.2)",
-              top: 4,
-              zIndex: 1,
+              width: bubbleSize + 8,
+              height: bubbleSize + 8,
+              top: 6, // Offset to create 3D effect
+              zIndex: 0,
+              borderRadius: (bubbleSize + 8) / 2,
             }}
           />
 
           {/* Contêiner principal com borda condicional */}
           <View
-            className={`items-center justify-center rounded-full ${
-              isActive
-                ? "border-4 border-purple-700"
-                : isCompleted
-                ? "border-2 border-green-700"
-                : ""
-            }`}
+            className={`items-center justify-center rounded-full ${getBubbleBackgroundColor()} ${getBorderStyle()}`}
             style={{
               width: bubbleSize + 8,
               height: bubbleSize + 8,
               zIndex: 2,
-              elevation: isActive ? 8 : 4,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: isActive ? 4 : 2 },
-              shadowOpacity: isActive ? 0.3 : 0.2,
-              shadowRadius: isActive ? 6 : 3,
+              elevation: 4,
+              shadowColor: "#86a531",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 2,
             }}
           >
-            {/* Gradiente para efeito 3D */}
-            <LinearGradient
-              colors={[highlightColor, baseColor, shadowColor]}
-              start={{ x: 0.2, y: 0.2 }}
-              end={{ x: 0.8, y: 0.8 }}
-              className="rounded-full items-center justify-center"
-              style={{ width: bubbleSize, height: bubbleSize }}
-            >
-              {/* Ícone dentro da bolha */}
-              <View className="items-center justify-center">
-                {renderIcon()}
-              </View>
+            <View className="items-center justify-center">{renderIcon()}</View>
 
-              {isCompleted && (
-                <View className="bg-green-700 absolute top-0 right-0 w-6 h-6 rounded-full items-center justify-center">
-                  <Text className="text-white font-bold">✓</Text>
-                </View>
-              )}
-            </LinearGradient>
+            {isCompleted && (
+              <View className="bg-green-700 absolute top-0 right-0 w-6 h-6 rounded-full items-center justify-center">
+                <Text className="text-white font-bold">✓</Text>
+              </View>
+            )}
           </View>
 
-          {/* Número da etapa */}
           <View
-            className="bg-purple-800 rounded-full absolute items-center justify-center z-10"
+            className="bg-secondary rounded-full absolute items-center justify-center z-10"
             style={{
               width: numberSize,
               height: numberSize,
               top: -2,
               elevation: 6,
-              shadowColor: "#000",
               shadowOffset: { width: 0, height: 3 },
               shadowOpacity: 0.3,
               shadowRadius: 4,
@@ -159,9 +165,9 @@ const LessonBubble = ({
           </View>
 
           {/* Título e descrição abaixo da bolha */}
-          <View className="mt-4 items-center max-w-[200px]">
+          {/*      <View className="mt-4 items-center max-w-[200px]">
             <View
-              className="bg-purple-700 px-3 py-1 rounded-lg mb-2 w-full"
+              className={`${isCompleted ? "bg-green-700" : "bg-purple-700"} px-3 py-1 rounded-lg mb-2 w-full`}
               style={{
                 elevation: 5,
                 shadowColor: "#000",
@@ -170,17 +176,14 @@ const LessonBubble = ({
                 shadowRadius: 3,
               }}
             >
-              <Text
-                className="text-white font-medium text-sm text-center"
-                numberOfLines={2}
-              >
+              <Text className="text-white font-medium text-sm text-center" numberOfLines={2}>
                 {title}
               </Text>
             </View>
 
             {description && (
               <View
-                className="bg-purple-600/80 px-3 py-1 rounded-lg w-full"
+                className={`${isCompleted ? "bg-green-600/80" : "bg-purple-600/80"} px-3 py-1 rounded-lg w-full`}
                 style={{
                   elevation: 3,
                   shadowColor: "#000",
@@ -189,19 +192,17 @@ const LessonBubble = ({
                   shadowRadius: 2,
                 }}
               >
-                <Text
-                  className="text-white text-xs text-center"
-                  numberOfLines={3}
-                >
+                <Text className="text-white text-xs text-center" numberOfLines={3}>
                   {description}
                 </Text>
               </View>
             )}
-          </View>
+          </View> */}
         </View>
       </Animated.View>
     </Pressable>
-  );
-};
+  )
+}
 
-export default LessonBubble;
+export default LessonBubble
+
