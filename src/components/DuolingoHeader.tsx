@@ -1,5 +1,4 @@
 import { View, Text, TouchableOpacity, Animated } from "react-native"
-
 import { Menu, Trophy, Target, Heart } from "lucide-react-native"
 import React from "react"
 
@@ -9,9 +8,13 @@ interface DuolingoHeaderProps {
   lives: number
   nome: string
   scrollY: Animated.Value
+  selectedQuestion?: {
+    titulo: string
+    descricao: string
+  } | null
 }
 
-const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeaderProps) => {
+const DuolingoHeader = ({ points, streak, lives, nome, scrollY, selectedQuestion }: DuolingoHeaderProps) => {
   // Animation values for header transformation
   const titleHeight = 60 // Height of the title section that will hide
 
@@ -37,7 +40,8 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeader
   })
 
   return (
-    <View className="bg-secondary pt-4 pb-4 px-4"
+    <View
+      className="bg-secondary pt-4 pb-4 px-4"
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 6 },
@@ -47,54 +51,59 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY }: DuolingoHeader
         zIndex: 10,
       }}
     >
-
-        {/* Linha superior com título e configurações - animada para desaparecer */}
-        <Animated.View
-          className="flex-row justify-between items-center"
-          style={{
-            opacity: titleOpacity,
-            height: titleHeight_animated,
-            marginBottom: titleMargin,
-            overflow: "hidden", // Prevent content from showing outside the animated height
-          }}
-        >
+      <Animated.View
+        className="flex-row justify-between items-center"
+        style={{
+          opacity: titleOpacity,
+          height: titleHeight_animated,
+          marginBottom: titleMargin,
+          overflow: "hidden",
+        }}
+      >
+        {selectedQuestion ? (
+          <View className="flex-1 mr-2">
+            <Text className="text-xl font-bold text-white" numberOfLines={1}>
+              {selectedQuestion.titulo}
+            </Text>
+            <Text className="text-sm text-white opacity-80" numberOfLines={1}>
+              {selectedQuestion.descricao}
+            </Text>
+          </View>
+        ) : (
           <Text className="text-2xl font-bold text-white">{nome}</Text>
-          {/* Fixed menu button styling */}
-          <TouchableOpacity
-            className="bg-tertiary p-3 rounded-lg"
-      
-          >
-            <Menu size={20} color="white" />
-          </TouchableOpacity>
-        </Animated.View>
+        )}
 
-        {/* Linha de estatísticas - sempre visível e não se move */}
-        <View className="flex-row justify-between items-center">
-          {/* XP / Pontos */}
-          <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
-            <View className="flex-row items-center">
-              <Trophy size={20} color="#FFD700" />
-              <Text className="text-white font-bold ml-1">{points} Onocash</Text>
-            </View>
-          </TouchableOpacity>
+        <TouchableOpacity className="bg-tertiary p-3 rounded-lg">
+          <Menu size={20} color="white" />
+        </TouchableOpacity>
+      </Animated.View>
 
-          {/* Streak */}
-          <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
-            <View className="flex-row items-center">
-              <Target size={20} color="#FF4500" />
-              <Text className="text-white font-bold ml-1">{streak} dias</Text>
-            </View>
-          </TouchableOpacity>
+      {/* Linha de estatísticas - sempre visível e não se move */}
+      <View className="flex-row justify-between items-center">
+        {/* XP / Pontos */}
+        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
+          <View className="flex-row items-center">
+            <Trophy size={20} color="#FFD700" />
+            <Text className="text-white font-bold ml-1">{points} Onocash</Text>
+          </View>
+        </TouchableOpacity>
 
-          {/* Vidas */}
-          <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
-            <View className="flex-row items-center">
-              <Heart size={20} color="#FF4500" />
-              <Text className="text-white font-bold ml-1">{lives}</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+        {/* Streak */}
+        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
+          <View className="flex-row items-center">
+            <Target size={20} color="#FF4500" />
+            <Text className="text-white font-bold ml-1">{streak} dias</Text>
+          </View>
+        </TouchableOpacity>
 
+        {/* Vidas */}
+        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
+          <View className="flex-row items-center">
+            <Heart size={20} color="#FF4500" />
+            <Text className="text-white font-bold ml-1">{lives}</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }

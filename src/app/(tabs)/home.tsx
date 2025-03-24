@@ -132,6 +132,10 @@ const Home = () => {
   // Animação para transição de trilhas
   const slideAnim = useRef(new Animated.Value(0)).current
   const [isAnimating, setIsAnimating] = useState(false)
+  const [selectedQuestion, setSelectedQuestion] = useState<{
+    titulo: string
+    descricao: string
+  } | null>(null)
 
   // Estatísticas do usuário para o cabeçalho
   const [userStats, setUserStats] = useState({

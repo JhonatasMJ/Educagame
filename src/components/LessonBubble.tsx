@@ -165,9 +165,9 @@ const LessonBubble = ({
           </View>
 
           {/* Título e descrição abaixo da bolha */}
-          {/*      <View className="mt-4 items-center max-w-[200px]">
+               <View className="mt-4 items-center max-w-[200px]">
             <View
-              className={`${isCompleted ? "bg-green-700" : "bg-purple-700"} px-3 py-1 rounded-lg mb-2 w-full`}
+              className= "bg-secondary px-3 py-1 rounded-lg mb-2 w-full"
               style={{
                 elevation: 5,
                 shadowColor: "#000",
@@ -181,7 +181,7 @@ const LessonBubble = ({
               </Text>
             </View>
 
-            {description && (
+            {/* {description && (
               <View
                 className={`${isCompleted ? "bg-green-600/80" : "bg-purple-600/80"} px-3 py-1 rounded-lg w-full`}
                 style={{
@@ -196,8 +196,8 @@ const LessonBubble = ({
                   {description}
                 </Text>
               </View>
-            )}
-          </View> */}
+            )} */}
+          </View>
         </View>
       </Animated.View>
     </Pressable>

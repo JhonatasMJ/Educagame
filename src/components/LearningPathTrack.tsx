@@ -19,7 +19,8 @@ interface LearningPathTrackProps {
   backgroundImage?: ImageSourcePropType // Can be a local or remote image
 }
 
-const LearningPathTrack = ({
+const 
+LearningPathTrack = ({
   stages,
   currentStage,
   onStagePress,
