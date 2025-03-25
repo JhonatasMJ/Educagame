@@ -15,14 +15,9 @@ module.exports = {
             menu: '#2D2D2D',
             inputBg: '#F7F8F9',
             inputBor: '#E8ECF4',
-            'coral': {
-              400: '#FF8A75', // lighter coral for bubbles
-              500: '#FF7A61', // darker coral for the line
-            },
-            'purple': {
-              700: '#6A3894', // for the number circles and bottom bar
-              800: '#5D3080', // for the bottom navigation bar
-            },
+        },
+        backgroundImage: {
+          'fundo': "url('@src/assets/images/fundo.png')",
         }
         
      
