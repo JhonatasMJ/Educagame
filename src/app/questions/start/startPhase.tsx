@@ -2,7 +2,7 @@
 
 import React from "react"
 import { useState, useEffect } from "react"
-import { Text, View, SafeAreaView, Image, ScrollView, Animated, Dimensions } from "react-native"
+import { Text, View, SafeAreaView, Image, ScrollView, Animated, Dimensions, StatusBar } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { Video, ResizeMode } from "expo-av"
 import { useLocalSearchParams } from "expo-router"
@@ -71,6 +71,7 @@ const StartPhase = ({
 
   return (
     <SafeAreaView className="flex-1 bg-primary">
+      <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608"  translucent={false} />
       <View className="flex-1">
         <ScrollView className="flex-1 pb-20">
           <Animated.View

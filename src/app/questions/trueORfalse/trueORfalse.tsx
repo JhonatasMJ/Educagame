@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Text, View, SafeAreaView, TouchableOpacity, Image, StyleSheet, Alert } from "react-native"
-import { Check, X } from "lucide-react-native"
+import { Text, View, SafeAreaView, TouchableOpacity, Image, Alert, Animated, ActivityIndicator, StatusBar } from "react-native"
+import { Check, X, Clock, Award, AlertTriangle } from "lucide-react-native"
 import { router, useLocalSearchParams } from "expo-router"
 import StepIndicator from "@/src/components/StepIndicator"
 import FeedbackModal from "@/src/components/FeedbackModal"
@@ -44,6 +44,11 @@ const TrueOrFalse = () => {
   const [showLoading, setShowLoading] = useState(false)
   const [allQuestionsCorrect, setAllQuestionsCorrect] = useState(false)
 
+  // Animation values
+  const scaleAnim = useRef(new Animated.Value(0.95)).current
+  const opacityAnim = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(50)).current
+
   // Timer interval reference
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -65,6 +70,26 @@ const TrueOrFalse = () => {
         break
       }
     }
+
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start()
   }, [phaseId, trailId])
 
   // Background timer implementation
@@ -84,13 +109,12 @@ const TrueOrFalse = () => {
     }
   }, [isTimerRunning])
 
-  // If no questions found, show a message or redirect
+  // If no questions found, show a loading screen
   if (questions.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.contentContainer}>
-          <Text style={styles.questionText}>Carregando questões...</Text>
-        </View>
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text className="text-gray-700 text-lg font-medium mt-4">Carregando questões...</Text>
       </SafeAreaView>
     )
   }
@@ -190,51 +214,110 @@ const TrueOrFalse = () => {
     setTotalTime(time)
   }
 
+  // Format time for display
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Progress Indicator */}
-      <StepIndicator
-        currentStep={isRetrying ? wrongQuestions.indexOf(currentQuestionIndex) + 1 : currentQuestionIndex + 1}
-        totalSteps={isRetrying ? wrongQuestions.length : questions.length}
-      />
+    <SafeAreaView className="flex-1 bg-gray-50">
+<StatusBar barStyle={"dark-content"} backgroundColor={showLoading ? "#3185BE" : "#fff" }  translucent={false} />
+      <View className="px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row items-center">
+            <Clock size={16} color="#666" />
+            <Text className="text-gray-700 ml-1.5 font-medium">{formatTime(totalTime)}</Text>
+          </View>
 
-      {/* Question Content */}
-      <View style={styles.contentContainer}>
-        {currentQuestion.image && (
-          <Image source={{ uri: currentQuestion.image }} style={styles.image} resizeMode="cover" />
-        )}
-
-        <View style={styles.questionContainer}>
-          <Text style={styles.questionText}>{currentQuestion.description}</Text>
+          <View className="flex-row items-center">
+            <Award size={16} color="#666" />
+            <Text className="text-gray-700 ml-1.5 font-medium">
+              {isRetrying ? `Revisão: ${wrongQuestions.length}` : `${currentQuestionIndex + 1}/${questions.length}`}
+            </Text>
+          </View>
         </View>
 
-        <Text style={styles.statementText}>{statementText}</Text>
-
-        {/* Answer Buttons */}
-        <View style={styles.buttonsContainer}>
-          <TouchableOpacity
-            style={[styles.answerButton, styles.trueButton, selectedAnswer === true && styles.selectedButton]}
-            onPress={() => handleAnswer(true)}
-            disabled={selectedAnswer !== null}
-          >
-            <View style={styles.iconContainer}>
-              <Check width={24} height={24} color="#006400" />
-            </View>
-            <Text style={styles.answerText}>Verdadeiro</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.answerButton, styles.falseButton, selectedAnswer === false && styles.selectedButton]}
-            onPress={() => handleAnswer(false)}
-            disabled={selectedAnswer !== null}
-          >
-            <View style={styles.iconContainer}>
-              <X width={24} height={24} color="#8B0000" />
-            </View>
-            <Text style={styles.answerText}>Falso</Text>
-          </TouchableOpacity>
+        {/* Progress indicator */}
+        <View className="mt-2">
+          <StepIndicator
+            currentStep={isRetrying ? wrongQuestions.indexOf(currentQuestionIndex) + 1 : currentQuestionIndex + 1}
+            totalSteps={isRetrying ? wrongQuestions.length : questions.length}
+          />
         </View>
       </View>
+
+      {/* Question Content */}
+      <Animated.View
+        className="flex-1 px-5 py-6"
+        style={{
+          opacity: opacityAnim,
+          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+        }}
+      >
+        {isRetrying && (
+          <View className="flex-row items-center bg-amber-100 px-3 py-2 rounded-md mb-4 border border-amber-300">
+            <AlertTriangle size={16} color="#D97706" />
+            <Text className="text-amber-800 font-medium ml-2">Revisando questões incorretas</Text>
+          </View>
+        )}
+
+        {/* Question number and text */}
+        <View className="mb-5">
+          <Text className="text-sm font-medium text-gray-500 mb-1">Questão {currentQuestionIndex + 1}</Text>
+          <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <Text className="text-lg text-gray-800 leading-relaxed">{currentQuestion.description}</Text>
+          </View>
+        </View>
+
+        {/* Image if available */}
+        {currentQuestion.image && (
+          <View className="mb-5 rounded-lg overflow-hidden border border-gray-200">
+            <Image source={{ uri: currentQuestion.image }} className="w-full h-48 rounded-lg" resizeMode="cover" />
+          </View>
+        )}
+
+        {/* Statement */}
+        <View className="mb-6">
+          <Text className="text-center text-lg font-semibold text-gray-700">{statementText}</Text>
+        </View>
+
+
+        <View className="space-y-4">
+          <TouchableOpacity
+            className={`flex-row items-center p-4 rounded-lg border ${
+              selectedAnswer === true ? "bg-green-100 border-green-500" : "bg-white border-gray-300"
+            }`}
+            onPress={() => handleAnswer(true)}
+            disabled={selectedAnswer !== null}
+            activeOpacity={0.8}
+          >
+            <View className="w-10 h-10 rounded-full bg-green-100 justify-center items-center mr-3">
+              <Check width={20} height={20} color="#16A34A" />
+            </View>
+            <Text className={`text-lg font-medium ${selectedAnswer === true ? "text-green-800" : "text-gray-800"}`}>
+              Verdadeiro
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className={`flex-row items-center p-4 rounded-lg border mt-4 ${
+              selectedAnswer === false ? "bg-red-100 border-red-500" : "bg-white border-gray-300"
+            }`}
+            onPress={() => handleAnswer(false)}
+            disabled={selectedAnswer !== null}
+            activeOpacity={0.8}
+          >
+            <View className="w-10 h-10 rounded-full bg-red-100 justify-center items-center mr-3">
+              <X width={20} height={20} color="#DC2626" />
+            </View>
+            <Text className={`text-lg font-medium ${selectedAnswer === false ? "text-red-800" : "text-gray-800"}`}>
+              Falso
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
 
       {/* Feedback Modal */}
       <FeedbackModal visible={showFeedback} isCorrect={isCorrect} onContinue={handleContinue} />
@@ -245,101 +328,6 @@ const TrueOrFalse = () => {
     </SafeAreaView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f0f0f0",
-  },
-  contentContainer: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-    alignItems: "center", // Center content horizontally
-  },
-  image: {
-    width: "100%",
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  questionContainer: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 30,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    width: "100%",
-    alignItems: "center", // Center text horizontally
-  },
-  questionText: {
-    fontSize: 18,
-    lineHeight: 26,
-    color: "#333",
-    textAlign: "center", // Center text
-  },
-  statementText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#333",
-  },
-  buttonsContainer: {
-    width: "100%",
-    gap: 15,
-    marginBottom: '6.5%',
-  },
-  answerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start", // Center content
-    padding: 15,
-    borderRadius: 12, // Less rounded corners
-    borderWidth: 2,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  trueButton: {
-    backgroundColor: "#e6ffe6",
-    borderColor: "#4CAF50",
-  },
-  falseButton: {
-    backgroundColor: "#fff0f0",
-    borderColor: "#FF5252",
-  },
-  selectedButton: {
-    borderWidth: 3,
-    elevation: 5,
-    transform: [{ scale: 1.02 }], // Slightly larger when selected
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "white",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  answerText: {
-    marginLeft: 15,
-    fontSize: 18,
-    fontWeight: "600",
-  },
-})
 
 export default TrueOrFalse
 

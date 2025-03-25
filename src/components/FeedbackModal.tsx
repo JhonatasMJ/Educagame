@@ -1,6 +1,5 @@
-import { View, Text, Modal, StyleSheet } from "react-native"
+import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native"
 import { Check, X } from "lucide-react-native"
-import ButtonFeedbackModal from "./ButtonFeedbackModal"
 import React from "react"
 
 interface FeedbackModalProps {
@@ -9,7 +8,6 @@ interface FeedbackModalProps {
   title?: string
   description?: string
   buttonText?: string
-  color?: string
   onContinue: () => void
 }
 
@@ -19,84 +17,106 @@ const FeedbackModal = ({
   title,
   description,
   buttonText = "CONTINUAR",
-  color,
   onContinue,
 }: FeedbackModalProps) => {
   // Default values based on isCorrect
   const defaultTitle = isCorrect ? "Parabéns!" : "Incorreto"
   const defaultDescription = isCorrect ? "Você está On!" : "Que pena! Você está em Off!"
-  const defaultColor = isCorrect ? "#8FE388" : "#FF9B9B"
-  const iconColor = isCorrect ? "#1E4620" : "#8B0000"
-  const buttonColor = isCorrect ? "#1A2B6D" : "#8B0000"
 
   // Use provided values or defaults
   const displayTitle = title || defaultTitle
   const displayDescription = description || defaultDescription
-  const backgroundColor = color || defaultColor
+
+  // Use styles from StyleSheet instead of Tailwind classes
+  const styles = StyleSheet.create({
+    iconContainer: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: isCorrect ? "#dcfce7" : "#fee2e2", // Explicit green-100 or red-100
+    },
+    titleText: {
+      fontSize: 24,
+      fontWeight: "bold",
+      marginBottom: 8,
+      color: isCorrect ? "#15803d" : "#b91c1c", // Explicit green-700 or red-700
+    },
+    button: {
+      padding: 12,
+      borderRadius: 8,
+      alignItems: "center",
+      width: "100%",
+      backgroundColor: isCorrect ? "#16a34a" : "#dc2626", // Explicit green-600 or red-600
+    },
+    buttonText: {
+      color: "white",
+      fontWeight: "bold",
+      fontSize: 16,
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    modalContent: {
+      width: "85%",
+      borderRadius: 12,
+      padding: 24,
+      backgroundColor: "white",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    iconWrapper: {
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    contentContainer: {
+      alignItems: "center",
+      marginBottom: 24,
+    },
+    descriptionText: {
+      color: "#374151",
+      fontSize: 16,
+      textAlign: "center",
+    },
+  })
 
   return (
-    <Modal visible={visible} transparent={true} animationType="fade">
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor }]}>
-          <View style={[styles.iconContainer, { backgroundColor: iconColor }]}>
-            {isCorrect ? <Check width={30} height={30} color="white" /> : <X width={30} height={30} color="white" />}
+    <Modal visible={visible} transparent={true} animationType="slide" statusBarTranslucent={true}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          {/* Icon */}
+          <View style={styles.iconWrapper}>
+            <View style={styles.iconContainer}>
+              {isCorrect ? (
+                <Check width={32} height={32} color="#16A34A" />
+              ) : (
+                <X width={32} height={32} color="#DC2626" />
+              )}
+            </View>
           </View>
 
-          <Text style={styles.title}>{displayTitle}</Text>
-          <Text style={styles.description}>{displayDescription}</Text>
+          {/* Content */}
+          <View style={styles.contentContainer}>
+            <Text style={styles.titleText}>{displayTitle}</Text>
+            <Text style={styles.descriptionText}>{displayDescription}</Text>
+          </View>
 
-          {/* Using ButtonFeedbackModal instead of a regular button */}
-          <ButtonFeedbackModal
-            title={buttonText}
-            nextStep="#" // This will be ignored since we're using onPress
-            style={{ backgroundColor: buttonColor, width: "100%" }}
-            onPress={onContinue}
-          />
+          {/* Button */}
+          <TouchableOpacity style={styles.button} onPress={onContinue} activeOpacity={0.8}>
+            <Text style={styles.buttonText}>{buttonText}</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContainer: {
-    width: "80%",
-    padding: 20,
-    borderRadius: 15,
-    alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  description: {
-    fontSize: 18,
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-})
 
 export default FeedbackModal
 

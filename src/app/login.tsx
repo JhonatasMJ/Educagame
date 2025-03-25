@@ -32,7 +32,7 @@ interface FormData {
 }
 
 const Login = () => {
-  const { handleLogin, signInWithGoogle, isLoading, googleLoading, savedEmail } = useLogin()
+  const { handleLogin, signInWithGoogle, isLoading, googleLoading, savedEmail, savedPassword } = useLogin()
   const [formData, setFormData] = useState<FormData>({ email: "", password: "" })
   const [errors, setErrors] = useState<Errors>({})
   const [rememberMe, setRememberMe] = useState(false)
@@ -40,13 +40,17 @@ const Login = () => {
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
-  // Set the email field if we have a saved email
+  // Set the email and password fields if we have saved credentials
   useEffect(() => {
     if (savedEmail) {
       setFormData((prev) => ({ ...prev, email: savedEmail }))
       setRememberMe(true) // Also check the remember me box
     }
-  }, [savedEmail])
+
+    if (savedPassword) {
+      setFormData((prev) => ({ ...prev, password: savedPassword }))
+    }
+  }, [savedEmail, savedPassword])
 
   const updateFormField = (field: keyof FormData, value: string): void => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -193,7 +197,7 @@ const Login = () => {
                   <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
                     <FontAwesome name="facebook" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.socialButton, styles.googleButton]}
                     onPress={signInWithGoogle}
                     disabled={googleLoading}
@@ -393,3 +397,4 @@ const styles = StyleSheet.create({
 })
 
 export default Login
+

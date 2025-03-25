@@ -16,44 +16,43 @@ export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [savedEmail, setSavedEmail] = useState<string | null>(null);
+  const [savedPassword, setSavedPassword] = useState<string | null>(null);
   const router = useRouter();
   const { refreshUserData } = useAuth();
 
-
- 
 /*   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: '192448973264-696og487kp5lovckl4lu0872sktcj8g7.apps.googleusercontent.com',
     redirectUri: Platform.select({
       web: 'https://auth.expo.io/@vittorpatricio/educagame',
       default: undefined
     })
-  }); */
-
-
-
-  // Handle Google Sign In response
-/*   useEffect(() => {
-    if (response?.type === 'success') {
-      setGoogleLoading(true);
-      const { id_token } = response.params;
-      handleGoogleLogin(id_token);
-    }
-  }, [response]);
+  });
  */
-  // Load saved email when hook initializes
+  // Load saved credentials when hook initializes
   useEffect(() => {
-    const loadSavedEmail = async () => {
+    const loadSavedCredentials = async () => {
       try {
         const email = await AsyncStorage.getItem('rememberedEmail');
+        const password = await AsyncStorage.getItem('rememberedPassword');
+        
         if (email) {
           setSavedEmail(email);
         }
+        
+        if (password) {
+          setSavedPassword(password);
+        }
+        
+        // Auto login if we have both email and password
+        if (email && password) {
+          handleLogin(email, password, true);
+        }
       } catch (error) {
-        console.error('Error loading saved email:', error);
+        console.error('Error loading saved credentials:', error);
       }
     };
     
-    loadSavedEmail();
+    loadSavedCredentials();
   }, []);
 
   const handleLogin = async (email: string, password: string, rememberMe: boolean) => {
@@ -69,11 +68,13 @@ export const useLogin = () => {
 
     setIsLoading(true);
     try {
-      // Save or remove email based on rememberMe checkbox
+      // Save or remove credentials based on rememberMe checkbox
       if (rememberMe) {
         await AsyncStorage.setItem('rememberedEmail', email);
+        await AsyncStorage.setItem('rememberedPassword', password);
       } else {
         await AsyncStorage.removeItem('rememberedEmail');
+        await AsyncStorage.removeItem('rememberedPassword');
       }
       
       // Faz o login
@@ -158,5 +159,25 @@ export const useLogin = () => {
     }
   };
 
-  return { handleLogin, signInWithGoogle, isLoading, googleLoading, savedEmail };
+  // Function to clear saved credentials (useful for logout)
+  const clearSavedCredentials = async () => {
+    try {
+      await AsyncStorage.removeItem('rememberedEmail');
+      await AsyncStorage.removeItem('rememberedPassword');
+      setSavedEmail(null);
+      setSavedPassword(null);
+    } catch (error) {
+      console.error('Error clearing saved credentials:', error);
+    }
+  };
+
+  return { 
+    handleLogin, 
+    signInWithGoogle, 
+    isLoading, 
+    googleLoading, 
+    savedEmail, 
+    savedPassword,
+    clearSavedCredentials 
+  };
 };

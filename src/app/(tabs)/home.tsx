@@ -70,7 +70,7 @@ export const trilhas = [
             type: QuestionType.TRUE_OR_FALSE,
             description:
               "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, euismod tincidunt ut laoreet dolore magna aliquam erat.",
-            image: "/placeholder.svg?height=200&width=400",
+              image: require("@/assets/images/logo.png"),
             isTrue: false,
           },
           {

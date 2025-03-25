@@ -27,7 +27,7 @@ const StepIndicator = ({ currentStep, totalSteps }: StepIndicatorProps) => {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    paddingHorizontal: 20,
+
     marginVertical: 15,
   },
   progressContainer: {
