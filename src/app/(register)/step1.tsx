@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { View, Text, SafeAreaView, TextInput, StatusBar, StyleSheet, Dimensions } from "react-native"
+import { View, Text, SafeAreaView, TextInput, StatusBar, StyleSheet, Dimensions, Platform, KeyboardAvoidingView, } from "react-native"
 import { useLocalSearchParams, router } from "expo-router"
 import CustomButton from "@/src/components/CustomButton"
 import BigAvatar from "@/src/components/BigAvatar"
 import Cloudsvg from "../../../assets/images/cloud.svg"
 import ProgressDots from "@/src/components/ProgressDots"
 import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
+import React from "react"
 
 const { width, height } = Dimensions.get("window")
 
@@ -73,7 +74,11 @@ const Step01 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" translucent />
+      <KeyboardAvoidingView 
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={styles.keyboardAvoidingView}
+      ></KeyboardAvoidingView>
+          <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
       <View style={styles.backgroundContainer}>
         <Cloudsvg width="90%" height="40%" />
       </View>
@@ -88,7 +93,13 @@ const Step01 = () => {
         <View style={styles.inputsContainer}>
           <Text style={styles.label}>Nome</Text>
           <TextInput
-            style={[styles.input, { borderColor: getBorderColor("nome", nomeFocused) }]}
+            style={[
+              styles.input, 
+              { borderColor: getBorderColor("nome", nomeFocused) },           
+              Platform.select({
+                web: nomeFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+              })
+            ]}
             placeholder="Digite seu nome"
             value={nome}
             onChangeText={(value) => updateField("nome", value)}
@@ -100,7 +111,12 @@ const Step01 = () => {
 
           <Text style={styles.label}>Sobrenome</Text>
           <TextInput
-            style={[styles.input, { borderColor: getBorderColor("sobrenome", sobrenomeFocused) }]}
+            style={[styles.input, 
+              { borderColor: getBorderColor("sobrenome", sobrenomeFocused) },           
+              Platform.select({
+                web: sobrenomeFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+              })
+            ]}
             placeholder="Digite seu sobrenome"
             value={sobrenome}
             onChangeText={(value) => updateField("sobrenome", value)}
@@ -119,7 +135,6 @@ const Step01 = () => {
     </SafeAreaView>
   )
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -157,12 +172,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#1F2937",
-    marginBottom: 8,
     width: "80%",
+    top: "2%",
   },
   input: {
     width: "80%",
-    height: "20%",
+    height: "21%",
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 16,
@@ -178,6 +193,9 @@ const styles = StyleSheet.create({
     bottom: bottomHeight(),
     justifyContent: "space-between",
     height: "20%",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
 })
 

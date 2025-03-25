@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions } from "react-native"
+import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions, Platform, KeyboardAvoidingView } from "react-native"
 import { useLocalSearchParams, router } from "expo-router"
 import Toast from "react-native-toast-message"
 import CustomButton from "@/src/components/CustomButton"
@@ -9,7 +9,9 @@ import Checkbox from "@/src/components/Checkbox"
 import Cloudsvg from "../../../assets/images/cloud.svg"
 import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
+import { MaskedTextInput } from "react-native-mask-text"
 import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
+import React from "react"
 
 const { height } = Dimensions.get("window")
 
@@ -80,7 +82,11 @@ const Step02 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#56A6DC" />
+            <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.keyboardAvoidingView}
+            ></KeyboardAvoidingView>
+      <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
       <View style={styles.backgroundContainer}>
         <Cloudsvg width="90%" height="40%" />
       </View>
@@ -91,28 +97,41 @@ const Step02 = () => {
       <View style={styles.formContainer}>
         <Text style={styles.title}>{nome}, falta pouco!</Text>
 
-        <View style={styles.inputsContainer}>
-          <Text style={styles.label}>Data Nascimento</Text>
-          <TextInput
-            style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) }]}
-            onFocus={() => setField1Focused(true)}
-            onBlur={() => setField1Focused(false)}
-            placeholder="DD/MM/AAAA"
-            value={birthDate}
-            onChangeText={setBirthDate}
-            keyboardType="numeric"
-          />
+              <View style={styles.inputsContainer}>
+        <Text style={styles.label}>Data Nascimento</Text>
+        <MaskedTextInput
+          style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) },
+            Platform.select({
+              web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+              })
+          ]}
+          onFocus={() => setField1Focused(true)}
+          onBlur={() => setField1Focused(false)}
+          placeholder="DD/MM/AAAA"
+          placeholderTextColor="#999"
+          value={birthDate}
+          onChangeText={setBirthDate}
+          keyboardType="numeric"
+          mask="99/99/9999"
+        />
 
-          <Text style={styles.label}>Celular</Text>
-          <TextInput
-            style={[styles.input, { borderColor: getBorderColor("phone", field2Focused) }]}
-            onFocus={() => setField2Focused(true)}
-            onBlur={() => setField2Focused(false)}
-            placeholder="Digite seu celular"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="numeric"
-          />
+        <Text style={styles.label}>Celular</Text>
+        <MaskedTextInput
+          style={[styles.input, { borderColor: getBorderColor("phone", field2Focused) },
+            Platform.select({
+              web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+              })
+          ]}
+          onFocus={() => setField2Focused(true)}
+          onBlur={() => setField2Focused(false)}
+          placeholder="+55 __ _____-____"
+          placeholderTextColor="#999"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="numeric"
+          mask="+55 99 99999-9999"
+        />
+
 
           <View style={styles.checkboxesContainer}>
             <Checkbox title="Termos de uso" isChecked={termsAccepted} onCheck={setTermsAccepted} />
@@ -168,7 +187,7 @@ const styles = StyleSheet.create({
   },
   input: {
     width: "80%",
-    height: 50,
+    height: "21%",
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 16,
@@ -180,14 +199,15 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    marginBottom: 4,
+    top: "2%",
     width: "80%",
   },
   checkboxesContainer: {
     width: "100%",
+    gap: 10,
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 10,
+    marginBottom: 10,
   },
   buttonContainer: {
     zIndex: 3,
@@ -195,6 +215,9 @@ const styles = StyleSheet.create({
     bottom: bottomHeight(),
     justifyContent: "space-between",
     height: "20%",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
 })
 
