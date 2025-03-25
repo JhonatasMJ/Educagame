@@ -16,8 +16,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
 import { router } from "expo-router"
 import { useGameProgress } from "@/src/context/GameProgressContext"
-
-// Import componentized UI elements
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
 import React from "react"
@@ -384,13 +382,12 @@ const Home = () => {
   })
 
   return (
-    <View className="flex-1 bg-gradient-to-b bg-primary to-purple-100">
+    <View className="flex-1 bg-primary ">
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Cabeçalho estilo Duolingo com animação de scroll */}
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
-      {/* Barra de navegação inferior - FIXA na parte inferior */}
+      
       <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
         <TouchableOpacity
           onPress={handlePreviousTrilha}

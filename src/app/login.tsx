@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { router } from "expo-router";
+"use client"
+
+import { useState, useEffect } from "react"
+import { router } from "expo-router"
 import {
   View,
   TextInput,
@@ -9,88 +11,92 @@ import {
   SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
-  Image,
   StyleSheet,
-  StatusBar,
-  Dimensions
-} from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
-import { useLogin } from "../hooks/UseLogin";
-import Checkbox from "../components/Checkbox";
-import Logo from "../../assets/images/logo.svg";
+  Dimensions,
+  ActivityIndicator,
+} from "react-native"
+import { FontAwesome } from "@expo/vector-icons"
+import { useLogin } from "../hooks/UseLogin"
+import Checkbox from "../components/Checkbox"
+import Logo from "../../assets/images/logo.svg"
+import React from "react"
 
 interface Errors {
-  email?: string;
-  password?: string;
+  email?: string
+  password?: string
 }
 
 interface FormData {
-  email: string;
-  password: string;
+  email: string
+  password: string
 }
 
 const Login = () => {
-  const { handleLogin, isLoading } = useLogin();
-  const [formData, setFormData] = useState<FormData>({ email: "", password: "" });
-  const [errors, setErrors] = useState<Errors>({});
-  const [rememberMe, setRememberMe] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const { handleLogin, signInWithGoogle, isLoading, googleLoading, savedEmail } = useLogin()
+  const [formData, setFormData] = useState<FormData>({ email: "", password: "" })
+  const [errors, setErrors] = useState<Errors>({})
+  const [rememberMe, setRememberMe] = useState(false)
+  const [emailFocused, setEmailFocused] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Set the email field if we have a saved email
+  useEffect(() => {
+    if (savedEmail) {
+      setFormData((prev) => ({ ...prev, email: savedEmail }))
+      setRememberMe(true) // Also check the remember me box
+    }
+  }, [savedEmail])
 
   const updateFormField = (field: keyof FormData, value: string): void => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }))
 
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
-  };
+  }
 
   const validateAndLogin = () => {
-    const newErrors: Errors = {};
-    
+    const newErrors: Errors = {}
+
     if (!formData.email.trim()) {
-      newErrors.email = "O e-mail é obrigatório";
+      newErrors.email = "O e-mail é obrigatório"
     }
-    
+
     if (!formData.password.trim()) {
-      newErrors.password = "A senha é obrigatória";
+      newErrors.password = "A senha é obrigatória"
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
+      setErrors(newErrors)
+      return
     }
-    handleLogin(formData.email, formData.password);
-  };
+
+    // Pass the rememberMe state to the login handler
+    handleLogin(formData.email, formData.password, rememberMe)
+  }
 
   const getBorderColor = (field: keyof Errors, isFocused: boolean) => {
-    if (errors[field]) return '#FF0000';
-    if (isFocused) return '#56A6DC';
-    return '#E8ECF4';
-  };
+    if (errors[field]) return "#FF0000"
+    if (isFocused) return "#56A6DC"
+    return "#E8ECF4"
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoidingView}
-      >
-        
-        <ScrollView 
-          keyboardShouldPersistTaps="handled" 
-          showsVerticalScrollIndicator={false} 
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollViewContent}
-          
         >
           <View style={styles.mainContainer}>
             <View style={styles.logoContainer}>
-            <View style={{ alignItems: "center" }}>
+              <View style={{ alignItems: "center" }}>
                 <Logo style={{ width: 315, height: 65 }} />
+              </View>
             </View>
-            </View>
-            
+
             <View style={styles.welcomeContainer}>
               <Text style={styles.welcomeText}>Bem-vindo (a) 👋</Text>
               <Text style={styles.headerText}>Entre na sua conta</Text>
@@ -102,10 +108,10 @@ const Login = () => {
                 <TextInput
                   style={[
                     styles.input,
-                    { borderColor: getBorderColor('email', emailFocused) },
+                    { borderColor: getBorderColor("email", emailFocused) },
                     Platform.select({
-                      web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                    })
+                      web: emailFocused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
+                    }),
                   ]}
                   placeholder="Digite seu email"
                   value={formData.email}
@@ -129,10 +135,10 @@ const Login = () => {
                     style={[
                       styles.input,
                       styles.passwordInput,
-                      { borderColor: getBorderColor('password', passwordFocused) },
+                      { borderColor: getBorderColor("password", passwordFocused) },
                       Platform.select({
-                        web: passwordFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                      })
+                        web: passwordFocused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
+                      }),
                     ]}
                     placeholder="Digite sua senha"
                     value={formData.password}
@@ -144,23 +150,15 @@ const Login = () => {
                     onBlur={() => setPasswordFocused(false)}
                     placeholderTextColor="#999"
                   />
-                  <TouchableOpacity
-                    style={styles.eyeIconContainer}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <FontAwesome
-                      name={showPassword ? "eye" : "eye-slash"}
-                      size={24}
-                      color="#666"
-                    />
+                  <TouchableOpacity style={styles.eyeIconContainer} onPress={() => setShowPassword(!showPassword)}>
+                    <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={24} color="#666" />
                   </TouchableOpacity>
                 </View>
                 {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               </View>
 
               <View style={styles.rememberForgotContainer}>
-
-                  <Checkbox title="Lembrar conta" isChecked={rememberMe} onCheck={setRememberMe} colorText="#3B82F6" />
+                <Checkbox title="Lembrar conta" isChecked={rememberMe} onCheck={setRememberMe} colorText="#3B82F6" />
 
                 <TouchableOpacity onPress={() => router.push("/forgotPassword")}>
                   <Text style={styles.linkText}>Esqueci minha senha</Text>
@@ -174,9 +172,7 @@ const Login = () => {
                 onPress={validateAndLogin}
                 disabled={isLoading}
               >
-                <Text style={styles.loginButtonText}>
-                  {isLoading ? "Carregando..." : "Entrar"}
-                </Text>
+                <Text style={styles.loginButtonText}>{isLoading ? "Carregando..." : "Entrar"}</Text>
               </TouchableOpacity>
 
               <View style={styles.signupContainer}>
@@ -192,13 +188,21 @@ const Login = () => {
                   <Text style={styles.dividerText}>ou entre com</Text>
                   <View style={styles.divider} />
                 </View>
-                
+
                 <View style={styles.socialButtonsContainer}>
                   <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
                     <FontAwesome name="facebook" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.socialButton, styles.googleButton]}>
-                    <FontAwesome name="google" size={24} color="#FFFFFF" />
+                  <TouchableOpacity 
+                    style={[styles.socialButton, styles.googleButton]}
+                    onPress={signInWithGoogle}
+                    disabled={googleLoading}
+                  >
+                    {googleLoading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <FontAwesome name="google" size={24} color="#FFFFFF" />
+                    )}
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.socialButton, styles.instagramButton]}>
                     <FontAwesome name="instagram" size={24} color="#FFFFFF" />
@@ -210,23 +214,24 @@ const Login = () => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-};
+  )
+}
 
 function marginTopDaLogo(): any {
-
-  const {width} = Dimensions.get("window");
-  if(width <= 410){ //para celular bemmm pequeno
-    return '18%';
-  } else { //nos que não se encaixam
-    return 40;
+  const { width } = Dimensions.get("window")
+  if (width <= 410) {
+    //para celular bemmm pequeno
+    return "18%"
+  } else {
+    //nos que não se encaixam
+    return 40
   }
-}  
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -237,154 +242,154 @@ const styles = StyleSheet.create({
   mainContainer: {
     paddingHorizontal: 24,
     flex: 1,
-    justifyContent: 'space-evenly',
+    justifyContent: "space-evenly",
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: marginTopDaLogo(),
   },
   logo: {
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   welcomeContainer: {
     marginTop: 20,
   },
   welcomeText: {
     fontSize: 18,
-    fontWeight: '500',
-    color: '#3B82F6',
+    fontWeight: "500",
+    color: "#3B82F6",
     marginBottom: 4,
   },
   headerText: {
     fontSize: 30,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 16,
   },
   formContainer: {
-    justifyContent: 'center',
+    justifyContent: "center",
     marginTop: 8,
   },
   inputContainer: {
     marginBottom: 20,
   },
   input: {
-    width: '100%',
+    width: "100%",
     height: 64,
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: '#F7F8F9',
-    color: '#000000',
+    backgroundColor: "#F7F8F9",
+    color: "#000000",
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#4B5563',
+    fontWeight: "500",
+    color: "#4B5563",
     marginBottom: 8,
   },
   passwordContainer: {
-    position: 'relative',
+    position: "relative",
   },
   passwordInput: {
     paddingRight: 50,
   },
   eyeIconContainer: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
-    height: '100%',
-    justifyContent: 'center',
+    height: "100%",
+    justifyContent: "center",
   },
   errorText: {
-    color: '#FF0000',
+    color: "#FF0000",
     fontSize: 14,
     marginTop: 4,
   },
   rememberForgotContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 10,
     marginBottom: "10%",
-    width: '80%',
+    width: "80%",
   },
   linkText: {
     fontSize: 14,
-    color: '#3B82F6',
-    textDecorationLine: 'underline',
+    color: "#3B82F6",
+    textDecorationLine: "underline",
   },
   actionContainer: {
     marginBottom: 8,
   },
   loginButton: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 16,
-    backgroundColor: '#3B82F6',
+    backgroundColor: "#3B82F6",
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 24,
   },
   disabledButton: {
     opacity: 0.7,
   },
   loginButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginBottom: 32,
   },
   grayText: {
-    color: '#6B7280',
+    color: "#6B7280",
   },
   signupText: {
-    color: '#3B82F6',
-    fontWeight: '500',
-    textDecorationLine: 'underline',
+    color: "#3B82F6",
+    fontWeight: "500",
+    textDecorationLine: "underline",
   },
   socialContainer: {
     marginBottom: 24,
   },
   dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: "#D1D5DB",
   },
   dividerText: {
     paddingHorizontal: 16,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   socialButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 28,
   },
   socialButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   facebookButton: {
-    backgroundColor: '#1e40af',
+    backgroundColor: "#1e40af",
   },
   googleButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: "#ef4444",
   },
   instagramButton: {
-    backgroundColor: '#db2777',
+    backgroundColor: "#db2777",
   },
-});
+})
 
-export default Login;
+export default Login
