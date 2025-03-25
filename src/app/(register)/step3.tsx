@@ -2,7 +2,7 @@
 
 import { router, useLocalSearchParams } from "expo-router"
 import { useState } from "react"
-import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions } from "react-native"
+import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions, Platform, KeyboardAvoidingView } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
 import Cloudsvg from "../../../assets/images/cloud.svg"
@@ -87,7 +87,11 @@ const Step03 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#56A6DC" />
+            <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.keyboardAvoidingView}
+            ></KeyboardAvoidingView>
+          <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
 
       <View style={styles.backgroundContainer}>
         <Cloudsvg width="90%" height="40%" />
@@ -103,8 +107,13 @@ const Step03 = () => {
         <View style={styles.inputsContainer}>
           <Text style={styles.label}>Email</Text>
           <TextInput
-            style={[styles.input, { borderColor: getBorderColor("email", emailFocused) }]}
+            style={[styles.input, { borderColor: getBorderColor("email", emailFocused) },
+              Platform.select({
+                web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                })
+            ]}
             placeholder="Digite seu email"
+            placeholderTextColor="#999"
             value={email}
             onChangeText={setEmail}
             onFocus={() => setEmailFocused(true)}
@@ -115,8 +124,13 @@ const Step03 = () => {
 
           <Text style={styles.label}>Senha</Text>
           <TextInput
-            style={[styles.input, { borderColor: getBorderColor("password", field1Focused) }]}
+            style={[styles.input, { borderColor: getBorderColor("password", field1Focused) },
+            Platform.select({
+              web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+              })
+            ]}
             placeholder="Digite sua senha"
+            placeholderTextColor="#999"
             value={password}
             onChangeText={setPassword}
             onFocus={() => setField1Focused(true)}
@@ -126,8 +140,13 @@ const Step03 = () => {
 
           <Text style={styles.label}>Confirme sua senha</Text>
           <TextInput
-            style={[styles.input, { borderColor: getBorderColor("confirmPassword", field2Focused) }]}
+            style={[styles.input, { borderColor: getBorderColor("confirmPassword", field2Focused) },
+              Platform.select({
+                web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                })
+            ]}
             placeholder="Confirme sua senha"
+            placeholderTextColor="#999"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             onFocus={() => setField2Focused(true)}
@@ -178,13 +197,13 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
-    height: "47%",
-    justifyContent: "space-around",
-    top: "8%",
+    height: "60%",
+    justifyContent: "space-evenly",
+    top: "5%",
   },
   input: {
     width: "80%",
-    height: 50,
+    height: "20%",
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 16,
@@ -196,7 +215,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    marginBottom: 4,
     width: "80%",
   },
   buttonContainer: {
@@ -205,6 +223,9 @@ const styles = StyleSheet.create({
     bottom: bottomHeight(),
     justifyContent: "space-between",
     height: "20%",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
 })
 

@@ -8,6 +8,7 @@ import Toast from "react-native-toast-message"
 import Cloudsvg from "../../../assets/images/cloud.svg"
 import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
+import React from "react"
 
 const { height } = Dimensions.get("window")
 
@@ -77,7 +78,7 @@ const Step04 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#85F995" />
+          <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
 
       <View style={styles.backgroundContainer}>
         <Cloudsvg width="90%" height="40%" />
