@@ -14,6 +14,8 @@ import {
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
+import { router } from "expo-router"
+import { useGameProgress } from "@/src/context/GameProgressContext"
 
 // Import componentized UI elements
 import DuolingoHeader from "@/src/components/DuolingoHeader"
@@ -22,17 +24,34 @@ import React from "react"
 
 const { width, height } = Dimensions.get("window")
 
-// Mock data for trilhas (courses) - now with local image paths
-const trilhas = [
+// Define question types
+export enum QuestionType {
+  TRUE_OR_FALSE = "trueOrFalse",
+  MULTIPLE_CHOICE = "multipleChoice",
+  MATCHING = "matching",
+  ORDERING = "ordering",
+}
+
+// Define question interface
+export interface Question {
+  id: string
+  type: QuestionType
+  description: string
+  image?: string
+  // For true/false questions
+  isTrue?: boolean
+  // For multiple choice questions
+  options?: string[]
+  correctOptionIndex?: number
+}
+
+// Mock data for trilhas (courses) with questions
+export const trilhas = [
   {
     id: "1",
     nome: "React Native Básico",
     descricao: "Aprenda os fundamentos do React Native",
-    // For SVG files, you can use either:
-    // 1. Local SVG (requires react-native-svg-transformer):
     image: require("@/assets/images/fundo.svg"),
-    // 2. Or remote SVG:
-    // image: 'https://example.com/path/to/fundo.svg',
     etapas: [
       {
         id: "1",
@@ -40,31 +59,114 @@ const trilhas = [
         descricao: "Conceitos básicos e configuração do ambiente",
         concluida: true,
         icone: "book",
+        questions: [
+          {
+            id: "q1",
+            type: QuestionType.TRUE_OR_FALSE,
+            description:
+              "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat.",
+            isTrue: true,
+          },
+          {
+            id: "q2",
+            type: QuestionType.TRUE_OR_FALSE,
+            description:
+              "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, euismod tincidunt ut laoreet dolore magna aliquam erat.",
+            image: "/placeholder.svg?height=200&width=400",
+            isTrue: false,
+          },
+          {
+            id: "q3",
+            type: QuestionType.TRUE_OR_FALSE,
+            description:
+              "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat.",
+            isTrue: true,
+          },
+        ],
       },
       {
         id: "2",
-        titulo: "Introdução ao React Native",
-        descricao: "Conceitos básicos e configuração do ambiente",
+        titulo: "Componentes Básicos",
+        descricao: "Aprenda sobre os componentes fundamentais",
         concluida: true,
         icone: "book",
+        questions: [
+          {
+            id: "q1",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "React Native usa a mesma base de código para iOS e Android.",
+            isTrue: true,
+          },
+          {
+            id: "q2",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "StyleSheet no React Native funciona exatamente como CSS na web.",
+            isTrue: false,
+          },
+        ],
       },
       {
-        titulo: "Viagem",
+        id: "3",
+        titulo: "Navegação",
         concluida: false,
         icone: "target",
-        descricao: "Frases úteis para viagem",
+        descricao: "Aprenda sobre navegação entre telas",
+        questions: [
+          {
+            id: "q1",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "React Navigation é a única biblioteca de navegação para React Native.",
+            isTrue: false,
+          },
+          {
+            id: "q2",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "Stack Navigator permite navegação em pilha entre telas.",
+            isTrue: true,
+          },
+        ],
       },
       {
-        titulo: "Família",
+        id: "4",
+        titulo: "Estado e Props",
         concluida: false,
         icone: "book",
-        descricao: "Membros da família",
+        descricao: "Gerenciamento de estado e propriedades",
+        questions: [
+          {
+            id: "q1",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "useState é um hook que permite adicionar estado a componentes funcionais.",
+            isTrue: true,
+          },
+          {
+            id: "q2",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "Props são imutáveis em componentes React.",
+            isTrue: true,
+          },
+        ],
       },
       {
-        titulo: "Casa",
+        id: "5",
+        titulo: "APIs Nativas",
         concluida: false,
         icone: "crown",
-        descricao: "Vocabulário do lar",
+        descricao: "Acesso a recursos nativos do dispositivo",
+        questions: [
+          {
+            id: "q1",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "React Native permite acesso direto à câmera sem bibliotecas adicionais.",
+            isTrue: false,
+          },
+          {
+            id: "q2",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "AsyncStorage é usado para armazenamento persistente de dados.",
+            isTrue: true,
+          },
+        ],
       },
     ],
   },
@@ -74,41 +176,34 @@ const trilhas = [
     image: "",
     etapas: [
       {
+        id: "1",
         titulo: "Roupas",
         concluida: false,
         icone: "zap",
         descricao: "Vocabulário de vestuário",
+        questions: [
+          {
+            id: "q1",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "A camisa é uma peça de roupa para a parte superior do corpo.",
+            isTrue: true,
+          },
+        ],
       },
       {
+        id: "2",
         titulo: "Cores",
         concluida: false,
         icone: "target",
         descricao: "Aprenda as cores",
-      },
-      {
-        titulo: "Animais",
-        concluida: false,
-        icone: "book",
-        descricao: "Nomes de animais comuns",
-      },
-    ],
-  },
-  {
-    id: "3",
-    nome: "Intermediário",
-    image: "",
-    etapas: [
-      {
-        titulo: "Trabalho",
-        concluida: false,
-        icone: "crown",
-        descricao: "Vocabulário profissional",
-      },
-      {
-        titulo: "Hobbies",
-        concluida: false,
-        icone: "zap",
-        descricao: "Atividades de lazer",
+        questions: [
+          {
+            id: "q1",
+            type: QuestionType.TRUE_OR_FALSE,
+            description: "Vermelho, azul e amarelo são cores primárias.",
+            isTrue: true,
+          },
+        ],
       },
     ],
   },
@@ -120,6 +215,7 @@ const Home = () => {
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
   const { userData, authUser, refreshUserData } = useAuth()
+  const { getPhaseCompletionPercentage } = useGameProgress()
 
   const nome = `${userData?.nome} ${userData?.sobrenome}`
   const scrollViewRef = useRef<ScrollView>(null)
@@ -147,13 +243,22 @@ const Home = () => {
 
   // Dados da trilha atual
   const currentTrilha = trilhas[trilhaAtualIndex]
-  const stages = currentTrilha.etapas.map((etapa, index) => ({
-    number: index + 1,
-    title: etapa.titulo,
-    completed: etapa.concluida,
-    icon: etapa.icone || "crown",
-    description: etapa.descricao || "Descrição da etapa não disponível",
-  }))
+
+  // Add id to each stage and calculate progress percentage
+  const stages = currentTrilha.etapas.map((etapa, index) => {
+    // Get progress percentage from context
+    const progressPercentage = getPhaseCompletionPercentage(etapa.id)
+
+    return {
+      number: index + 1,
+      title: etapa.titulo,
+      completed: etapa.concluida,
+      icon: etapa.icone || "crown",
+      description: etapa.descricao || "Descrição da etapa não disponível",
+      id: etapa.id, // Add the id property
+      progressPercentage: progressPercentage, // Add progress percentage
+    }
+  })
 
   // Medir a altura do container para posicionar os estágios corretamente
   const onContainerLayout = (event: {
@@ -192,6 +297,20 @@ const Home = () => {
 
   const handleStagePress = (index: number) => {
     setEtapaAtualIndex(index)
+
+    // Get the current stage
+    const currentStage = currentTrilha.etapas[index]
+
+    // Navigate to the start phase with the stage data
+    router.push({
+      pathname: "/questions/start/startPhase",
+      params: {
+        phaseId: currentStage.id,
+        trailId: currentTrilha.id, // Pass the trail ID too
+        title: currentStage.titulo,
+        description: currentStage.descricao || "",
+      },
+    } as any)
 
     // Simulação de ganho de pontos ao clicar em uma etapa
     if (!stages[index].completed) {
@@ -269,24 +388,14 @@ const Home = () => {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Cabeçalho estilo Duolingo com animação de scroll */}
-      <DuolingoHeader
-        points={userStats.points}
-        streak={userStats.streak}
-        lives={userStats.lives}
-        nome={nome}
-        scrollY={scrollY}
-      />
+      <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
       {/* Barra de navegação inferior - FIXA na parte inferior */}
-      <View
-        className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary"
-
-      >
+      <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
         <TouchableOpacity
           onPress={handlePreviousTrilha}
           className="bg-tertiary p-2 rounded-md"
           disabled={trilhaAtualIndex === 0 || isAnimating}
-  
         >
           <ChevronLeft size={24} color="white" />
         </TouchableOpacity>
@@ -307,9 +416,7 @@ const Home = () => {
                 className="mx-1"
               >
                 <View
-                  className={`rounded-full ${
-                    trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"
-                  }`}
+                  className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
                 />
               </TouchableOpacity>
             ))}
@@ -320,7 +427,6 @@ const Home = () => {
           onPress={handleNextTrilha}
           className="bg-tertiary p-2 rounded-md"
           disabled={trilhaAtualIndex === trilhas.length - 1 || isAnimating}
-
         >
           <ChevronRight size={24} color="white" />
         </TouchableOpacity>
@@ -350,6 +456,7 @@ const Home = () => {
             onStagePress={handleStagePress}
             containerHeight={containerHeight}
             backgroundImage={currentTrilha.image}
+            trailId={currentTrilha.id}
           />
           <View style={{ height: 100 }} />
         </ScrollView>

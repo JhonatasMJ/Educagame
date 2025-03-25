@@ -9,6 +9,7 @@ interface Stage {
   title: string
   icon: string
   description?: string
+  id: string // Added id to identify the phase
 }
 
 interface LearningPathTrackProps {
@@ -17,15 +18,16 @@ interface LearningPathTrackProps {
   onStagePress: (index: number) => void
   containerHeight: number
   backgroundImage?: ImageSourcePropType // Can be a local or remote image
+  trailId?: string // Added trail ID
 }
 
-const 
-LearningPathTrack = ({
+const LearningPathTrack = ({
   stages,
   currentStage,
   onStagePress,
   containerHeight,
   backgroundImage,
+  trailId = "1", // Default to first trail
 }: LearningPathTrackProps) => {
   // Encontrar o índice da próxima etapa não concluída
   const nextStageIndex = stages.findIndex((stage) => !stage.completed)
@@ -126,6 +128,7 @@ LearningPathTrack = ({
                 title={stage.title}
                 icon={stage.icon as "crown" | "zap" | "target" | "book"}
                 description={stage.description}
+                phaseId={stage.id} // Pass the phase ID to the bubble
               />
 
               {/* Espaço entre bolhas - aumentado */}
@@ -137,5 +140,6 @@ LearningPathTrack = ({
     )
   }
 }
+
 export default LearningPathTrack
 

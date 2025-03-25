@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, TextInput, TextInputProps as RNTextInputProps, KeyboardTypeOptions } from "react-native";
 
 interface TextInputProps extends RNTextInputProps {

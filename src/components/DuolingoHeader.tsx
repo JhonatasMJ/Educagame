@@ -1,11 +1,9 @@
 import { View, Text, TouchableOpacity, Animated } from "react-native"
-import { Menu, Trophy, Target, Heart } from "lucide-react-native"
+import { Menu, Trophy, Target, Flame } from "lucide-react-native"
+import { useGameProgress } from "@/src/context/GameProgressContext"
 import React from "react"
 
 interface DuolingoHeaderProps {
-  points: number
-  streak: number
-  lives: number
   nome: string
   scrollY: Animated.Value
   selectedQuestion?: {
@@ -14,7 +12,14 @@ interface DuolingoHeaderProps {
   } | null
 }
 
-const DuolingoHeader = ({ points, streak, lives, nome, scrollY, selectedQuestion }: DuolingoHeaderProps) => {
+const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps) => {
+  const { progress } = useGameProgress()
+
+  // Get points and consecutive correct answers from context
+  const points = progress.totalPoints
+  const consecutiveCorrect = progress.consecutiveCorrect
+  const streak = 7 // This could also come from the context if needed
+
   // Animation values for header transformation
   const titleHeight = 60 // Height of the title section that will hide
 
@@ -57,23 +62,27 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY, selectedQuestion
           opacity: titleOpacity,
           height: titleHeight_animated,
           marginBottom: titleMargin,
-          overflow: "hidden",
+          overflow: "hidden", // Prevent content from showing outside the animated height
         }}
       >
-        {selectedQuestion ? (
-          <View className="flex-1 mr-2">
-            <Text className="text-xl font-bold text-white" numberOfLines={1}>
-              {selectedQuestion.titulo}
-            </Text>
-            <Text className="text-sm text-white opacity-80" numberOfLines={1}>
-              {selectedQuestion.descricao}
-            </Text>
-          </View>
-        ) : (
-          <Text className="text-2xl font-bold text-white">{nome}</Text>
-        )}
-
-        <TouchableOpacity className="bg-tertiary p-3 rounded-lg">
+        <Text className="text-2xl font-bold text-white">{nome}</Text>
+        {/* Fixed menu button styling */}
+        <TouchableOpacity
+          className="bg-tertiary p-2 rounded-lg"
+          style={{
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            width: 40,
+            height: 40,
+            alignItems: "center",
+            justifyContent: "center",
+            position: "absolute",
+            right: 0,
+          }}
+        >
           <Menu size={20} color="white" />
         </TouchableOpacity>
       </Animated.View>
@@ -96,11 +105,11 @@ const DuolingoHeader = ({ points, streak, lives, nome, scrollY, selectedQuestion
           </View>
         </TouchableOpacity>
 
-        {/* Vidas */}
+        {/* Acertos consecutivos */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
           <View className="flex-row items-center">
-            <Heart size={20} color="#FF4500" />
-            <Text className="text-white font-bold ml-1">{lives}</Text>
+            <Flame size={20} color="#FF4500" />
+            <Text className="text-white font-bold ml-1">{consecutiveCorrect}</Text>
           </View>
         </TouchableOpacity>
       </View>

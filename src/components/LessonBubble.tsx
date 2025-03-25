@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import { View, Text, Pressable, Animated, Easing } from "react-native"
 import { Crown, Zap, Target, BookOpen, Lock } from "lucide-react-native"
-import React from "react"
+import { useGameProgress } from "@/src/context/GameProgressContext"
 
 interface LessonBubbleProps {
   number: number
@@ -14,6 +14,7 @@ interface LessonBubbleProps {
   title: string
   icon: "crown" | "zap" | "target" | "book"
   description?: string
+  phaseId: string
 }
 
 const LessonBubble = ({
@@ -25,12 +26,19 @@ const LessonBubble = ({
   title,
   icon,
   description,
+  phaseId,
 }: LessonBubbleProps) => {
   const bubbleSize = 80
   const numberSize = 30
+  const progressRingSize = bubbleSize + 16
+  const progressRingThickness = 4
+
+  const { getPhaseCompletionPercentage } = useGameProgress()
+  const completionPercentage = getPhaseCompletionPercentage(phaseId)
 
   // Valor de animação apenas para a próxima etapa
   const pulseAnim = useRef(new Animated.Value(1)).current
+  const progressAnim = useRef(new Animated.Value(0)).current
 
   // Função para renderizar o ícone correto
   const renderIcon = () => {
@@ -81,6 +89,16 @@ const LessonBubble = ({
     }
   }, [isNext])
 
+  // Animate progress ring when completion percentage changes
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: completionPercentage / 100,
+      duration: 1000,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start()
+  }, [completionPercentage])
+
   // Determine background color based on completion status
   const getBubbleBackgroundColor = () => {
     if (isCompleted) {
@@ -105,6 +123,13 @@ const LessonBubble = ({
     }
   }
 
+  // Calculate the progress ring stroke dash
+  const circumference = 2 * Math.PI * (progressRingSize / 2)
+  const progressStrokeDashoffset = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, 0],
+  })
+
   return (
     <Pressable onPress={onPress} className="stage-bubble">
       <Animated.View
@@ -114,6 +139,44 @@ const LessonBubble = ({
         }}
       >
         <View className="items-center">
+          {/* Progress Ring */}
+          <View
+            style={{
+              position: "absolute",
+              width: progressRingSize,
+              height: progressRingSize,
+              borderRadius: progressRingSize / 2,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Svg width={progressRingSize} height={progressRingSize} style={{ position: "absolute" }}>
+              {/* Background Circle */}
+              <Circle
+                cx={progressRingSize / 2}
+                cy={progressRingSize / 2}
+                r={progressRingSize / 2 - progressRingThickness / 2}
+                
+                strokeWidth={progressRingThickness}
+                fill="transparent"
+              />
+              {/* Progress Circle */}
+              <AnimatedCircle
+                cx={progressRingSize / 2}
+                cy={progressRingSize / 2}
+                r={progressRingSize / 2 - progressRingThickness / 2}
+                stroke={isCompleted ? "#83AD11" : "#8B5CF6"}
+                strokeWidth={progressRingThickness}
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={progressStrokeDashoffset}
+                strokeLinecap="round"
+                rotation="-90"
+                origin={`${progressRingSize / 2}, ${progressRingSize / 2}`}
+              />
+            </Svg>
+          </View>
+
           {/* 3D effect base layer */}
           <View
             className={`absolute rounded-full ${isCompleted ? "bg-green" : "bg-gray-700"}`}
@@ -165,9 +228,9 @@ const LessonBubble = ({
           </View>
 
           {/* Título e descrição abaixo da bolha */}
-               <View className="mt-4 items-center max-w-[200px]">
+          <View className="mt-4 items-center max-w-[200px]">
             <View
-              className= "bg-secondary px-3 py-1 rounded-lg mb-2 w-full"
+              className="bg-secondary px-3 py-1 rounded-lg mb-2 w-full"
               style={{
                 elevation: 5,
                 shadowColor: "#000",
@@ -180,29 +243,20 @@ const LessonBubble = ({
                 {title}
               </Text>
             </View>
-
-            {/* {description && (
-              <View
-                className={`${isCompleted ? "bg-green-600/80" : "bg-purple-600/80"} px-3 py-1 rounded-lg w-full`}
-                style={{
-                  elevation: 3,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 1, height: 1 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 2,
-                }}
-              >
-                <Text className="text-white text-xs text-center" numberOfLines={3}>
-                  {description}
-                </Text>
-              </View>
-            )} */}
           </View>
         </View>
       </Animated.View>
     </Pressable>
   )
 }
+
+// Import these at the top of the file
+import Svg, { Circle } from "react-native-svg"
+import React from "react"
+// import { Animated } from "react-native" // Removed duplicated import
+
+// Create an animated circle component
+const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 export default LessonBubble
 
