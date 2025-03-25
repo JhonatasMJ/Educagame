@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { View, Text, SafeAreaView, Animated } from "react-native"
+import { View, Text, SafeAreaView, Animated, StatusBar } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { useLocalSearchParams } from "expo-router"
 import { Clock, Award, Target, Star, Trophy, ChevronRight } from "lucide-react-native"
@@ -73,6 +73,7 @@ const CompletionPage = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#f0f8ff]">
+      <StatusBar barStyle={"dark-content"} backgroundColor='#4361ee' translucent={false} />
       <Confetti ref={confettiRef} />
 
       {/* Header */}
