@@ -105,14 +105,14 @@ const Step03 = () => {
         <Text style={styles.title}>Vamos criar uma senha!</Text>
 
         <View style={styles.inputsContainer}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>E-mail</Text>
           <TextInput
             style={[styles.input, { borderColor: getBorderColor("email", emailFocused) },
               Platform.select({
                 web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
                 })
             ]}
-            placeholder="Digite seu email"
+            placeholder="Digite seu e-mail"
             placeholderTextColor="#999"
             value={email}
             onChangeText={setEmail}
