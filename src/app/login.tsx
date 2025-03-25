@@ -113,7 +113,7 @@ const Login = () => {
                       web: emailFocused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
                     }),
                   ]}
-                  placeholder="Digite seu email"
+                  placeholder="Digite seu e-mail"
                   value={formData.email}
                   onChangeText={(value: string) => updateFormField("email", value)}
                   keyboardType="email-address"
