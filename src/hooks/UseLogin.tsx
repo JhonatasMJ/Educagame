@@ -21,25 +21,25 @@ export const useLogin = () => {
 
 
  
-  const [request, response, promptAsync] = Google.useAuthRequest({
+/*   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: '192448973264-696og487kp5lovckl4lu0872sktcj8g7.apps.googleusercontent.com',
     redirectUri: Platform.select({
       web: 'https://auth.expo.io/@vittorpatricio/educagame',
       default: undefined
     })
-  });
+  }); */
 
-  console.log("URI de redirecionamento:", request?.redirectUri);
+
 
   // Handle Google Sign In response
-  useEffect(() => {
+/*   useEffect(() => {
     if (response?.type === 'success') {
       setGoogleLoading(true);
       const { id_token } = response.params;
       handleGoogleLogin(id_token);
     }
   }, [response]);
-
+ */
   // Load saved email when hook initializes
   useEffect(() => {
     const loadSavedEmail = async () => {
