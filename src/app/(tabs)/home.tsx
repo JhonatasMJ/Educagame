@@ -383,7 +383,7 @@ const Home = () => {
 
   return (
     <View className="flex-1 bg-primary ">
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 

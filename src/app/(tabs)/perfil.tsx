@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, TouchableOpacity, Modal, StatusBar } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
@@ -101,9 +101,10 @@ const StatsContent = ({ navigation, onOpenDrawer }: any) => {
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        <SafeAreaView className="flex-1" style={{ backgroundColor: '#56A6DC' }}>
+          <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
+        <SafeAreaView style={{ backgroundColor: '#56A6DC', flex: 1 }}>
       {loading ? (
-        <View className="flex-1 justify-center items-center">
+        <View style={{ flex: 1, height: '100%', width: '100%', backgroundColor: '#56A6DC', justifyContent: 'center', alignItems: 'center' }}>
           <Text className="text-white text-lg">Carregando perfil...</Text>
         </View>
       ) : (

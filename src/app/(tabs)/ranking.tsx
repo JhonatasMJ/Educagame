@@ -102,9 +102,9 @@ const RankingScreen = () => {
         <View style={styles.positionContainer}>
           <Text style={styles.positionText}>{position}</Text>
         </View>
-        <TouchableOpacity style={styles.avatarContainer} onPress={() => handleAvatarPress(item.id, item.avatarSource)}>
+        <View style={styles.avatarContainer}>
           <AvatarComponent width={40} height={40} style={styles.avatar} />
-        </TouchableOpacity>
+        </View>
         <Text style={styles.userName}>{item.name}</Text>
         <View style={styles.resultContainer}>
           <Feather name="flag" size={16} color="#FFA500" />
@@ -173,48 +173,6 @@ const RankingScreen = () => {
         style={styles.list}
         showsVerticalScrollIndicator={false}
       />
-
-      {/* Modal de seleção de avatar */}
-      <Modal
-        visible={showAvatarModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowAvatarModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Escolha seu avatar</Text>
-
-            <View style={styles.avatarGrid}>
-              {Object.entries(avatarComponents).map(([key, AvatarComp]) => (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.avatarOption, selectedAvatarSource === key && styles.selectedAvatarOption]}
-                  onPress={() => setSelectedAvatarSource(key)}
-                >
-                  <AvatarComp width={85} height={85} style={{ borderRadius: 45 }} />
-
-                  {selectedAvatarSource === key && (
-                    <View style={styles.checkIcon}>
-                      <FontAwesome name="check" size={12} color="#fff" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowAvatarModal(false)}>
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.confirmButton} onPress={() => handleAvatarChange(selectedAvatarSource)}>
-                <Text style={styles.confirmButtonText}>Confirmar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   )
 }
@@ -298,8 +256,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "white",
     borderRadius: 8,
-    marginBottom: 8,
-    padding: 12,
+    marginBottom: 14,
+    padding: 14.5,
+    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    
   },
   highlightedItem: {
     backgroundColor: "#FFA500",
