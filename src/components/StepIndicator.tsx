@@ -32,14 +32,14 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     height: 24,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: "#BF720C",
     borderRadius: 12,
     overflow: "hidden",
     position: "relative",
   },
   progressBar: {
     height: "100%",
-    backgroundColor: "#FFD700", // Gold color
+    backgroundColor: "#a86502", // Gold color
     borderRadius: 12,
     position: "absolute",
     left: 0,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#555",
+    color: "#f2f2f2",
   },
 })
 

@@ -11,7 +11,7 @@ import { QuestionType } from "../../(tabs)/home"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import GameTimer from "@/src/utils/GameTimer"
 
-// Define the question type for true/false minigame
+
 interface TrueOrFalseQuestion {
   id: string
   type: QuestionType.TRUE_OR_FALSE
@@ -222,9 +222,9 @@ const TrueOrFalse = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-<StatusBar barStyle={"dark-content"} backgroundColor={showLoading ? "#3185BE" : "#fff" }  translucent={false} />
-      <View className="px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+    <SafeAreaView className="flex-1  bg-primary">
+<StatusBar barStyle={"dark-content"} backgroundColor={showLoading ? "#3185BE" : "#F6A608" }  translucent={false} />
+      <View className="px-4 py-3 bg-secondary  border-tertiary border-b-4 shadow-sm">
         <View className="flex-row justify-between items-center">
           <View className="flex-row items-center">
             <Clock size={16} color="#666" />
@@ -263,59 +263,82 @@ const TrueOrFalse = () => {
           </View>
         )}
 
-        {/* Question number and text */}
+    
         <View className="mb-5">
-          <Text className="text-sm font-medium text-gray-500 mb-1">Questão {currentQuestionIndex + 1}</Text>
+          <Text className="text-md font-medium text-gray-100 mb-4">Questão {currentQuestionIndex + 1}:</Text>
           <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <Text className="text-lg text-gray-800 leading-relaxed">{currentQuestion.description}</Text>
           </View>
         </View>
 
-        {/* Image if available */}
+       
         {currentQuestion.image && (
           <View className="mb-5 rounded-lg overflow-hidden border border-gray-200">
             <Image source={{ uri: currentQuestion.image }} className="w-full h-48 rounded-lg" resizeMode="cover" />
           </View>
         )}
 
-        {/* Statement */}
+        
         <View className="mb-6">
-          <Text className="text-center text-lg font-semibold text-gray-700">{statementText}</Text>
+          <Text className="text-center text-lg font-semibold text-zinc-100">{statementText}</Text>
         </View>
 
 
         <View className="space-y-4">
           <TouchableOpacity
-            className={`flex-row items-center p-4 rounded-lg border ${
-              selectedAnswer === true ? "bg-green-100 border-green-500" : "bg-white border-gray-300"
+            className={`flex-row items-center p-4 rounded-lg   ${
+              selectedAnswer === true ? "bg-green-100 border-green-500" : "bg-lime-500 "
             }`}
+            style={{
+              borderBottomWidth: 6, 
+              borderBottomColor: "#117805", 
+              shadowColor: "#FF4F4F",
+              shadowOffset: { width: 4, height: 6 },
+              shadowOpacity: 0.8,
+              shadowRadius: 8,
+              elevation: 10, // Sombras para Android
+            }}
             onPress={() => handleAnswer(true)}
             disabled={selectedAnswer !== null}
             activeOpacity={0.8}
           >
             <View className="w-10 h-10 rounded-full bg-green-100 justify-center items-center mr-3">
-              <Check width={20} height={20} color="#16A34A" />
+              <Check width={20} height={20} color="#023614" />
             </View>
-            <Text className={`text-lg font-medium ${selectedAnswer === true ? "text-green-800" : "text-gray-800"}`}>
+            <Text className={`text-lg font-medium shadow-md  ${selectedAnswer === true ? "text-green-800" : "text-lime-950"}`}>
               Verdadeiro
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className={`flex-row items-center p-4 rounded-lg border mt-4 ${
-              selectedAnswer === false ? "bg-red-100 border-red-500" : "bg-white border-gray-300"
-            }`}
-            onPress={() => handleAnswer(false)}
-            disabled={selectedAnswer !== null}
-            activeOpacity={0.8}
-          >
-            <View className="w-10 h-10 rounded-full bg-red-100 justify-center items-center mr-3">
-              <X width={20} height={20} color="#DC2626" />
-            </View>
-            <Text className={`text-lg font-medium ${selectedAnswer === false ? "text-red-800" : "text-gray-800"}`}>
-              Falso
-            </Text>
-          </TouchableOpacity>
+        className={`flex-row items-center p-4 rounded-lg mt-4 ${
+          selectedAnswer === false ? "bg-red-100" : "bg-red-600"
+        }`}
+        style={{
+          borderBottomWidth: 6, // Dá a sensação de relevo
+          borderBottomColor: "#870000", // Cor mais escura para dar profundidade
+          shadowColor: "#FF4F4F",
+          shadowOffset: { width: 4, height: 6 },
+          shadowOpacity: 0.8,
+          shadowRadius: 8,
+          elevation: 10, // Sombras para Android
+        }}
+    
+        onPress={() => handleAnswer(false)}
+        disabled={selectedAnswer !== null}
+        activeOpacity={0.8}
+      >
+        <View className="w-10 h-10 rounded-full justify-center items-center mr-3">
+          <X width={20} height={20} color="#5e0303" />
+        </View>
+        <Text
+          className={`text-lg font-medium ${
+            selectedAnswer === false ? "text-red-800" : "text-gray-800"
+          }`}
+        >
+          Falso
+        </Text>
+      </TouchableOpacity>
         </View>
       </Animated.View>
 

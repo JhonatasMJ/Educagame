@@ -181,3 +181,7 @@ export const useLogin = () => {
     clearSavedCredentials 
   };
 };
+
+function promptAsync() {
+  throw new Error('Function not implemented.');
+}
