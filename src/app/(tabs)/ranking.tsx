@@ -1,12 +1,11 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Modal } from "react-native"
-import { Feather, FontAwesome } from "@expo/vector-icons"
+import { useState, useRef, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Animated } from "react-native"
+import { Feather } from "@expo/vector-icons"
 import { useAuth } from "@/src/context/AuthContext"
 
 // Importando os componentes de avatar
-
 import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
 import BigAvatar2 from "../../../assets/images/grande-avatar2.svg"
 import BigAvatar3 from "../../../assets/images/grande-avatar3.svg"
@@ -61,30 +60,40 @@ const userDetailsData: UserDetails = {
 
 const RankingScreen = () => {
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(true)
-  const [showAvatarModal, setShowAvatarModal] = useState(false)
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-  const [selectedAvatarSource, setSelectedAvatarSource] = useState<string>("avatar1")
-
   // Usando o contexto de autenticação para obter o usuário atual
   const { userData, authUser } = useAuth()
 
   // ID do usuário atual (simulando que o ID do Firebase é o mesmo do nosso mock)
   const currentUserId = authUser?.uid || "1" // Fallback para o ID 1 se não houver usuário autenticado
 
+  // Animated values
+  const statsHeight = useRef(new Animated.Value(isHeaderExpanded ? 1 : 0)).current
+  const arrowRotation = useRef(new Animated.Value(isHeaderExpanded ? 0 : 1)).current
+
+  // Calculate the rotation for the arrow icon
+  const arrowRotationDegree = arrowRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg']
+  })
+
+  // Effect to animate when isHeaderExpanded changes
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(statsHeight, {
+        toValue: isHeaderExpanded ? 1 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(arrowRotation, {
+        toValue: isHeaderExpanded ? 0 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      })
+    ]).start()
+  }, [isHeaderExpanded])
+
   const toggleHeader = () => {
     setIsHeaderExpanded(!isHeaderExpanded)
-  }
-
-  const handleAvatarPress = (userId: string, avatarSource: string) => {
-    setSelectedUserId(userId)
-    setSelectedAvatarSource(avatarSource)
-    setShowAvatarModal(true)
-  }
-
-  const handleAvatarChange = (newAvatarSource: string) => {
-    // Aqui você implementaria a lógica para atualizar o avatar no Firebase
-    // Por enquanto, apenas fechamos o modal
-    setShowAvatarModal(false)
   }
 
   const renderItem = ({ item, index }: { item: User; index: number }) => {
@@ -114,6 +123,21 @@ const RankingScreen = () => {
     )
   }
 
+  // Calculate the max height for the stats container
+  const maxStatsHeight = 170 // Reduzido para eliminar espaço vazio
+
+  // Interpolate the height for the stats container
+  const animatedStatsHeight = statsHeight.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, maxStatsHeight],
+  })
+
+  // Interpolate opacity for the stats container
+  const statsOpacity = statsHeight.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0.7, 1],
+  })
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -123,47 +147,77 @@ const RankingScreen = () => {
             <Text style={styles.title}>RANKING</Text>
           </View>
           <TouchableOpacity onPress={toggleHeader} style={styles.arrowButton}>
-            <Feather name={isHeaderExpanded ? "chevron-down" : "chevron-up"} size={24} color="white" />
+            <Animated.View style={{ transform: [{ rotate: arrowRotationDegree }] }}>
+              <Feather name="chevron-up" size={24} color="white" />
+            </Animated.View>
           </TouchableOpacity>
         </View>
 
-        {isHeaderExpanded && (
-          <View style={styles.userStatsContainer}>
-            <Text style={styles.statsTitle}>Confira seus resultados:</Text>
+        <Animated.View 
+          style={[
+            styles.userStatsContainer, 
+            { 
+              height: animatedStatsHeight,
+              opacity: statsOpacity,
+              overflow: 'hidden'
+            }
+          ]}
+        >
+          <Text style={styles.statsTitle}>Confira seus resultados:</Text>
 
-            <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Feather name="flag" size={20} color="#4A90E2" />
+          <View style={styles.statsGrid}>
+            {/* Primeira linha do grid */}
+            <View style={[styles.statsRow, {
+    marginBottom: 10,}]}>
+              {/* Item 1 - Milhas */}
+              <View style={styles.statItemGrid}>
+                <View style={styles.statIconContainer}>
+                  <Feather name="flag" size={20} color="#4A90E2" />
+                </View>
+                <View style={styles.statTextContainer}>
+                  <Text style={styles.statValue}>{userDetailsData.miles}</Text>
+                  <Text style={styles.statLabel}>milhas</Text>
+                </View>
               </View>
-              <Text style={styles.statValue}>{userDetailsData.miles}</Text>
-              <Text style={styles.statLabel}>milhas</Text>
+
+              {/* Item 2 - Horas */}
+              <View style={styles.statItemGrid}>
+                <View style={styles.statIconContainer}>
+                  <Feather name="clock" size={20} color="#4A90E2" />
+                </View>
+                <View style={styles.statTextContainer}>
+                  <Text style={styles.statValue}>{userDetailsData.hours}</Text>
+                  <Text style={styles.statLabel}>horas</Text>
+                </View>
+              </View>
             </View>
 
-            <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Feather name="clock" size={20} color="#4A90E2" />
+            {/* Segunda linha do grid */}
+            <View style={styles.statsRow}>
+              {/* Item 3 - Dias seguidos */}
+              <View style={styles.statItemGrid}>
+                <View style={styles.statIconContainer}>
+                  <Feather name="calendar" size={20} color="#4A90E2" />
+                </View>
+                <View style={styles.statTextContainer}>
+                  <Text style={styles.statValue}>{userDetailsData.consecutiveDays}</Text>
+                  <Text style={styles.statLabel}>dias seguidos</Text>
+                </View>
               </View>
-              <Text style={styles.statValue}>{userDetailsData.hours}</Text>
-              <Text style={styles.statLabel}>horas</Text>
-            </View>
 
-            <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Feather name="calendar" size={20} color="#4A90E2" />
+              {/* Item 4 - Total dias seguidos */}
+              <View style={styles.statItemGrid}>
+                <View style={styles.statIconContainer}>
+                  <Feather name="award" size={20} color="#4A90E2" />
+                </View>
+                <View style={styles.statTextContainer}>
+                  <Text style={styles.statValue}>{userDetailsData.totalConsecutiveDays}</Text>
+                  <Text style={styles.statLabel}>dias seguidos</Text>
+                </View>
               </View>
-              <Text style={styles.statValue}>{userDetailsData.consecutiveDays}</Text>
-              <Text style={styles.statLabel}>dias seguidos</Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Feather name="award" size={20} color="#4A90E2" />
-              </View>
-              <Text style={styles.statValue}>{userDetailsData.totalConsecutiveDays}</Text>
-              <Text style={styles.statLabel}>dias seguidos</Text>
             </View>
           </View>
-        )}
+        </Animated.View>
       </View>
 
       <FlatList
@@ -171,6 +225,7 @@ const RankingScreen = () => {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         style={styles.list}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -185,13 +240,20 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#FFA500",
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    borderBottomLeftRadius: 16, // Adicionado para melhorar o visual
+    borderBottomRightRadius: 16, // Adicionado para melhorar o visual
+    marginBottom: 6, // Adicionado espaço entre o header e a lista
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 12, // Reduzido para economizar espaço
   },
   titleContainer: {
     flexDirection: "row",
@@ -199,26 +261,59 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "white",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     marginLeft: 8,
   },
   arrowButton: {
     width: 32,
     height: 32,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: '#BF720C',
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   userStatsContainer: {
-    marginTop: 8,
   },
   statsTitle: {
     color: "white",
-    fontSize: 16,
-    marginBottom: 8,
+    fontSize: 16, // Reduzido para economizar espaço
+    marginTop: 6,
+    marginBottom: 8, // Reduzido para economizar espaço
   },
+  // Novos estilos para o grid
+  statsGrid: {
+    marginTop: 10,
+    width: '100%',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statItemGrid: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 10, // Reduzido para economizar espaço
+    width: '49%', // Aumentado para reduzir o espaço entre os itens
+    elevation: 2, // Adicionado para dar profundidade
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+  },
+  statTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  // Estilos originais mantidos
   statItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -228,28 +323,30 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   statIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28, // Reduzido para economizar espaço
+    height: 28, // Reduzido para economizar espaço
+    borderRadius: 14,
     backgroundColor: "#F0F8FF",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 15, // Reduzido para economizar espaço
     fontWeight: "bold",
     color: "#4A90E2",
     marginRight: 4,
   },
   statLabel: {
-    fontSize: 16,
+    fontSize: 14, // Reduzido para economizar espaço
     color: "#888",
   },
   list: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 16,
+  },
+  listContent: {
+    paddingBottom: '35%',
   },
   rankingItem: {
     flexDirection: "row",
@@ -262,7 +359,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    
   },
   highlightedItem: {
     backgroundColor: "#FFA500",
@@ -311,84 +407,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 4,
   },
-  // Estilos para o modal de seleção de avatar
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    width: "90%",
-    backgroundColor: "#333",
-    borderRadius: 24,
-    padding: 24,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "white",
-  },
-  avatarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 16,
-  },
-  avatarOption: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
-    backgroundColor: "#444",
-    position: "relative",
-  },
-  selectedAvatarOption: {
-    borderColor: "#56A6DC",
-    backgroundColor: "rgba(86, 166, 220, 0.1)",
-  },
-  checkIcon: {
-    position: "absolute",
-    bottom: 4,
-    right: 4,
-    backgroundColor: "#56A6DC",
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    width: "100%",
-    gap: 12,
-    marginTop: 24,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: "#E53935",
-    padding: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: "#FFA500",
-    padding: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  confirmButtonText: {
-    color: "#333",
-    fontWeight: "bold",
-  },
 })
 
 export default RankingScreen
-

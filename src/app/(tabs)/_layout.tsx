@@ -7,6 +7,7 @@ import { Tabs } from "expo-router"
 import { View, Animated, Pressable, StyleSheet } from "react-native"
 import { useRef, useEffect } from "react"
 import React from "react"
+import { FontAwesome6 } from "@expo/vector-icons"
 
 interface TabBarButtonProps {
   accessibilityState: { selected: boolean }
@@ -132,9 +133,9 @@ export default function TabLayout() {
               isFocused={props.accessibilityState.selected}
               onPress={props.onPress}
               icon={
-                <FontAwesome
-                  size={32}
-                  name="gear"
+                <FontAwesome6
+                  size={23.5}
+                  name="ranking-star"
                   color={props.accessibilityState.selected ? "#EAAE00" : "#FFFFFF"}
                 />
               }

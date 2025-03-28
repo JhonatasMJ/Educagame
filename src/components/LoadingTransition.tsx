@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useRef } from "react"
-import { StyleSheet, Animated, Easing, ActivityIndicator } from "react-native"
+import { StyleSheet, Animated, Easing, ActivityIndicator, Dimensions } from "react-native"
 
 interface LoadingTransitionProps {
   isVisible: boolean
@@ -11,6 +11,7 @@ interface LoadingTransitionProps {
 const LoadingTransition = ({ isVisible, onAnimationComplete }: LoadingTransitionProps) => {
   const slideAnim = useRef(new Animated.Value(isVisible ? 0 : -1000)).current
   const opacityAnim = useRef(new Animated.Value(isVisible ? 1 : 0)).current
+  const { height, width } = Dimensions.get("window")
 
   useEffect(() => {
     if (isVisible) {
@@ -62,6 +63,9 @@ const LoadingTransition = ({ isVisible, onAnimationComplete }: LoadingTransition
         styles.container,
         {
           transform: [{ translateY: slideAnim }],
+          opacity: opacityAnim,
+          width: width,
+          height: height,
         },
       ]}
     >
@@ -73,7 +77,7 @@ const LoadingTransition = ({ isVisible, onAnimationComplete }: LoadingTransition
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    backgroundColor: "#3185BE" ,
+    backgroundColor: "#3185BE",
     top: 0,
     left: 0,
     right: 0,

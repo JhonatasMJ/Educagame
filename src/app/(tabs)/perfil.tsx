@@ -14,6 +14,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { getDatabase, ref, update } from 'firebase/database';
 import TextInputLabel from '@/src/components/TextInputLabel';
 import Toast from 'react-native-toast-message';
+import LoadingTransition from '@/src/components/LoadingTransition';
 const { height, width } = Dimensions.get('window');
 const Drawer = createDrawerNavigator();
 
@@ -25,7 +26,7 @@ const avatarComponents = {
   avatar4: BigAvatar4,
 }
 
-const StatsContent = ({ navigation, onOpenDrawer }: any) => {
+const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   const { isDesktop, isMobileDevice } = useDeviceType();
   const { userData, authUser, refreshUserData, loading } = useAuth();
   const [editar, setEditar] = useState(false);
@@ -103,11 +104,18 @@ const StatsContent = ({ navigation, onOpenDrawer }: any) => {
     <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
           <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
         <SafeAreaView style={{ backgroundColor: '#56A6DC', flex: 1 }}>
-      {loading ? (
-        <View style={{ flex: 1, height: '100%', width: '100%', backgroundColor: '#56A6DC', justifyContent: 'center', alignItems: 'center' }}>
-          <Text className="text-white text-lg">Carregando perfil...</Text>
-        </View>
-      ) : (
+        {loading ? (
+  <View style={{ 
+    flex: 1,           // This ensures the view takes full available space
+    backgroundColor: '#56A6DC', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    height: '100%',    // Optional, given flex: 1
+    width: '100%'      // Optional, given flex: 1
+  }}>
+    <Text className="text-white text-lg">Carregando perfil...</Text>
+  </View>
+) : (
         <>
         <View className="h-40"></View>
 
@@ -287,17 +295,17 @@ const StatsContent = ({ navigation, onOpenDrawer }: any) => {
 };
 
 // Drawer que participa da tela como um componente a parte
-const StatsScreen = () => {
+const PerfilScreen = () => {
   const { isDesktop, isMobileDevice } = useDeviceType();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { width } = Dimensions.get('window');
 
-  // Nova lógica para o StatsScreen
+  // Nova lógica para o PerfilScreen
   // Se estiver na web (desktop ou mobile), usa o CustomWebDrawer
   if (Platform.OS === 'web') {
     return (
       <View style={[styles.navigatorContainer, { overflow: 'hidden' }]}>
-        <StatsContent
+        <PerfilContent
           onOpenDrawer={() => setIsDrawerOpen(true)}
         />
         <CustomWebDrawer
@@ -330,8 +338,8 @@ const StatsScreen = () => {
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >
         <Drawer.Screen
-          name="StatsContent"
-          component={StatsContent}
+          name="PerfilContent"
+          component={PerfilContent}
           options={{
             drawerLabel: 'Stats',
           }}
@@ -369,4 +377,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StatsScreen;
+export default PerfilScreen;
