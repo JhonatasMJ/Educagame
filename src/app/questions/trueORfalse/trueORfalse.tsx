@@ -197,11 +197,7 @@ const TrueOrFalse = () => {
               wrongAnswers: wrongQuestions.length.toString(),
             },
           } as any)
-        } else {
-          // Some questions are still wrong, alert the user
-          Alert.alert("Atenção", "Você ainda tem questões incorretas. Vamos tentar novamente!", [
-            { text: "OK", onPress: () => setCurrentQuestionIndex(wrongQuestions[0]) },
-          ])
+        } else {setCurrentQuestionIndex(wrongQuestions[0])
         }
       }
     } else {
@@ -222,7 +218,7 @@ const TrueOrFalse = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1  bg-primary">
+    <SafeAreaView className="flex-1 bg-primary">
 <StatusBar barStyle={"dark-content"} backgroundColor={showLoading ? "#3185BE" : "#F6A608" }  translucent={false} />
       <View className="px-4 py-3 bg-secondary  border-tertiary border-b-4 shadow-sm">
         <View className="flex-row justify-between items-center">
@@ -250,8 +246,11 @@ const TrueOrFalse = () => {
 
       {/* Question Content */}
       <Animated.View
-        className="flex-1 px-5 py-6"
+      
         style={{
+          flex: 1,
+          padding: 12,
+          marginBottom: 8,
           opacity: opacityAnim,
           transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
         }}
@@ -286,49 +285,47 @@ const TrueOrFalse = () => {
 
         <View className="space-y-4">
           <TouchableOpacity
-            className={`flex-row items-center p-4 rounded-lg   ${
-              selectedAnswer === true ? "bg-green-100 border-green-500" : "bg-lime-500 "
+            className={`flex-row items-center p-4    ${
+              selectedAnswer === true ? "bg-lime-500 border-green-500" : "bg-lime-100 "
             }`}
             style={{
+              borderRadius: 8,
               borderBottomWidth: 6, 
               borderBottomColor: "#117805", 
-              shadowColor: "#FF4F4F",
-              shadowOffset: { width: 4, height: 6 },
-              shadowOpacity: 0.8,
-              shadowRadius: 8,
-              elevation: 10, // Sombras para Android
             }}
             onPress={() => handleAnswer(true)}
             disabled={selectedAnswer !== null}
             activeOpacity={0.8}
           >
-            <View className="w-10 h-10 rounded-full bg-green-100 justify-center items-center mr-3">
+            <View className={
+              `w-10 h-10 rounded-full justify-center items-center mr-3 ${
+              selectedAnswer === true ? "bg-lime-100" : "bg-lime-500 "
+            }`
+            }>
               <Check width={20} height={20} color="#023614" />
             </View>
-            <Text className={`text-lg font-medium shadow-md  ${selectedAnswer === true ? "text-green-800" : "text-lime-950"}`}>
+            <Text className={`text-lg font-medium  ${selectedAnswer === true ? "text-green-800" : "text-lime-950"}`}>
               Verdadeiro
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-        className={`flex-row items-center p-4 rounded-lg mt-4 ${
-          selectedAnswer === false ? "bg-red-100" : "bg-red-600"
+        className={`flex-row items-center p-4  mt-4 ${
+          selectedAnswer === false ? "bg-red-500" : "bg-red-100"
         }`}
         style={{
+          borderRadius: 8,
           borderBottomWidth: 6, // Dá a sensação de relevo
           borderBottomColor: "#870000", // Cor mais escura para dar profundidade
-          shadowColor: "#FF4F4F",
-          shadowOffset: { width: 4, height: 6 },
-          shadowOpacity: 0.8,
-          shadowRadius: 8,
-          elevation: 10, // Sombras para Android
         }}
     
         onPress={() => handleAnswer(false)}
         disabled={selectedAnswer !== null}
         activeOpacity={0.8}
       >
-        <View className="w-10 h-10 rounded-full justify-center items-center mr-3">
+        <View className={`w-10 h-10 rounded-full justify-center items-center mr-3 ${
+          selectedAnswer === false ? "bg-red-100" : "bg-red-500"
+        }`}>
           <X width={20} height={20} color="#5e0303" />
         </View>
         <Text

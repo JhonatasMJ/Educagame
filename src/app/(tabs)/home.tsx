@@ -41,6 +41,7 @@ export interface Question {
   // For multiple choice questions
   options?: string[]
   correctOptionIndex?: number
+  explanation?: string
 }
 
 // Mock data for trilhas (courses) with questions
@@ -61,24 +62,26 @@ export const trilhas = [
           {
             id: "q1",
             type: QuestionType.TRUE_OR_FALSE,
-            description:
-              "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat.",
+            description: "React Native permite escrever código uma vez e executar em múltiplas plataformas.",
             isTrue: true,
+            explanation:
+              "Correto! React Native permite que você escreva código JavaScript que funciona tanto em iOS quanto em Android.",
           },
           {
             id: "q2",
             type: QuestionType.TRUE_OR_FALSE,
-            description:
-              "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, euismod tincidunt ut laoreet dolore magna aliquam erat.",
-              image: require("@/assets/images/logo.png"),
-            isTrue: false,
+            description: "React Native compila para código nativo de cada plataforma.",
+            image: require("@/assets/images/logo.png"),
+            isTrue: true,
+            explanation: "Correto! O React Native traduz seus componentes para elementos nativos da plataforma.",
           },
           {
             id: "q3",
             type: QuestionType.TRUE_OR_FALSE,
-            description:
-              "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat.",
-            isTrue: true,
+            description: "React Native usa WebView para renderizar a interface do usuário.",
+            isTrue: false,
+            explanation:
+              "Incorreto! React Native não usa WebView, ele renderiza componentes nativos reais da plataforma.",
           },
         ],
       },
@@ -94,12 +97,16 @@ export const trilhas = [
             type: QuestionType.TRUE_OR_FALSE,
             description: "React Native usa a mesma base de código para iOS e Android.",
             isTrue: true,
+            explanation:
+              "Correto! Você escreve uma única base de código JavaScript que funciona em ambas as plataformas.",
           },
           {
             id: "q2",
             type: QuestionType.TRUE_OR_FALSE,
             description: "StyleSheet no React Native funciona exatamente como CSS na web.",
             isTrue: false,
+            explanation:
+              "Incorreto! Embora similar, StyleSheet no React Native tem diferenças importantes, como uso de camelCase e suporte limitado a algumas propriedades CSS.",
           },
         ],
       },
@@ -115,12 +122,16 @@ export const trilhas = [
             type: QuestionType.TRUE_OR_FALSE,
             description: "React Navigation é a única biblioteca de navegação para React Native.",
             isTrue: false,
+            explanation:
+              "Incorreto! Existem várias bibliotecas de navegação, como React Navigation, Expo Router e React Native Navigation.",
           },
           {
             id: "q2",
             type: QuestionType.TRUE_OR_FALSE,
             description: "Stack Navigator permite navegação em pilha entre telas.",
             isTrue: true,
+            explanation:
+              "Correto! Stack Navigator empilha telas uma sobre a outra, permitindo navegação para frente e para trás.",
           },
         ],
       },
@@ -136,12 +147,15 @@ export const trilhas = [
             type: QuestionType.TRUE_OR_FALSE,
             description: "useState é um hook que permite adicionar estado a componentes funcionais.",
             isTrue: true,
+            explanation:
+              "Correto! useState é um hook do React que permite adicionar estado local a componentes funcionais.",
           },
           {
             id: "q2",
             type: QuestionType.TRUE_OR_FALSE,
             description: "Props são imutáveis em componentes React.",
             isTrue: true,
+            explanation: "Correto! Props são somente leitura e não devem ser modificadas dentro do componente.",
           },
         ],
       },
@@ -157,12 +171,16 @@ export const trilhas = [
             type: QuestionType.TRUE_OR_FALSE,
             description: "React Native permite acesso direto à câmera sem bibliotecas adicionais.",
             isTrue: false,
+            explanation:
+              "Incorreto! Para acessar a câmera, você precisa de bibliotecas como expo-camera ou react-native-camera.",
           },
           {
             id: "q2",
             type: QuestionType.TRUE_OR_FALSE,
             description: "AsyncStorage é usado para armazenamento persistente de dados.",
             isTrue: true,
+            explanation:
+              "Correto! AsyncStorage é uma API para armazenamento de dados chave-valor assíncrono e não criptografado.",
           },
         ],
       },
@@ -185,6 +203,7 @@ export const trilhas = [
             type: QuestionType.TRUE_OR_FALSE,
             description: "A camisa é uma peça de roupa para a parte superior do corpo.",
             isTrue: true,
+            explanation: "Correto! A camisa é uma peça de vestuário usada na parte superior do corpo.",
           },
         ],
       },
@@ -200,6 +219,8 @@ export const trilhas = [
             type: QuestionType.TRUE_OR_FALSE,
             description: "Vermelho, azul e amarelo são cores primárias.",
             isTrue: true,
+            explanation:
+              "Correto! Vermelho, azul e amarelo são consideradas as três cores primárias no sistema de cores subtrativas.",
           },
         ],
       },
@@ -215,9 +236,8 @@ const Home = () => {
   const { userData, authUser, refreshUserData } = useAuth()
   const { getPhaseCompletionPercentage } = useGameProgress()
 
-  const nome = `${userData?.nome} ${userData?.sobrenome}`
+  const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
-  const flatListRef = useRef(null)
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
 
   // Animated scroll value for header animation
@@ -387,7 +407,6 @@ const Home = () => {
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
-      
       <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
         <TouchableOpacity
           onPress={handlePreviousTrilha}
@@ -440,7 +459,7 @@ const Home = () => {
         <ScrollView
           ref={scrollViewRef}
           className="flex-1"
-          contentContainerClassName="items-center px-4 pb-24" // Padding inferior para dar espaço à barra de navegação
+          contentContainerStyle={{ alignItems: "center", paddingHorizontal: 16, paddingBottom: 96 }}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16} // Standard value for smooth animation

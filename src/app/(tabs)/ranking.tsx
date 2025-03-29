@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Animated } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Animated, StatusBar } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import { useAuth } from "@/src/context/AuthContext"
 
@@ -140,6 +140,8 @@ const RankingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+          <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
+    
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.titleContainer}>
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12, // Reduzido para economizar espaço
+    paddingVertical: 20, // Reduzido para economizar espaço
   },
   titleContainer: {
     flexDirection: "row",
