@@ -68,12 +68,20 @@ export const trilhas = [
               "Correto! React Native permite que você escreva código JavaScript que funciona tanto em iOS quanto em Android.",
           },
           {
-            id: "q2",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "React Native compila para código nativo de cada plataforma.",
-            image: require("@/assets/images/logo.png"),
-            isTrue: true,
-            explanation: "Correto! O React Native traduz seus componentes para elementos nativos da plataforma.",
+            id: "q1",
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Lorem ____ ipsum",
+            options: [
+              { id: "a", text: "React Navigation" },
+              { id: "b", text: "Expo Router" },
+              { id: "c", text: "React Native Navigation" },
+              { id: "d", text: "React Router Native" },
+            ],
+            correctOptions: ["a", "b", "c"],
+            multipleCorrect: true,
+            statementText: "Complete a frase",
+            explanation:
+              "Todas estas são bibliotecas de navegação populares para React Native, cada uma com suas próprias vantagens e abordagens.",
           },
           {
             id: "q3",
@@ -119,19 +127,34 @@ export const trilhas = [
         questions: [
           {
             id: "q1",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "React Navigation é a única biblioteca de navegação para React Native.",
-            isTrue: false,
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Quais das seguintes são bibliotecas de navegação para React Native?",
+            options: [
+              { id: "a", text: "React Navigation" },
+              { id: "b", text: "Expo Router" },
+              { id: "c", text: "React Native Navigation" },
+              { id: "d", text: "React Router Native" },
+            ],
+            correctOptions: ["a", "b", "c", "d"],
+            multipleCorrect: true,
+            statementText: "Selecione todas as opções corretas:",
             explanation:
-              "Incorreto! Existem várias bibliotecas de navegação, como React Navigation, Expo Router e React Native Navigation.",
+              "Todas estas são bibliotecas de navegação populares para React Native, cada uma com suas próprias vantagens e abordagens.",
           },
           {
             id: "q2",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "Stack Navigator permite navegação em pilha entre telas.",
-            isTrue: true,
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Qual navegador no React Navigation permite navegação em pilha entre telas?",
+            options: [
+              { id: "a", text: "Stack Navigator" },
+              { id: "b", text: "Tab Navigator" },
+              { id: "c", text: "Drawer Navigator" },
+              { id: "d", text: "Bottom Navigator" },
+            ],
+            correctOptions: ["a"],
+            multipleCorrect: false,
             explanation:
-              "Correto! Stack Navigator empilha telas uma sobre a outra, permitindo navegação para frente e para trás.",
+              "O Stack Navigator empilha telas uma sobre a outra, permitindo navegação para frente e para trás.",
           },
         ],
       },
@@ -144,11 +167,19 @@ export const trilhas = [
         questions: [
           {
             id: "q1",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "useState é um hook que permite adicionar estado a componentes funcionais.",
-            isTrue: true,
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Quais dos seguintes são hooks do React para gerenciamento de estado?",
+            options: [
+              { id: "a", text: "useState" },
+              { id: "b", text: "useEffect" },
+              { id: "c", text: "useReducer" },
+              { id: "d", text: "useContext" },
+            ],
+            correctOptions: ["a", "c", "d"],
+            multipleCorrect: true,
+            statementText: "Selecione todas as opções que são hooks de estado:",
             explanation:
-              "Correto! useState é um hook do React que permite adicionar estado local a componentes funcionais.",
+              "useState, useReducer e useContext são hooks relacionados ao gerenciamento de estado. useEffect é um hook para efeitos colaterais, não diretamente para estado.",
           },
           {
             id: "q2",
@@ -168,19 +199,35 @@ export const trilhas = [
         questions: [
           {
             id: "q1",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "React Native permite acesso direto à câmera sem bibliotecas adicionais.",
-            isTrue: false,
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Quais das seguintes APIs são usadas para armazenamento de dados em React Native?",
+            options: [
+              { id: "a", text: "AsyncStorage" },
+              { id: "b", text: "SQLite" },
+              { id: "c", text: "Realm" },
+              { id: "d", text: "Firebase Firestore" },
+            ],
+            correctOptions: ["a", "b", "c", "d"],
+            multipleCorrect: true,
+            image: require("@/assets/images/logo.png"),
+            statementText: "Selecione todas as opções corretas:",
             explanation:
-              "Incorreto! Para acessar a câmera, você precisa de bibliotecas como expo-camera ou react-native-camera.",
+              "Todas estas são opções válidas para armazenamento de dados em aplicativos React Native, cada uma com diferentes casos de uso e complexidade.",
           },
           {
             id: "q2",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "AsyncStorage é usado para armazenamento persistente de dados.",
-            isTrue: true,
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Qual API é usada para acessar a localização do dispositivo em React Native?",
+            options: [
+              { id: "a", text: "react-native-geolocation" },
+              { id: "b", text: "expo-location" },
+              { id: "c", text: "react-native-maps" },
+              { id: "d", text: "react-native-gps" },
+            ],
+            correctOptions: ["a", "b"],
+            multipleCorrect: true,
             explanation:
-              "Correto! AsyncStorage é uma API para armazenamento de dados chave-valor assíncrono e não criptografado.",
+              "react-native-geolocation e expo-location são APIs para acessar a localização do dispositivo. react-native-maps é para exibir mapas e react-native-gps não é uma biblioteca padrão.",
           },
         ],
       },
@@ -200,10 +247,19 @@ export const trilhas = [
         questions: [
           {
             id: "q1",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "A camisa é uma peça de roupa para a parte superior do corpo.",
-            isTrue: true,
-            explanation: "Correto! A camisa é uma peça de vestuário usada na parte superior do corpo.",
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Quais das seguintes são peças de roupa para a parte superior do corpo?",
+            options: [
+              { id: "a", text: "Camisa" },
+              { id: "b", text: "Calça" },
+              { id: "c", text: "Blusa" },
+              { id: "d", text: "Sapato" },
+            ],
+            correctOptions: ["a", "c"],
+            multipleCorrect: true,
+            statementText: "Selecione todas as opções corretas:",
+            explanation:
+              "Camisa e blusa são peças de vestuário usadas na parte superior do corpo. Calça é usada na parte inferior e sapato nos pés.",
           },
         ],
       },
@@ -216,17 +272,40 @@ export const trilhas = [
         questions: [
           {
             id: "q1",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "Vermelho, azul e amarelo são cores primárias.",
-            isTrue: true,
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Quais das seguintes são cores primárias no sistema de cores subtrativas?",
+            options: [
+              { id: "a", text: "Vermelho" },
+              { id: "b", text: "Verde" },
+              { id: "c", text: "Azul" },
+              { id: "d", text: "Amarelo" },
+            ],
+            correctOptions: ["a", "c", "d"],
+            multipleCorrect: true,
+            statementText: "Selecione todas as cores primárias:",
             explanation:
-              "Correto! Vermelho, azul e amarelo são consideradas as três cores primárias no sistema de cores subtrativas.",
+              "No sistema de cores subtrativas (como tintas), as cores primárias são vermelho, azul e amarelo. No sistema aditivo (como luz), são vermelho, verde e azul.",
+          },
+          {
+            id: "q2",
+            type: QuestionType.MULTIPLE_CHOICE,
+            description: "Qual é a cor resultante da mistura de azul e amarelo?",
+            options: [
+              { id: "a", text: "Verde" },
+              { id: "b", text: "Roxo" },
+              { id: "c", text: "Laranja" },
+              { id: "d", text: "Marrom" },
+            ],
+            correctOptions: ["a"],
+            multipleCorrect: false,
+            explanation: "A mistura de azul e amarelo resulta na cor verde.",
           },
         ],
       },
     ],
   },
 ]
+
 
 // Main Home component
 const Home = () => {

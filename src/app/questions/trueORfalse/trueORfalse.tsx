@@ -1,351 +1,146 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Text, View, SafeAreaView, TouchableOpacity, Image, Alert, Animated, ActivityIndicator, StatusBar } from "react-native"
-import { Check, X, Clock, Award, AlertTriangle } from "lucide-react-native"
-import { router, useLocalSearchParams } from "expo-router"
-import StepIndicator from "@/src/components/StepIndicator"
-import FeedbackModal from "@/src/components/FeedbackModal"
-import LoadingTransition from "@/src/components/LoadingTransition"
-import { QuestionType } from "../../(tabs)/home"
-import { useGameProgress } from "@/src/context/GameProgressContext"
-import GameTimer from "@/src/utils/GameTimer"
-
+import { useState, useEffect } from "react"
+import { View, Text, TouchableOpacity, Image } from "react-native"
+import { Check, X } from "lucide-react-native"
+import type { QuestionType } from "../../(tabs)/home" // Ajuste o caminho conforme necessário
+import React from "react"
 
 interface TrueOrFalseQuestion {
   id: string
   type: QuestionType.TRUE_OR_FALSE
   description: string
-  image?: string
+  image?: string | any // Aceita tanto string quanto objeto require()
   isTrue: boolean
-  statementText?: string // Added customizable statement text
+  statementText?: string
+  explanation?: string
 }
 
-// Import the trilhas data to access questions
-import { trilhas } from "../../(tabs)/home"
-import React from "react"
+interface TrueOrFalseProps {
+  question: TrueOrFalseQuestion
+  onAnswer: (correct: boolean, explanation?: string) => void
+  questionNumber: number
+}
 
-const TrueOrFalse = () => {
-  const params = useLocalSearchParams()
-  const phaseId = params.phaseId as string
-  const trailId = (params.trailId as string) || "1" // Default to first trail if not provided
-
-  const { startPhase, answerQuestion, completePhase } = useGameProgress()
-
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [showFeedback, setShowFeedback] = useState(false)
-  const [isCorrect, setIsCorrect] = useState(false)
+const TrueOrFalse = ({ question, onAnswer, questionNumber }: TrueOrFalseProps) => {
   const [selectedAnswer, setSelectedAnswer] = useState<boolean | null>(null)
-  const [wrongQuestions, setWrongQuestions] = useState<number[]>([])
-  const [questions, setQuestions] = useState<TrueOrFalseQuestion[]>([])
-  const [isRetrying, setIsRetrying] = useState(false)
-  const [totalTime, setTotalTime] = useState(0)
-  const [isTimerRunning, setIsTimerRunning] = useState(true)
-  const [showLoading, setShowLoading] = useState(false)
-  const [allQuestionsCorrect, setAllQuestionsCorrect] = useState(false)
 
-  // Animation values
-  const scaleAnim = useRef(new Animated.Value(0.95)).current
-  const opacityAnim = useRef(new Animated.Value(0)).current
-  const slideAnim = useRef(new Animated.Value(50)).current
-
-  // Timer interval reference
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Find the questions for this phase
+  // Log para debug
   useEffect(() => {
-    // Find the phase with the matching ID
-    for (const trilha of trilhas) {
-      const phase = trilha.etapas.find((etapa) => etapa.id === phaseId)
-      if (phase) {
-        // Filter for true/false questions only
-        const trueOrFalseQuestions = phase.questions.filter(
-          (q) => q.type === QuestionType.TRUE_OR_FALSE,
-        ) as TrueOrFalseQuestion[]
+    console.log("TrueOrFalse component mounted with question:", question)
+  }, [question])
 
-        setQuestions(trueOrFalseQuestions)
-
-        // Start tracking progress for this phase
-        startPhase(trailId, phaseId)
-        break
-      }
-    }
-
-    // Start entrance animations
-    Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [phaseId, trailId])
-
-  // Background timer implementation
+  // Reset selectedAnswer when question changes
   useEffect(() => {
-    // Start the timer
-    if (isTimerRunning) {
-      timerIntervalRef.current = setInterval(() => {
-        setTotalTime((prev) => prev + 1)
-      }, 1000)
-    }
+    setSelectedAnswer(null)
+    console.log("Question changed, resetting selectedAnswer")
+  }, [question.id]) // Use question.id as dependency to ensure it resets when the question changes
 
-    // Cleanup function
-    return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
-      }
-    }
-  }, [isTimerRunning])
-
-  // If no questions found, show a loading screen
-  if (questions.length === 0) {
+  // Verificação de segurança para evitar o erro
+  if (!question) {
+    console.error("Question is undefined in TrueOrFalse component")
     return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text className="text-gray-700 text-lg font-medium mt-4">Carregando questões...</Text>
-      </SafeAreaView>
+      <View className="flex-1 p-4 justify-center items-center">
+        <Text className="text-red-500">Erro: Questão não encontrada</Text>
+      </View>
     )
   }
 
-  const currentQuestion = questions[currentQuestionIndex]
   const defaultStatementText = "A afirmação é:"
-  const statementText = currentQuestion.statementText || defaultStatementText
+  const statementText = question.statementText || defaultStatementText
 
   const handleAnswer = (answer: boolean) => {
     setSelectedAnswer(answer)
-    const correct = answer === currentQuestion.isTrue
-    setIsCorrect(correct)
+    const correct = answer === question.isTrue
+    onAnswer(correct, question.explanation)
+  }
 
-    // Record answer in context
-    answerQuestion(correct, currentQuestion.id)
+  // Determinar como renderizar a imagem com base no tipo
+  const renderImage = () => {
+    if (!question.image) return null
 
-    // If answer is wrong, add to wrongQuestions array
-    if (!correct && !wrongQuestions.includes(currentQuestionIndex) && !isRetrying) {
-      setWrongQuestions((prev) => [...prev, currentQuestionIndex])
+    // Se for um objeto (require), use diretamente
+    if (typeof question.image === "object") {
+      return (
+        <View className="mb-5 rounded-lg overflow-hidden border border-gray-200">
+          <Image source={question.image} className="w-full h-48 rounded-lg" resizeMode="cover" />
+        </View>
+      )
     }
 
-    setShowFeedback(true)
-  }
-
-  const handleContinue = () => {
-    setShowFeedback(false)
-    setShowLoading(true)
-  }
-
-  const handleLoadingComplete = () => {
-    setSelectedAnswer(null)
-    setShowLoading(false)
-
-    // If we've gone through all questions, check if there are wrong questions to retry
-    if (currentQuestionIndex >= questions.length - 1 && !isRetrying) {
-      if (wrongQuestions.length > 0) {
-        // Start retrying wrong questions
-        setIsRetrying(true)
-        setCurrentQuestionIndex(wrongQuestions[0])
-      } else {
-        // All questions answered correctly
-        setAllQuestionsCorrect(true)
-        setIsTimerRunning(false)
-        completePhase(phaseId, totalTime)
-        router.push({
-          pathname: "/questions/completion/completion",
-          params: {
-            phaseId,
-            totalTime: totalTime.toString(),
-            wrongAnswers: "0",
-          },
-        } as any)
-      }
-    } else if (isRetrying) {
-      // If we're retrying and there are more wrong questions
-      const currentWrongIndex = wrongQuestions.indexOf(currentQuestionIndex)
-
-      if (currentWrongIndex < wrongQuestions.length - 1) {
-        // Move to the next wrong question
-        setCurrentQuestionIndex(wrongQuestions[currentWrongIndex + 1])
-      } else {
-        // Check if all retried questions are now correct
-        const allCorrect = wrongQuestions.every((index) => {
-          const question = questions[index]
-          // Check if this question is now marked as correct in our tracking
-          // This would require additional state tracking for retried questions
-          return isCorrect // This is simplified - you'd need to track each retried question
-        })
-
-        if (allCorrect) {
-          // All wrong questions have been retried and are now correct
-          setAllQuestionsCorrect(true)
-          setIsTimerRunning(false)
-          completePhase(phaseId, totalTime)
-          router.push({
-            pathname: "/questions/completion/completion",
-            params: {
-              phaseId,
-              totalTime: totalTime.toString(),
-              wrongAnswers: wrongQuestions.length.toString(),
-            },
-          } as any)
-        } else {setCurrentQuestionIndex(wrongQuestions[0])
-        }
-      }
-    } else {
-      // Move to the next question
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-    }
-  }
-
-  const handleTimeUpdate = (time: number) => {
-    setTotalTime(time)
-  }
-
-  // Format time for display
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+    // Se for uma string (URI), use como URI
+    return (
+      <View className="mb-5 rounded-lg overflow-hidden border border-gray-200">
+        <Image source={{ uri: question.image as string }} className="w-full h-48 rounded-lg" resizeMode="cover" />
+      </View>
+    )
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-primary">
-<StatusBar barStyle={"dark-content"} backgroundColor={showLoading ? "#3185BE" : "#F6A608" }  translucent={false} />
-      <View className="px-4 py-3 bg-secondary  border-tertiary border-b-4 shadow-sm">
-        <View className="flex-row justify-between items-center">
-          <View className="flex-row items-center">
-            <Clock size={16} color="#666" />
-            <Text className="text-gray-700 ml-1.5 font-medium">{formatTime(totalTime)}</Text>
-          </View>
-
-          <View className="flex-row items-center">
-            <Award size={16} color="#666" />
-            <Text className="text-gray-700 ml-1.5 font-medium">
-              {isRetrying ? `Revisão: ${wrongQuestions.length}` : `${currentQuestionIndex + 1}/${questions.length}`}
-            </Text>
-          </View>
-        </View>
-
-        {/* Progress indicator */}
-        <View className="mt-2">
-          <StepIndicator
-            currentStep={isRetrying ? wrongQuestions.indexOf(currentQuestionIndex) + 1 : currentQuestionIndex + 1}
-            totalSteps={isRetrying ? wrongQuestions.length : questions.length}
-          />
+    <View className="flex-1 p-4">
+      <View className="mb-5">
+        <Text className="text-md font-medium text-gray-100 mb-4">Questão {questionNumber}:</Text>
+        <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
         </View>
       </View>
 
-      {/* Question Content */}
-      <Animated.View
-      
-        style={{
-          flex: 1,
-          padding: 12,
-          marginBottom: 8,
-          opacity: opacityAnim,
-          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-        }}
-      >
-        {isRetrying && (
-          <View className="flex-row items-center bg-amber-100 px-3 py-2 rounded-md mb-4 border border-amber-300">
-            <AlertTriangle size={16} color="#D97706" />
-            <Text className="text-amber-800 font-medium ml-2">Revisando questões incorretas</Text>
-          </View>
-        )}
+      {renderImage()}
 
-    
-        <View className="mb-5">
-          <Text className="text-md font-medium text-gray-100 mb-4">Questão {currentQuestionIndex + 1}:</Text>
-          <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <Text className="text-lg text-gray-800 leading-relaxed">{currentQuestion.description}</Text>
-          </View>
-        </View>
+      <View className="mb-6">
+        <Text className="text-center text-lg font-semibold text-zinc-100">{statementText}</Text>
+      </View>
 
-       
-        {currentQuestion.image && (
-          <View className="mb-5 rounded-lg overflow-hidden border border-gray-200">
-            <Image source={{ uri: currentQuestion.image }} className="w-full h-48 rounded-lg" resizeMode="cover" />
-          </View>
-        )}
-
-        
-        <View className="mb-6">
-          <Text className="text-center text-lg font-semibold text-zinc-100">{statementText}</Text>
-        </View>
-
-
-        <View className="space-y-4">
-          <TouchableOpacity
-            className={`flex-row items-center p-4    ${
-              selectedAnswer === true ? "bg-lime-500 border-green-500" : "bg-lime-100 "
-            }`}
-            style={{
-              borderRadius: 8,
-              borderBottomWidth: 6, 
-              borderBottomColor: "#117805", 
-            }}
-            onPress={() => handleAnswer(true)}
-            disabled={selectedAnswer !== null}
-            activeOpacity={0.8}
-          >
-            <View className={
-              `w-10 h-10 rounded-full justify-center items-center mr-3 ${
-              selectedAnswer === true ? "bg-lime-100" : "bg-lime-500 "
-            }`
-            }>
-              <Check width={20} height={20} color="#023614" />
-            </View>
-            <Text className={`text-lg font-medium  ${selectedAnswer === true ? "text-green-800" : "text-lime-950"}`}>
-              Verdadeiro
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-        className={`flex-row items-center p-4  mt-4 ${
-          selectedAnswer === false ? "bg-red-500" : "bg-red-100"
-        }`}
-        style={{
-          borderRadius: 8,
-          borderBottomWidth: 6, // Dá a sensação de relevo
-          borderBottomColor: "#870000", // Cor mais escura para dar profundidade
-        }}
-    
-        onPress={() => handleAnswer(false)}
-        disabled={selectedAnswer !== null}
-        activeOpacity={0.8}
-      >
-        <View className={`w-10 h-10 rounded-full justify-center items-center mr-3 ${
-          selectedAnswer === false ? "bg-red-100" : "bg-red-500"
-        }`}>
-          <X width={20} height={20} color="#5e0303" />
-        </View>
-        <Text
-          className={`text-lg font-medium ${
-            selectedAnswer === false ? "text-red-800" : "text-gray-800"
+      <View className="space-y-4">
+        <TouchableOpacity
+          className={`flex-row items-center p-4 ${
+            selectedAnswer === true ? "bg-lime-500 border-green-500" : "bg-lime-100"
           }`}
+          style={{
+            borderRadius: 8,
+            borderBottomWidth: 6,
+            borderBottomColor: "#117805",
+          }}
+          onPress={() => handleAnswer(true)}
+          disabled={selectedAnswer !== null}
+          activeOpacity={0.8}
         >
-          Falso
-        </Text>
-      </TouchableOpacity>
-        </View>
-      </Animated.View>
+          <View
+            className={`w-10 h-10 rounded-full justify-center items-center mr-3 ${
+              selectedAnswer === true ? "bg-lime-100" : "bg-lime-500"
+            }`}
+          >
+            <Check width={20} height={20} color="#023614" />
+          </View>
+          <Text className={`text-lg font-medium ${selectedAnswer === true ? "text-green-800" : "text-lime-950"}`}>
+            Verdadeiro
+          </Text>
+        </TouchableOpacity>
 
-      {/* Feedback Modal */}
-      <FeedbackModal visible={showFeedback} isCorrect={isCorrect} onContinue={handleContinue} />
-
-      {/* Loading Transition */}
-      <LoadingTransition isVisible={showLoading} onAnimationComplete={handleLoadingComplete} />
-      <GameTimer isRunning={isTimerRunning} onTimeUpdate={handleTimeUpdate} showVisual={false} />
-    </SafeAreaView>
+        <TouchableOpacity
+          className={`flex-row items-center p-4 mt-4 ${selectedAnswer === false ? "bg-red-500" : "bg-red-100"}`}
+          style={{
+            borderRadius: 8,
+            borderBottomWidth: 6,
+            borderBottomColor: "#870000",
+          }}
+          onPress={() => handleAnswer(false)}
+          disabled={selectedAnswer !== null}
+          activeOpacity={0.8}
+        >
+          <View
+            className={`w-10 h-10 rounded-full justify-center items-center mr-3 ${
+              selectedAnswer === false ? "bg-red-100" : "bg-red-500"
+            }`}
+          >
+            <X width={20} height={20} color="#5e0303" />
+          </View>
+          <Text className={`text-lg font-medium ${selectedAnswer === false ? "text-red-800" : "text-gray-800"}`}>
+            Falso
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   )
 }
 

@@ -33,6 +33,7 @@ const StartPhase = ({
   const title = propTitle || (params.title as string)
   const description = propDescription || (params.description as string)
   const phaseId = params.phaseId as string
+  const trailId = params.trailId as string
 
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0]
@@ -71,9 +72,9 @@ const StartPhase = ({
 
   return (
     <SafeAreaView className="flex-1 bg-primary">
-      <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608"  translucent={false} />
+      <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608" translucent={false} />
       <View className="flex-1">
-        <ScrollView className="flex-1 pb-20">
+        <ScrollView showsVerticalScrollIndicator={false} className="flex-1 pb-20">
           <Animated.View
             className="flex-1 items-center justify-between"
             style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
@@ -165,7 +166,7 @@ const StartPhase = ({
           <View className="relative">
             <CustomButton
               title="CONTINUAR"
-              nextStep={`../trueORfalse/trueORfalse?phaseId=${phaseId}`}
+              nextStep={`/questions/game?phaseId=${phaseId}&trailId=${trailId}`}
               className="bg-secondary shadow-md"
               textClassName="tracking-wide"
             />

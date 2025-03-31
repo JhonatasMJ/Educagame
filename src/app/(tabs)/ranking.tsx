@@ -165,7 +165,7 @@ const RankingScreen = () => {
             }
           ]}
         >
-          <Text style={styles.statsTitle}>Confira seus resultados:</Text>
+          <Text style={styles.statsTitle}>Confira seus resultados detalhados:</Text>
 
           <View style={styles.statsGrid}>
             {/* Primeira linha do grid */}

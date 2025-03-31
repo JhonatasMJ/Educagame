@@ -143,7 +143,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
+     {/*  <Tabs.Screen
         name="Ia"
         options={{
           title: "Chat",
@@ -161,7 +161,7 @@ export default function TabLayout() {
             />
           ),
         }}
-      />
+      /> */}
     </Tabs>
   )
 }
