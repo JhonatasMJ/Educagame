@@ -36,20 +36,6 @@ const avatarComponents = {
   avatar4: BigAvatar4,
 }
 
-// Dados mock para a lista de ranking
-const usersData: User[] = [
-  { id: "1", name: "Vittor Patricio", result: 1000, avatarSource: "avatar1" },
-  { id: "2", name: "Vittor Patricio", result: 1000, avatarSource: "avatar2" },
-  { id: "3", name: "Vittor Patricio", result: 1000, avatarSource: "avatar3" },
-  { id: "4", name: "Vittor Patricio", result: 1000, avatarSource: "avatar4" },
-  { id: "5", name: "Vittor Patricio", result: 950, avatarSource: "avatar1" },
-  { id: "6", name: "Vittor Patricio", result: 900, avatarSource: "avatar2" },
-  { id: "7", name: "Vittor Patricio", result: 850, avatarSource: "avatar3" },
-  { id: "8", name: "Vittor Patricio", result: 800, avatarSource: "avatar4" },
-  { id: "9", name: "Vittor Patricio", result: 750, avatarSource: "avatar1" },
-  { id: "10", name: "Vittor Patricio", result: 700, avatarSource: "avatar2" },
-]
-
 // Dados mock para os detalhes do usuário logado
 const userDetailsData: UserDetails = {
   miles: 120,
@@ -60,11 +46,40 @@ const userDetailsData: UserDetails = {
 
 const RankingScreen = () => {
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(true)
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  
   // Usando o contexto de autenticação para obter o usuário atual
-  const { userData, authUser } = useAuth()
+  const { userData, authUser, getAllUsers } = useAuth()
 
-  // ID do usuário atual (simulando que o ID do Firebase é o mesmo do nosso mock)
-  const currentUserId = authUser?.uid || "1" // Fallback para o ID 1 se não houver usuário autenticado
+  // ID do usuário atual
+  const currentUserId = authUser?.uid || ""
+
+  // Buscar usuários do Firebase
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true)
+        const firebaseUsers = await getAllUsers()
+        
+        // Mapear os usuários para o formato esperado pelo componente
+        const formattedUsers = firebaseUsers.map(user => ({
+          id: user.id,
+          name: user.nome || "Usuário",
+          result: user.result || 0,
+          avatarSource: user.avatarSource || "avatar1"
+        }))
+        
+        setUsers(formattedUsers)
+      } catch (error) {
+        console.error("Erro ao buscar usuários:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchUsers()
+  }, [])
 
   // Animated values
   const statsHeight = useRef(new Animated.Value(isHeaderExpanded ? 1 : 0)).current
@@ -140,7 +155,7 @@ const RankingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-          <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
+      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
     
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -222,14 +237,20 @@ const RankingScreen = () => {
         </Animated.View>
       </View>
 
-      <FlatList
-        data={usersData}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando usuários...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={users}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -242,9 +263,9 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#FFA500",
     paddingHorizontal: 16,
-    borderBottomLeftRadius: 16, // Adicionado para melhorar o visual
-    borderBottomRightRadius: 16, // Adicionado para melhorar o visual
-    marginBottom: 6, // Adicionado espaço entre o header e a lista
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    marginBottom: 6,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -255,7 +276,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 20, // Reduzido para economizar espaço
+    paddingVertical: 20,
   },
   titleContainer: {
     flexDirection: "row",
@@ -284,11 +305,10 @@ const styles = StyleSheet.create({
   },
   statsTitle: {
     color: "white",
-    fontSize: 16, // Reduzido para economizar espaço
+    fontSize: 16,
     marginTop: 6,
-    marginBottom: 8, // Reduzido para economizar espaço
+    marginBottom: 8,
   },
-  // Novos estilos para o grid
   statsGrid: {
     marginTop: 10,
     width: '100%',
@@ -302,9 +322,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "white",
     borderRadius: 8,
-    padding: 10, // Reduzido para economizar espaço
-    width: '49%', // Aumentado para reduzir o espaço entre os itens
-    elevation: 2, // Adicionado para dar profundidade
+    padding: 10,
+    width: '49%',
+    elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -315,7 +335,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
   },
-  // Estilos originais mantidos
   statItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -325,8 +344,8 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   statIconContainer: {
-    width: 28, // Reduzido para economizar espaço
-    height: 28, // Reduzido para economizar espaço
+    width: 28,
+    height: 28,
     borderRadius: 14,
     backgroundColor: "#F0F8FF",
     justifyContent: "center",
@@ -334,13 +353,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   statValue: {
-    fontSize: 15, // Reduzido para economizar espaço
+    fontSize: 15,
     fontWeight: "bold",
     color: "#4A90E2",
     marginRight: 4,
   },
   statLabel: {
-    fontSize: 14, // Reduzido para economizar espaço
+    fontSize: 14,
     color: "#888",
   },
   list: {
@@ -408,6 +427,16 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     marginLeft: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 })
 

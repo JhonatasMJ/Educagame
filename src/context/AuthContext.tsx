@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { getDatabase, ref, get } from 'firebase/database';
@@ -11,8 +10,8 @@ interface AuthContextData {
   loading: boolean;
   error: string | null;
   refreshUserData: () => Promise<void>;
+  getAllUsers: () => Promise<User[]>; // Added new function
 }
-
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
 
@@ -28,7 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const fetchUserData = async (uid: string) => {
     try {
-      setLoading(true); // Adicionado para indicar que está carregando
+      setLoading(true);
       const db = getDatabase();
       const userRef = ref(db, 'users/' + uid);
       const snapshot = await get(userRef);
@@ -45,7 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error(err);
       setUserData(null);
     } finally {
-      setLoading(false); // Finaliza o carregamento independente do resultado
+      setLoading(false);
     }
   };
 
@@ -55,6 +54,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // New function to get all users from Firebase
+  const getAllUsers = async (): Promise<User[]> => {
+    try {
+      const db = getDatabase();
+      const usersRef = ref(db, 'users');
+      const snapshot = await get(usersRef);
+      
+      if (snapshot.exists()) {
+        const usersData = snapshot.val();
+        // Convert the object to an array and add the key as id
+        const usersArray = Object.entries(usersData).map(([id, data]) => ({
+          id,
+          ...(data as any)
+        }));
+        
+        // Sort users by result (assuming there's a result field)
+        return usersArray.sort((a, b) => (b.result || 0) - (a.result || 0));
+      }
+      return [];
+    } catch (err) {
+      console.error('Erro ao buscar todos os usuários:', err);
+      return [];
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -77,7 +100,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userData,
     loading,
     error,
-    refreshUserData
+    refreshUserData,
+    getAllUsers // Added to context value
   };
 
   return (
