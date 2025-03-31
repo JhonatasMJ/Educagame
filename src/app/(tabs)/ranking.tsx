@@ -66,7 +66,7 @@ const RankingScreen = () => {
         const formattedUsers = firebaseUsers.map(user => ({
           id: user.id,
           name: user.nome || "Usuário",
-          result: user.result || 0,
+         /*  result: user.result || 0, */
           avatarSource: user.avatarSource || "avatar1"
         }))
         
