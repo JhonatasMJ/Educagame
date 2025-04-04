@@ -9,6 +9,7 @@ import Cloudsvg from "../../../assets/images/cloud.svg"
 import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import React from "react"
+import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
 const { height } = Dimensions.get("window")
 
@@ -37,6 +38,7 @@ const Step04 = () => {
       })
       return
     }
+    const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
     try {
       // Create user in Firebase Authentication

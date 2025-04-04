@@ -1,14 +1,26 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, SafeAreaView, TextInput, StatusBar, StyleSheet, Dimensions, Platform, KeyboardAvoidingView, } from "react-native"
+import { useState, useRef, useEffect } from "react"
+import {
+  View,
+  Text,
+  SafeAreaView,
+  TextInput,
+  StatusBar,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  ScrollView,
+  Keyboard,
+} from "react-native"
 import { useLocalSearchParams, router } from "expo-router"
 import CustomButton from "@/src/components/CustomButton"
 import BigAvatar from "@/src/components/BigAvatar"
 import Cloudsvg from "../../../assets/images/cloud.svg"
 import ProgressDots from "@/src/components/ProgressDots"
-import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
+import { getAvatarTop } from "@/src/utils/layoutHelpers"
 import React from "react"
+import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
 const { width, height } = Dimensions.get("window")
 
@@ -18,12 +30,35 @@ const Step01 = () => {
   const [errors, setErrors] = useState<{ nome?: boolean; sobrenome?: boolean }>({})
   const [nomeFocused, setNomeFocused] = useState(false)
   const [sobrenomeFocused, setSobrenomeFocused] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const scrollViewRef = useRef<ScrollView>(null)
+  const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
+  
 
   // Get params from previous screen
   const { avatarId, avatarSource } = useLocalSearchParams<{
     avatarId: string
     avatarSource: string
   }>()
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardVisible(true)
+      // Scroll to input area when keyboard appears
+      scrollViewRef.current?.scrollTo({ y: 200, animated: true })
+    })
+
+    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false)
+      // Optionally scroll back to top when keyboard hides
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true })
+    })
+
+    return () => {
+      keyboardDidShowListener.remove()
+      keyboardDidHideListener.remove()
+    }
+  }, [])
 
   const getBorderColor = (field: "nome" | "sobrenome", isFocused: boolean) => {
     if (errors[field]) return "#FF0000"
@@ -74,106 +109,127 @@ const Step01 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-              style={styles.keyboardAvoidingView}
-      ></KeyboardAvoidingView>
-          <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
-      <View style={styles.backgroundContainer}>
-        <Cloudsvg width="90%" height="40%" />
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.contentContainer}>
+          {avatarSource && <BigAvatar avatarSource={avatarSource} style={{ marginBottom: -20 }} />}
+          <View style={styles.backgroundContainer}>
+            <Cloudsvg width="90%" height="40%" />
+          </View>
 
-      {avatarSource && (
-        <BigAvatar avatarSource={avatarSource} style={{ position: "absolute", zIndex: 2, top: getAvatarTop() }} />
-      )}
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Vamos criar sua conta!</Text>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Vamos criar sua conta!</Text>
+            <View style={styles.inputsContainer}>
+              <Text style={styles.label}>Nome</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { borderColor: getBorderColor("nome", nomeFocused) },
+                  Platform.select({
+                    web: nomeFocused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
+                  }),
+                ]}
+                placeholder="Digite seu nome"
+                value={nome}
+                onChangeText={(value) => updateField("nome", value)}
+                cursorColor="#3B82F6"
+                onFocus={() => setNomeFocused(true)}
+                onBlur={() => setNomeFocused(false)}
+                placeholderTextColor="#999"
+              />
 
-        <View style={styles.inputsContainer}>
-          <Text style={styles.label}>Nome</Text>
-          <TextInput
-            style={[
-              styles.input, 
-              { borderColor: getBorderColor("nome", nomeFocused) },           
-              Platform.select({
-                web: nomeFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-              })
-            ]}
-            placeholder="Digite seu nome"
-            value={nome}
-            onChangeText={(value) => updateField("nome", value)}
-            cursorColor="#3B82F6"
-            onFocus={() => setNomeFocused(true)}
-            onBlur={() => setNomeFocused(false)}
-            placeholderTextColor="#999"
-          />
+              <Text style={styles.label}>Sobrenome</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { borderColor: getBorderColor("sobrenome", sobrenomeFocused) },
+                  Platform.select({
+                    web: sobrenomeFocused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
+                  }),
+                ]}
+                placeholder="Digite seu sobrenome"
+                value={sobrenome}
+                onChangeText={(value) => updateField("sobrenome", value)}
+                cursorColor="#3B82F6"
+                onFocus={() => setSobrenomeFocused(true)}
+                onBlur={() => setSobrenomeFocused(false)}
+                placeholderTextColor="#999"
+              />
+            </View>
 
-          <Text style={styles.label}>Sobrenome</Text>
-          <TextInput
-            style={[styles.input, 
-              { borderColor: getBorderColor("sobrenome", sobrenomeFocused) },           
-              Platform.select({
-                web: sobrenomeFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-              })
-            ]}
-            placeholder="Digite seu sobrenome"
-            value={sobrenome}
-            onChangeText={(value) => updateField("sobrenome", value)}
-            cursorColor="#3B82F6"
-            onFocus={() => setSobrenomeFocused(true)}
-            onBlur={() => setSobrenomeFocused(false)}
-            placeholderTextColor="#999"
-          />
+            <View style={styles.buttonContainer}>
+              <CustomButton title="Continuar" onPress={validateAndContinue} />
+              <ProgressDots currentStep={1} />
+            </View>
+          </View>
         </View>
-
-        <View style={styles.buttonContainer}>
-          <CustomButton title="Continuar" onPress={validateAndContinue} />
-          <ProgressDots currentStep={1} />
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#56A6DC",
   },
   backgroundContainer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
+    zIndex: -1,
     alignItems: "center",
   },
-  title: { fontSize: 24, fontWeight: "bold", top: 10 },
+  scrollView: {
+    flex: 1,
+    zIndex: 2,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingTop: getAvatarTop(),
+    paddingBottom: 50,
+  },
+  contentContainer: {
+    width: "100%",
+    flex: 1,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginTop: 20,
+    marginBottom: 10,
+  },
   formContainer: {
     width: "100%",
-    height: height <= 732 ? "60%" : "55%",
-    marginTop: 20,
     backgroundColor: "#fff",
-    position: "absolute",
-    bottom: 0,
     borderTopRightRadius: 30,
     borderTopLeftRadius: 30,
     alignItems: "center",
-    zIndex: 3,
+    paddingBottom: 20,
+    minHeight: height * 0.2,
   },
   inputsContainer: {
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
+    paddingVertical: 10,
+    top: "4%",
     height: "55%",
-    justifyContent: "space-evenly",
-    top: "5%",
+    gap: 15,
   },
   label: {
     fontSize: 16,
     fontWeight: "500",
     color: "#1F2937",
     width: "80%",
-    top: "2%",
+    marginBottom: 0,
   },
   input: {
     width: "80%",
@@ -188,14 +244,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   buttonContainer: {
-    zIndex: 3,
-    position: "absolute",
-    bottom: bottomHeight(),
+    width: "100%",
+    alignItems: "center",
     justifyContent: "space-between",
-    height: "20%",
-  },
-  keyboardAvoidingView: {
-    flex: 1,
+    height: 80,
+    marginTop: 0,
   },
 })
 

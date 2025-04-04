@@ -12,6 +12,7 @@ import ProgressDots from "@/src/components/ProgressDots"
 import { MaskedTextInput } from "react-native-mask-text"
 import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
 import React from "react"
+import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
 const { height } = Dimensions.get("window")
 
@@ -36,6 +37,7 @@ const Step02 = () => {
 
   const [field1Focused, setField1Focused] = useState(false)
   const [field2Focused, setField2Focused] = useState(false)
+  const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
   const getBorderColor = (field: "birthDate" | "phone", isFocused: boolean) => {
     if (errors[field]) return "#FF0000"

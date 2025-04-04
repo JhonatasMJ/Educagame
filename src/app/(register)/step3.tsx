@@ -10,6 +10,7 @@ import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import Toast from "react-native-toast-message"
 import React from "react"
+import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
 const { height } = Dimensions.get("window")
 
@@ -21,6 +22,7 @@ const Step03 = () => {
   const [emailFocused, setEmailFocused] = useState(false)
   const [field1Focused, setField1Focused] = useState(false)
   const [field2Focused, setField2Focused] = useState(false)
+  const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
   // Get params from previous screen
   const { avatarId, avatarSource, nome, sobrenome, birthDate, phone, termsAccepted, lgpdAccepted } =

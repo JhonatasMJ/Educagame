@@ -11,6 +11,7 @@ import Avatar2 from "../../../assets/images/avatar2.svg";
 import Avatar3 from "../../../assets/images/avatar3.svg";
 import Avatar4 from "../../../assets/images/avatar4.svg";
 import Toast from "react-native-toast-message";
+import { useRequireAuth } from "@/src/hooks/useRequireAuth";
 
 const avatars = [
   { id: 1, source: Avatar1, sourceName: "avatar1" },
@@ -22,6 +23,7 @@ const avatars = [
 const Register = () => {
   const [selectedAvatarId, setSelectedAvatarId] = useState<number | null>(null);
   const [sourceAvatar, setSourceAvatar] = useState<string | null>(null);
+  const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
   const handleAvatarSelect = (id: number, sourceName: string) => {
     setSelectedAvatarId(id);
