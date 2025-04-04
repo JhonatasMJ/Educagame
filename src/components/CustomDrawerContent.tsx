@@ -1,38 +1,34 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Dimensions,
-  Platform,
-  TouchableOpacity,
-} from "react-native";
-import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
-import { useRouter } from "expo-router";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Foundation from "@expo/vector-icons/Foundation";
-import ModalComponent from "./modalComponent";
-import { MOBILE_WIDTH } from "@/PlataformWrapper";
-import useDeviceType from "@/useDeviceType";
-import AcionarChamado from "./AcionarChamado";
-import { useLogin } from "../hooks/UseLogin";
+"use client"
+
+import { useState } from "react"
+import { View, Text, StyleSheet, Dimensions, Platform, TouchableOpacity } from "react-native"
+import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer"
+import { useRouter } from "expo-router"
+import MaterialIcons from "@expo/vector-icons/MaterialIcons"
+import ModalComponent from "./modalComponent"
+import { MOBILE_WIDTH } from "@/PlataformWrapper"
+import useDeviceType from "@/useDeviceType"
+import AcionarChamado from "./AcionarChamado"
+import { useLogin } from "../hooks/UseLogin"
+import { useAuth } from "../context/AuthContext"
+import React from "react"
 
 export const CustomDrawerContent = (props: any) => {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const { isDesktop } = useDeviceType();
-  const windowWidth = Dimensions.get("window").width;
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const { isDesktop } = useDeviceType()
+  const windowWidth = Dimensions.get("window").width
 
-  const { clearSavedCredentials } = useLogin();
+  const { clearSavedCredentials } = useLogin()
+  const { logout } = useAuth() // Usando o logout do contexto de autenticação
 
   // Calculate modal width based on platform and device type
   const getModalWidth = () => {
     if (Platform.OS === "web" && isDesktop) {
-      return Math.min(400, MOBILE_WIDTH * 0.9); // Slightly smaller than simulator width
+      return Math.min(400, MOBILE_WIDTH * 0.9) // Slightly smaller than simulator width
     }
-    return Math.min(windowWidth * 0.9, 400); // Max width of 400px on mobile
-  };
+    return Math.min(windowWidth * 0.9, 400) // Max width of 400px on mobile
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -59,12 +55,24 @@ export const CustomDrawerContent = (props: any) => {
         />  */}
         <DrawerItem
           label="Sair da Conta"
-          icon={({ color, size }) => (
-            <MaterialIcons name="logout" size={size} color={color} />
-          )}
-          onPress={() => {
-            router.push("/login");
-            clearSavedCredentials();
+          icon={({ color, size }) => <MaterialIcons name="logout" size={size} color={color} />}
+          onPress={async () => {
+            try {
+              // Primeiro faz logout no Firebase
+              await logout()
+              // Depois limpa as credenciais salvas
+              await clearSavedCredentials()
+
+              // Fechar o drawer após o logout
+              if (props.navigation) {
+                props.navigation.closeDrawer()
+              }
+
+              // Redirecionar para a tela de login
+              router.replace("/login")
+            } catch (error) {
+              console.error("Erro ao fazer logout:", error)
+            }
           }}
         />
       </DrawerContentScrollView>
@@ -72,10 +80,7 @@ export const CustomDrawerContent = (props: any) => {
       <ModalComponent
         state={open}
         setState={setOpen}
-        styles={[
-          styles.modal,
-          Platform.OS === "web" && isDesktop && styles.webModal,
-        ]}
+        styles={[styles.modal, Platform.OS === "web" && isDesktop && styles.webModal]}
       >
         <View
           style={[
@@ -87,10 +92,7 @@ export const CustomDrawerContent = (props: any) => {
         >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Acionar Chamado</Text>
-            <TouchableOpacity
-              onPress={() => setOpen(false)}
-              style={styles.closeButton}
-            >
+            <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeButton}>
               <MaterialIcons name="close" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -101,8 +103,8 @@ export const CustomDrawerContent = (props: any) => {
         </View>
       </ModalComponent>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   drawerHeader: {
@@ -181,4 +183,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-});
+})
+
