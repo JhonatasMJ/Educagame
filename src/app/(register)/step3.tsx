@@ -1,8 +1,19 @@
 "use client"
 
 import { router, useLocalSearchParams } from "expo-router"
-import { useState } from "react"
-import { View, Text, SafeAreaView, StyleSheet, TextInput, StatusBar, Dimensions, Platform, KeyboardAvoidingView } from "react-native"
+import { useState, useRef, useEffect } from "react"
+import { 
+  View, 
+  Text, 
+  SafeAreaView, 
+  StyleSheet, 
+  TextInput, 
+  StatusBar, 
+  Dimensions, 
+  Platform, 
+  ScrollView,
+  Keyboard
+} from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
 import Cloudsvg from "../../../assets/images/cloud.svg"
@@ -22,6 +33,8 @@ const Step03 = () => {
   const [emailFocused, setEmailFocused] = useState(false)
   const [field1Focused, setField1Focused] = useState(false)
   const [field2Focused, setField2Focused] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const scrollViewRef = useRef<ScrollView>(null)
   const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
   // Get params from previous screen
@@ -36,6 +49,26 @@ const Step03 = () => {
       termsAccepted: string
       lgpdAccepted: string
     }>()
+
+  // Add keyboard event listeners similar to step01.tsx and step02.tsx
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardVisible(true)
+      // Scroll to input area when keyboard appears
+      scrollViewRef.current?.scrollTo({ y: 200, animated: true })
+    })
+
+    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false)
+      // Optionally scroll back to top when keyboard hides
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true })
+    })
+
+    return () => {
+      keyboardDidShowListener.remove()
+      keyboardDidHideListener.remove()
+    }
+  }, [])
 
   const getBorderColor = (field: "email" | "password" | "confirmPassword", isFocused: boolean) => {
     if (errors[field]) return "#FF0000"
@@ -89,79 +122,83 @@ const Step03 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={styles.keyboardAvoidingView}
-            ></KeyboardAvoidingView>
-          <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      
+      {/* Replace KeyboardAvoidingView with ScrollView */}
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.contentContainer}>
+          {avatarSource && <BigAvatar avatarSource={avatarSource} style={{ marginBottom: -20 }} />}
+          <View style={styles.backgroundContainer}>
+            <Cloudsvg width="90%" height="40%" />
+          </View>
 
-      <View style={styles.backgroundContainer}>
-        <Cloudsvg width="90%" height="40%" />
-      </View>
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Vamos criar uma senha!</Text>
 
-      {avatarSource && (
-        <BigAvatar avatarSource={avatarSource} style={{ position: "absolute", zIndex: 2, top: getAvatarTop() }} />
-      )}
+            <View style={styles.inputsContainer}>
+              <Text style={styles.label}>E-mail</Text>
+              <TextInput
+                style={[styles.input, { borderColor: getBorderColor("email", emailFocused) },
+                  Platform.select({
+                    web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                  })
+                ]}
+                placeholder="Digite seu e-mail"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Vamos criar uma senha!</Text>
+              <Text style={styles.label}>Senha</Text>
+              <TextInput
+                style={[styles.input, { borderColor: getBorderColor("password", field1Focused) },
+                  Platform.select({
+                    web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                  })
+                ]}
+                placeholder="Digite sua senha"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setField1Focused(true)}
+                onBlur={() => setField1Focused(false)}
+                secureTextEntry
+              />
 
-        <View style={styles.inputsContainer}>
-          <Text style={styles.label}>E-mail</Text>
-          <TextInput
-            style={[styles.input, { borderColor: getBorderColor("email", emailFocused) },
-              Platform.select({
-                web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                })
-            ]}
-            placeholder="Digite seu e-mail"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            onFocus={() => setEmailFocused(true)}
-            onBlur={() => setEmailFocused(false)}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+              <Text style={styles.label}>Confirme sua senha</Text>
+              <TextInput
+                style={[styles.input, { borderColor: getBorderColor("confirmPassword", field2Focused) },
+                  Platform.select({
+                    web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                  })
+                ]}
+                placeholder="Confirme sua senha"
+                placeholderTextColor="#999"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                onFocus={() => setField2Focused(true)}
+                onBlur={() => setField2Focused(false)}
+                secureTextEntry
+              />
+            </View>
 
-          <Text style={styles.label}>Senha</Text>
-          <TextInput
-            style={[styles.input, { borderColor: getBorderColor("password", field1Focused) },
-            Platform.select({
-              web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-              })
-            ]}
-            placeholder="Digite sua senha"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            onFocus={() => setField1Focused(true)}
-            onBlur={() => setField1Focused(false)}
-            secureTextEntry
-          />
-
-          <Text style={styles.label}>Confirme sua senha</Text>
-          <TextInput
-            style={[styles.input, { borderColor: getBorderColor("confirmPassword", field2Focused) },
-              Platform.select({
-                web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                })
-            ]}
-            placeholder="Confirme sua senha"
-            placeholderTextColor="#999"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            onFocus={() => setField2Focused(true)}
-            onBlur={() => setField2Focused(false)}
-            secureTextEntry
-          />
+            <View style={styles.buttonContainer}>
+              <CustomButton title="Continuar" onPress={handleContinue} />
+              <ProgressDots currentStep={3} />
+            </View>
+          </View>
         </View>
-
-        <View style={styles.buttonContainer}>
-          <CustomButton title="Continuar" onPress={handleContinue} />
-          <ProgressDots currentStep={3} />
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -169,43 +206,61 @@ const Step03 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#56A6DC",
   },
   backgroundContainer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
+    zIndex: -1,
+    alignItems: "center",
+  },
+  scrollView: {
+    flex: 1,
+    zIndex: 2,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingTop: getAvatarTop(),
+    paddingBottom: 50,
+  },
+  contentContainer: {
+    width: "100%",
+    flex: 1,
     alignItems: "center",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    top: "4%",
+    marginTop: 20,
+    marginBottom: 10,
   },
   formContainer: {
     width: "100%",
-    height: height <= 732 ? "60%" : "55%",
-    marginTop: 20,
     backgroundColor: "#fff",
-    position: "absolute",
-    bottom: 0,
     borderTopRightRadius: 30,
     borderTopLeftRadius: 30,
     alignItems: "center",
-    zIndex: 3,
+    paddingBottom: 20,
+    minHeight: height * 0.2,
   },
   inputsContainer: {
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
-    height: "60%",
-    justifyContent: "space-evenly",
-    top: "5%",
+    paddingVertical: 10,
+    height: "55%",
+    gap: 5,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#1F2937",
+    width: "80%",
+    marginBottom: 0,
   },
   input: {
     width: "80%",
-    height: "20%",
+    height: "21%",
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 16,
@@ -215,21 +270,13 @@ const styles = StyleSheet.create({
     color: "#000000",
     marginBottom: 8,
   },
-  label: {
-    fontSize: 16,
-    width: "80%",
-  },
   buttonContainer: {
-    zIndex: 3,
-    position: "absolute",
-    bottom: bottomHeight(),
-    justifyContent: "space-between",
-    height: "20%",
-  },
-  keyboardAvoidingView: {
-    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-around",
+    height: "15%",
+    marginTop: 0,
   },
 })
 
 export default Step03
-

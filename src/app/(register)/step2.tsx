@@ -1,7 +1,18 @@
 "use client"
 
-import { useState } from "react"
-import { SafeAreaView, StyleSheet, Text, TextInput, View, StatusBar, Dimensions, Platform, KeyboardAvoidingView } from "react-native"
+import { useState, useRef, useEffect } from "react"
+import { 
+  SafeAreaView, 
+  StyleSheet, 
+  Text, 
+  TextInput, 
+  View, 
+  StatusBar, 
+  Dimensions, 
+  Platform, 
+  ScrollView,
+  Keyboard
+} from "react-native"
 import { useLocalSearchParams, router } from "expo-router"
 import Toast from "react-native-toast-message"
 import CustomButton from "@/src/components/CustomButton"
@@ -37,7 +48,33 @@ const Step02 = () => {
 
   const [field1Focused, setField1Focused] = useState(false)
   const [field2Focused, setField2Focused] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const [hasScrolled, setHasScrolled] = useState(false)
+  const scrollViewRef = useRef<ScrollView>(null)
   const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
+
+  // Modified keyboard event listeners to prevent infinite loops
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 200, animated: true });
+      }, 100);
+    });
+  
+    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    });
+  
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+  
 
   const getBorderColor = (field: "birthDate" | "phone", isFocused: boolean) => {
     if (errors[field]) return "#FF0000"
@@ -84,68 +121,72 @@ const Step02 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={styles.keyboardAvoidingView}
-            ></KeyboardAvoidingView>
-      <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
-      <View style={styles.backgroundContainer}>
-        <Cloudsvg width="90%" height="40%" />
-      </View>
-      {avatarSource && (
-        <BigAvatar avatarSource={avatarSource} style={{ position: "absolute", zIndex: 2, top: getAvatarTop() }} />
-      )}
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.contentContainer}>
+          {avatarSource && <BigAvatar avatarSource={avatarSource} style={{ marginBottom: -20 }} />}
+          <View style={styles.backgroundContainer}>
+            <Cloudsvg width="90%" height="40%" />
+          </View>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>{nome}, falta pouco!</Text>
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>{nome}, falta pouco!</Text>
 
-              <View style={styles.inputsContainer}>
-        <Text style={styles.label}>Data Nascimento</Text>
-        <MaskedTextInput
-          style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) },
-            Platform.select({
-              web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-              })
-          ]}
-          onFocus={() => setField1Focused(true)}
-          onBlur={() => setField1Focused(false)}
-          placeholder="DD/MM/AAAA"
-          placeholderTextColor="#999"
-          value={birthDate}
-          onChangeText={setBirthDate}
-          keyboardType="numeric"
-          mask="99/99/9999"
-        />
+            <View style={styles.inputsContainer}>
+              <Text style={styles.label}>Data Nascimento</Text>
+              <MaskedTextInput
+                style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) },
+                  Platform.select({
+                    web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                  })
+                ]}
+                onFocus={() => setField1Focused(true)}
+                onBlur={() => setField1Focused(false)}
+                placeholder="DD/MM/AAAA"
+                placeholderTextColor="#999"
+                value={birthDate}
+                onChangeText={setBirthDate}
+                keyboardType="numeric"
+                mask="99/99/9999"
+              />
 
-        <Text style={styles.label}>Celular</Text>
-        <MaskedTextInput
-          style={[styles.input, { borderColor: getBorderColor("phone", field2Focused) },
-            Platform.select({
-              web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-              })
-          ]}
-          onFocus={() => setField2Focused(true)}
-          onBlur={() => setField2Focused(false)}
-          placeholder="+55 __ _____-____"
-          placeholderTextColor="#999"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="numeric"
-          mask="+55 99 99999-9999"
-        />
+              <Text style={styles.label}>Celular</Text>
+              <MaskedTextInput
+                style={[styles.input, { borderColor: getBorderColor("phone", field2Focused) },
+                  Platform.select({
+                    web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                  })
+                ]}
+                onFocus={() => setField2Focused(true)}
+                onBlur={() => setField2Focused(false)}
+                placeholder="+55 __ _____-____"
+                placeholderTextColor="#999"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="numeric"
+                mask="+55 99 99999-9999"
+              />
 
+              <View style={styles.checkboxesContainer}>
+                <Checkbox title="Termos de uso" isChecked={termsAccepted} onCheck={setTermsAccepted} />
+                <Checkbox title="LGPD" isChecked={lgpdAccepted} onCheck={setLgpdAccepted} />
+              </View>
+            </View>
 
-          <View style={styles.checkboxesContainer}>
-            <Checkbox title="Termos de uso" isChecked={termsAccepted} onCheck={setTermsAccepted} />
-            <Checkbox title="LGPD" isChecked={lgpdAccepted} onCheck={setLgpdAccepted} />
+            <View style={styles.buttonContainer}>
+              <CustomButton title="Continuar" onPress={handleContinue} />
+              <ProgressDots currentStep={2} />
+            </View>
           </View>
         </View>
-
-        <View style={styles.buttonContainer}>
-          <CustomButton title="Continuar" onPress={handleContinue} />
-          <ProgressDots currentStep={2} />
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -153,39 +194,58 @@ const Step02 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#56A6DC",
   },
   backgroundContainer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
+    zIndex: -1,
+    alignItems: "center",
+  },
+  scrollView: {
+    flex: 1,
+    zIndex: 2,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingTop: getAvatarTop(),
+    paddingBottom: 50,
+  },
+  contentContainer: {
+    width: "100%",
+    flex: 1,
     alignItems: "center",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    top: 10,
+    marginTop: 20,
+    marginBottom: 10,
   },
   formContainer: {
     width: "100%",
-    height: height <= 732 ? "60%" : "55%",
-    marginTop: 20,
     backgroundColor: "#fff",
-    position: "absolute",
-    bottom: 0,
     borderTopRightRadius: 30,
     borderTopLeftRadius: 30,
     alignItems: "center",
-    zIndex: 3,
+    paddingBottom: 20,
+    minHeight: height * 0.2,
   },
   inputsContainer: {
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
-    height: "60%",
-    justifyContent: "space-between",
-    top: "5%",
+    paddingVertical: 10,
+    top: "2%",
+    height: "55%",
+    gap: 15,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#1F2937",
+    width: "80%",
+    marginBottom: 0,
   },
   input: {
     width: "80%",
@@ -199,11 +259,6 @@ const styles = StyleSheet.create({
     color: "#000000",
     marginBottom: 8,
   },
-  label: {
-    fontSize: 16,
-    top: "2%",
-    width: "80%",
-  },
   checkboxesContainer: {
     width: "100%",
     gap: 10,
@@ -212,16 +267,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonContainer: {
-    zIndex: 3,
-    position: "absolute",
-    bottom: bottomHeight(),
-    justifyContent: "space-between",
-    height: "20%",
-  },
-  keyboardAvoidingView: {
-    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-around",
+    height: "15%",
+    marginTop: 0,
   },
 })
 
 export default Step02
-
