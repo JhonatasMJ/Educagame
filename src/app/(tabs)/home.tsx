@@ -69,6 +69,33 @@ export const trilhas = [
           },
           {
             id: "q1",
+            type: QuestionType.ORDERING,
+            description: "Coloque os eventos históricos na ordem cronológica correta.",
+            items: [
+              { id: "a", text: "Independência do Brasil" },
+              { id: "b", text: "Proclamação da República" },
+              { id: "c", text: "Descobrimento do Brasil" },
+              { id: "d", text: "Abolição da Escravatura" }
+            ],
+            correctOrder: ["c", "a", "d", "b"],
+            statementText: "Coloque a ordem correta!",
+            explanation: "A ordem cronológica correta é: Descobrimento (1500), Independência (1822), Abolição (1888) e República (1889)."
+          },
+         /*  {
+            id: "q2",
+            type: QuestionType.ORDERING,
+            description: "Coloque as fases do desenvolvimento de uma planta em ordem.",
+            items: [
+              { id: "a", image: require("@/assets/images/planta-adulta.png") },
+              { id: "b", image: require("@/assets/images/semente.png") },
+              { id: "c", image: require("@/assets/images/broto.png") },
+              { id: "d", image: require("@/assets/images/muda.png") }
+            ],
+            correctOrder: ["b", "c", "d", "a"],
+            explanation: "O ciclo de vida de uma planta começa com a semente, depois brota, cresce como muda e finalmente se torna uma planta adulta."
+          }, */
+          {
+            id: "q1",
             type: QuestionType.MULTIPLE_CHOICE,
             description: "Lorem ____ ipsum",
             options: [
