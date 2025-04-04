@@ -9,6 +9,7 @@ import ConversationField from '@/src/components/ConversationField';
 import { styles } from './styles';
 import MessageBubble from '@/src/components/MessageBuble';
 import RealoadButton from '@/src/components/RealoadButton';
+import { useRequireAuth } from '@/src/hooks/useRequireAuth';
 
 
 interface Message {
@@ -33,6 +34,9 @@ const SearchTicket = () => {
 
   const router = useRouter();
   const { userData, authUser } = useAuth();
+
+  
+    const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
   const handleSearch = async () => {
     if (!ticketNumber.trim()) return;
@@ -167,7 +171,7 @@ const SearchTicket = () => {
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <TouchableOpacity onPress={() => router.push("/(tabs)/stats")} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push("/(tabs)/perfil")} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.searchBar}>

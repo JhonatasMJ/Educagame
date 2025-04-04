@@ -15,10 +15,11 @@ import conversationAi from "../../context/IaController";
 import { useConversation } from "../../context/ContextIa";
 import { useAuth } from "@/src/context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
+import { useRequireAuth } from "@/src/hooks/useRequireAuth";
 
 const AiAssistent = () => {
   const { messages, addMessage, markAsRead } = useConversation();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading2, setIsLoading] = useState(false);
   const scrollViewRef = useRef<any>(null);
     const { userData, authUser } = useAuth();
     const nome = `${userData?.nome} ${userData?.sobrenome}`;
@@ -29,6 +30,9 @@ const AiAssistent = () => {
       markAsRead();
     }, [markAsRead])
   );
+
+  
+    const { isAuthenticated, isLoading } = useRequireAuth();
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
@@ -157,7 +161,7 @@ const AiAssistent = () => {
             />
           ))}
 
-          {isLoading && (
+          {isLoading2 && (
             <MessageBubble
               text="Escrevendo ..."
               type="ai"

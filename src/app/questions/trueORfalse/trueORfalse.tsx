@@ -27,21 +27,36 @@ const TrueOrFalse = ({ question, onAnswer, questionNumber }: TrueOrFalseProps) =
 
   // Log para debug
   useEffect(() => {
-    console.log("TrueOrFalse component mounted with question:", question)
+    console.log("TrueOrFalse component mounted with question:", JSON.stringify(question))
   }, [question])
 
   // Reset selectedAnswer when question changes
   useEffect(() => {
-    setSelectedAnswer(null)
-    console.log("Question changed, resetting selectedAnswer")
-  }, [question.id]) // Use question.id as dependency to ensure it resets when the question changes
+    if (question && question.id) {
+      setSelectedAnswer(null)
+      console.log("Question changed, resetting selectedAnswer for question ID:", question.id)
+    } else {
+      console.error("Question is invalid or missing ID:", question)
+    }
+  }, [question])
 
   // Verificação de segurança para evitar o erro
   if (!question) {
     console.error("Question is undefined in TrueOrFalse component")
     return (
       <View className="flex-1 p-4 justify-center items-center">
-        <Text className="text-red-500">Erro: Questão não encontrada</Text>
+        <Text className="text-red-500 text-lg">Erro: Questão não encontrada</Text>
+        <Text className="text-gray-500 mt-2">Detalhes: A questão não foi carregada corretamente.</Text>
+      </View>
+    )
+  }
+
+  if (!question.id) {
+    console.error("Question is missing ID:", question)
+    return (
+      <View className="flex-1 p-4 justify-center items-center">
+        <Text className="text-red-500 text-lg">Erro: Questão inválida</Text>
+        <Text className="text-gray-500 mt-2">Detalhes: A questão não possui um ID válido.</Text>
       </View>
     )
   }

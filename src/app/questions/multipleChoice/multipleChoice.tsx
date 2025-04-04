@@ -343,4 +343,3 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
 }
 
 export default MultipleChoice
-

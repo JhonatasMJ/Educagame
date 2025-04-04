@@ -14,7 +14,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { getDatabase, ref, update } from 'firebase/database';
 import TextInputLabel from '@/src/components/TextInputLabel';
 import Toast from 'react-native-toast-message';
-import LoadingTransition from '@/src/components/LoadingTransition';
+import { useRequireAuth } from '@/src/hooks/useRequireAuth';
 const { height, width } = Dimensions.get('window');
 const Drawer = createDrawerNavigator();
 
@@ -38,6 +38,11 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   const [avatarSource, setAvatarSource] = useState("avatar1");
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
+  // For protected routes
+const { isAuthenticated, isLoading } = useRequireAuth();
+
+
+
   // Atualiza os estados locais quando userData for carregado ou atualizado
   useEffect(() => {
     if (userData) {
@@ -51,6 +56,7 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
       setEmail(authUser.email || "");
     }
   }, [userData, authUser]);
+  
 
   // Força uma atualização dos dados do usuário quando o componente montar
   useEffect(() => {

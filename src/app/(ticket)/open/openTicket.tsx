@@ -14,6 +14,7 @@ import Toast from 'react-native-toast-message';
 import { useAuth } from '../../../context/AuthContext';
 import { useRouter } from 'expo-router';
 import { styles } from './styles';
+import { useRequireAuth } from '@/src/hooks/useRequireAuth';
 
 const OpenTicket = () => {
   const [title, setTitle] = useState('');
@@ -24,6 +25,9 @@ const OpenTicket = () => {
   const { userData, authUser } = useAuth()
   const router = useRouter();
 
+  
+    const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
+  
   const handleOpenTicket = () => {
     if (title.trim() && description.trim()) {
       setLoading(true);
@@ -81,7 +85,7 @@ const OpenTicket = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.headerArea}>
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() =>  router.push("/(tabs)/stats")} style={styles.backButton}>
+            <TouchableOpacity onPress={() =>  router.push("/(tabs)/perfil")} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>📝 Abrir Chamado</Text>

@@ -433,4 +433,3 @@ const MainGame = () => {
 }
 
 export default MainGame
-

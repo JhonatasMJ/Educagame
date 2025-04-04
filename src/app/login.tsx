@@ -39,6 +39,7 @@ const Login = () => {
   const [emailFocused, setEmailFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  
 
   // Set the email and password fields if we have saved credentials
   useEffect(() => {

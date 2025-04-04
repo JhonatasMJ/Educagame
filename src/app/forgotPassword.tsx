@@ -14,6 +14,7 @@ import {
 
 import Logo from "../../assets/images/logo.svg";
 import CustomButton from "@/src/components/CustomButton";
+import { useRequireAuth } from "../hooks/useRequireAuth";
 
 
 
@@ -29,6 +30,9 @@ const ForgotPasswordScreen = () => {
     if (isFocused) return '#56A6DC';
     return '#E8ECF4';
   };
+
+  
+    const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
   return (
     <SafeAreaView style={styles.safeArea}>
