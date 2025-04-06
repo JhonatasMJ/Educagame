@@ -9,7 +9,7 @@ import React from "react"
 interface OrderItem {
   id: string
   text?: string
-  image?: string | any // Aceita tanto string quanto objeto require()
+  image?: string | any
 }
 
 // Interface para a questão de ordenação
@@ -18,7 +18,7 @@ interface OrderingQuestion {
   type: QuestionType.ORDERING
   description: string
   items: OrderItem[]
-  correctOrder: string[] // Array com os IDs dos itens na ordem correta
+  correctOrder: string[]
   statementText?: string
   explanation?: string
 }
@@ -30,48 +30,44 @@ interface OrderingProps {
 }
 
 const Ordering = ({ question, onAnswer, questionNumber }: OrderingProps) => {
-  // Estado para armazenar a ordem selecionada pelo usuário
+  // Estados principais
   const [selectedOrder, setSelectedOrder] = useState<string[]>([])
-  // Estado para armazenar os itens disponíveis (ainda não selecionados)
-  const [availableItems, setAvailableItems] = useState<OrderItem[]>([])
-  // Estado para controlar se a resposta foi submetida
+  const [availableItemIds, setAvailableItemIds] = useState<string[]>([])
   const [submitted, setSubmitted] = useState(false)
-  // Referências para animações
-  const animRefs = useRef<{ [key: string]: Animated.Value }>({})
-  const positionRefs = useRef<{ [key: string]: { x: number; y: number } }>({})
 
-  // Log para debug
+  // Estado para animações
+  const [animatingItemId, setAnimatingItemId] = useState<string | null>(null)
+  const fadeAnim = useState(new Animated.Value(1))[0]
+  const scaleAnim = useState(new Animated.Value(1))[0]
+
+  // Ref para armazenar a ordem selecionada atual (para evitar problemas com closures)
+  const selectedOrderRef = useRef<string[]>([])
+
+  // Inicialização
   useEffect(() => {
     console.log("Ordering component mounted with question:", question)
+    console.log("Correct order is:", question.correctOrder)
 
-    // Inicializar os itens disponíveis
     if (question && question.items) {
-      setAvailableItems([...question.items])
-
-      // Inicializar as referências de animação para cada item
-      question.items.forEach((item) => {
-        animRefs.current[item.id] = new Animated.Value(0)
-      })
+      // Inicializar os IDs dos itens disponíveis
+      const itemIds = question.items.map((item) => item.id)
+      setAvailableItemIds(itemIds)
     }
   }, [question])
 
   // Reset quando a questão mudar
   useEffect(() => {
-    if (question && question.id) {
+    if (question) {
       setSelectedOrder([])
-      setAvailableItems([...question.items])
+      selectedOrderRef.current = []
+      setAvailableItemIds(question.items.map((item) => item.id))
       setSubmitted(false)
-
-      // Resetar animações
-      Object.keys(animRefs.current).forEach((key) => {
-        animRefs.current[key].setValue(0)
-      })
-
+      setAnimatingItemId(null)
       console.log("Question changed, resetting states")
     }
-  }, [question])
+  }, [question.id])
 
-  // Verificação de segurança para evitar o erro
+  // Verificação de segurança
   if (!question) {
     console.error("Question is undefined in Ordering component")
     return (
@@ -86,51 +82,87 @@ const Ordering = ({ question, onAnswer, questionNumber }: OrderingProps) => {
 
   // Função para verificar se a ordem está correta
   const checkOrder = () => {
-    if (selectedOrder.length !== question.correctOrder.length) return false
+    // Usar a referência para garantir que temos o valor mais atualizado
+    const currentSelectedOrder = selectedOrderRef.current
 
-    for (let i = 0; i < selectedOrder.length; i++) {
-      if (selectedOrder[i] !== question.correctOrder[i]) return false
+    console.log("Checking order - Selected:", JSON.stringify(currentSelectedOrder))
+    console.log("Checking order - Correct:", JSON.stringify(question.correctOrder))
+
+    // Verificar se todos os itens foram selecionados
+    if (currentSelectedOrder.length !== question.correctOrder.length) {
+      console.log("Length mismatch - selected:", currentSelectedOrder.length, "correct:", question.correctOrder.length)
+      return false
     }
 
+    // Comparação item por item com logs detalhados
+    for (let i = 0; i < currentSelectedOrder.length; i++) {
+      console.log(`Comparing position ${i}: selected=${currentSelectedOrder[i]}, correct=${question.correctOrder[i]}`)
+      if (currentSelectedOrder[i] !== question.correctOrder[i]) {
+        console.log(`Mismatch at position ${i}: ${currentSelectedOrder[i]} !== ${question.correctOrder[i]}`)
+        return false
+      }
+    }
+
+    console.log("Final validation result: CORRECT")
     return true
   }
 
-  // Função para registrar a posição de um slot
-  const registerPosition = (id: string, x: number, y: number) => {
-    positionRefs.current[id] = { x, y }
-  }
-
   // Função para lidar com a seleção de um item
-  const handleItemSelect = (item: OrderItem) => {
-    if (submitted) return
+  const handleItemSelect = (itemId: string) => {
+    if (submitted || animatingItemId) return
 
-    // Adicionar o item à ordem selecionada
-    const newSelectedOrder = [...selectedOrder, item.id]
-    setSelectedOrder(newSelectedOrder)
+    // Marcar este item como o que está sendo animado
+    setAnimatingItemId(itemId)
 
-    // Remover o item dos disponíveis
-    const newAvailableItems = availableItems.filter((i) => i.id !== item.id)
-    setAvailableItems(newAvailableItems)
-
-    // Animar o item para a posição de destino
-    const positionIndex = selectedOrder.length // A próxima posição disponível
-    const positionId = `position-${positionIndex}`
-
-    if (positionRefs.current[positionId]) {
-      Animated.timing(animRefs.current[item.id], {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.cubic),
+    // Animar o item selecionado
+    Animated.sequence([
+      // 1. Escala para cima (efeito de "pegar" o item)
+      Animated.timing(scaleAnim, {
+        toValue: 1.1,
+        duration: 150,
         useNativeDriver: true,
-      }).start()
-    }
+        easing: Easing.out(Easing.cubic),
+      }),
+      // 2. Escala para o tamanho normal
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+    ]).start()
 
-    // Se todos os itens foram selecionados, verificar a resposta
-    if (newSelectedOrder.length === question.items.length) {
-      setSubmitted(true)
-      const isCorrect = checkOrder()
-      onAnswer(isCorrect, question.explanation)
-    }
+    // Animar o desaparecimento
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      // Após a animação, atualizar os estados
+      const newSelectedOrder = [...selectedOrderRef.current, itemId]
+
+      // Atualizar tanto o estado quanto a referência
+      setSelectedOrder(newSelectedOrder)
+      selectedOrderRef.current = newSelectedOrder
+
+      setAvailableItemIds((prev) => prev.filter((id) => id !== itemId))
+      setAnimatingItemId(null)
+      fadeAnim.setValue(1) // Reset para próxima animação
+
+      console.log("Item selected:", itemId)
+      console.log("Updated selected order:", newSelectedOrder)
+
+      // Verificar se todos os itens foram selecionados
+      if (newSelectedOrder.length === question.items.length) {
+        console.log("All items selected, checking order...")
+        setTimeout(() => {
+          setSubmitted(true)
+          const isCorrect = checkOrder()
+          console.log("Validation result:", isCorrect)
+          onAnswer(isCorrect, question.explanation)
+        }, 300)
+      }
+    })
   }
 
   // Função para renderizar um item (texto ou imagem)
@@ -157,14 +189,7 @@ const Ordering = ({ question, onAnswer, questionNumber }: OrderingProps) => {
       const item = itemId ? question.items.find((i) => i.id === itemId) : null
 
       return (
-        <View
-          key={`position-${index}`}
-          className="flex-row items-center mb-4"
-          onLayout={(event) => {
-            const { x, y } = event.nativeEvent.layout
-            registerPosition(`position-${index}`, x, y)
-          }}
-        >
+        <View key={`position-${index}`} className="flex-row items-center mb-4">
           <View className="w-12 h-12 rounded-full bg-indigo-900 items-center justify-center mr-3">
             <Text className="text-white font-bold text-xl">{index + 1}</Text>
           </View>
@@ -178,50 +203,59 @@ const Ordering = ({ question, onAnswer, questionNumber }: OrderingProps) => {
 
   // Renderizar os itens disponíveis para seleção
   const renderAvailableItems = () => {
-    // Calcular o número de colunas com base no número de itens
-    const columns = availableItems.length > 3 ? 2 : 1
-
     return (
-      <View className="flex-row flex-wrap justify-between mt-4">
-        {availableItems.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            className={`bg-white border-2 border-indigo-100 rounded-full p-4 mb-4 items-center justify-center ${
-              columns === 2 ? "w-[48%]" : "w-full"
-            }`}
-            style={{ minHeight: 60 }}
-            onPress={() => handleItemSelect(item)}
-            disabled={submitted}
-            activeOpacity={0.8}
-          >
-            {renderItemContent(item)}
-          </TouchableOpacity>
-        ))}
+      <View className="mt-4">
+        {question.items.map((item) => {
+          const isAvailable = availableItemIds.includes(item.id)
+          const isAnimating = animatingItemId === item.id
+
+          if (!isAvailable) return null
+
+          return (
+            <Animated.View
+              key={item.id}
+              style={{
+                marginBottom: 16,
+                opacity: isAnimating ? fadeAnim : 1,
+                transform: [{ scale: isAnimating ? scaleAnim : 1 }],
+              }}
+            >
+              <TouchableOpacity
+                className="bg-white border-2 border-indigo-100 rounded-full p-4 items-center justify-center"
+                onPress={() => handleItemSelect(item.id)}
+                disabled={submitted || animatingItemId !== null}
+                activeOpacity={0.8}
+              >
+                {renderItemContent(item)}
+              </TouchableOpacity>
+            </Animated.View>
+          )
+        })}
       </View>
     )
   }
 
   return (
-    <ScrollView className="flex-1 p-4">
+    <ScrollView className="flex-1 pl-4 pr-4 pt-0 pb-0" showsVerticalScrollIndicator={false}>
       <View className="mb-5">
-        <Text className="text-md font-medium text-gray-100 mb-4">Questão {questionNumber}:</Text>
-        <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
-        </View>
+        {question.description && (
+          <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
+          </View>
+        )}
       </View>
 
       {/* Área de posições para ordenação */}
-      <View className="mb-8">{renderPositions()}</View>
-        
+      <View>{renderPositions()}</View>
 
-      <View className="mb-6">
+      <View className="mt-1 mb-1">
         <Text className="text-center text-lg font-semibold text-zinc-100">{statementText}</Text>
       </View>
+
       {/* Itens disponíveis para seleção */}
       {renderAvailableItems()}
     </ScrollView>
   )
 }
-
 export default Ordering
 

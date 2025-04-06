@@ -235,6 +235,7 @@ const MainGame = () => {
 
   // Handle answer from game components
   const handleAnswer = (correct: boolean, explanation?: string) => {
+    console.log("MainGame - handleAnswer called with correct:", correct)
     setIsCorrect(correct)
     setFeedbackExplanation(explanation || currentQuestion.explanation)
 
@@ -433,7 +434,7 @@ const MainGame = () => {
           <View className="flex-row items-center">
             <Award size={16} color="#666" />
             <Text className="text-gray-700 ml-1.5 font-medium">
-              {isRetrying ? `Revisão: ${wrongQuestions.length}` : `${currentQuestionIndex + 1}/${questions.length}`}
+              {isRetrying ? `Revisão: ${wrongQuestions.length}` : `Questão ${currentQuestionIndex + 1}`}
             </Text>
           </View>
         </View>

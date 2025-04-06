@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, TouchableOpacity, Image, ScrollView } from "react-native"
+import { View, Text, TouchableOpacity, Image, ScrollView, Animated, Easing } from "react-native"
 import { Check, X } from "lucide-react-native"
 import type { QuestionType } from "../../(tabs)/home"
 import React from "react"
@@ -36,6 +36,11 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
   const [optionStates, setOptionStates] = useState<{ [key: string]: "correct" | "incorrect" | "unselected" }>({})
   const [submitted, setSubmitted] = useState(false)
   const [disabledOptions, setDisabledOptions] = useState<{ [key: string]: boolean }>({})
+
+  // Adicione estes estados para controlar as animações
+  const [animatingOptionId, setAnimatingOptionId] = useState<string | null>(null)
+  const fadeAnim = useState(new Animated.Value(1))[0]
+  const scaleAnim = useState(new Animated.Value(1))[0]
 
   // Log para debug
   useEffect(() => {
@@ -96,10 +101,31 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
     return allSelected && noIncorrect
   }
 
-  // Função para lidar com o clique em uma opção
+  // Modifique a função handleOptionPress para incluir animações
   const handleOptionPress = (optionId: string) => {
     // Não permite clicar em opções já selecionadas ou desabilitadas
     if (disabledOptions[optionId] || submitted) return
+
+    // Marcar este item como o que está sendo animado
+    setAnimatingOptionId(optionId)
+
+    // Animar o item selecionado
+    Animated.sequence([
+      // 1. Escala para cima (efeito de "pegar" o item)
+      Animated.timing(scaleAnim, {
+        toValue: 1.1,
+        duration: 150,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+      // 2. Escala para o tamanho normal
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+    ]).start()
 
     // Verificar se a opção é correta
     const isCorrect = question.correctOptions.includes(optionId)
@@ -124,8 +150,11 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
       // Marcar como submetido
       setSubmitted(true)
 
-      // Notificar o componente pai
-      onAnswer(isCorrect, question.explanation)
+      // Notificar o componente pai após a animação
+      setTimeout(() => {
+        setAnimatingOptionId(null)
+        onAnswer(isCorrect, question.explanation)
+      }, 300)
     }
     // Para questões com múltiplas respostas corretas
     else {
@@ -149,16 +178,6 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
 
       // Se o usuário selecionou uma opção incorreta ou todas as corretas
       if (!isCorrect || (allCorrect && allCorrectOptionsSelected)) {
-        // Se selecionou uma incorreta ou todas as corretas, mostrar todas as corretas
-        if (!isCorrect) {
-          // Mostrar as opções corretas que não foram selecionadas
-          question.options.forEach((option) => {
-            if (question.correctOptions.includes(option.id) && !newSelectedOptions.includes(option.id)) {
-              newOptionStates[option.id] = "correct"
-            }
-          })
-        }
-
         // Desabilitar todas as opções
         question.options.forEach((option) => {
           newDisabledOptions[option.id] = true
@@ -167,22 +186,15 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
         // Marcar como submetido
         setSubmitted(true)
 
-        // Notificar o componente pai
-        onAnswer(isCorrect ? allCorrectOptionsSelected : false, question.explanation)
+        // Notificar o componente pai após a animação
+        setTimeout(() => {
+          setAnimatingOptionId(null)
+          onAnswer(isCorrect ? allCorrectOptionsSelected : false, question.explanation)
+        }, 300)
       }
 
       // Se selecionou todas as opções necessárias (corretas ou não)
       if (newSelectedOptions.length >= question.correctOptions.length) {
-        // Verificar se todas as corretas foram selecionadas
-        if (!allCorrectOptionsSelected) {
-          // Mostrar as opções corretas que não foram selecionadas
-          question.options.forEach((option) => {
-            if (question.correctOptions.includes(option.id) && !newSelectedOptions.includes(option.id)) {
-              newOptionStates[option.id] = "correct"
-            }
-          })
-        }
-
         // Desabilitar todas as opções
         question.options.forEach((option) => {
           newDisabledOptions[option.id] = true
@@ -191,8 +203,16 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
         // Marcar como submetido
         setSubmitted(true)
 
-        // Notificar o componente pai
-        onAnswer(allCorrect && allCorrectOptionsSelected, question.explanation)
+        // Notificar o componente pai após a animação
+        setTimeout(() => {
+          setAnimatingOptionId(null)
+          onAnswer(allCorrect && allCorrectOptionsSelected, question.explanation)
+        }, 300)
+      } else {
+        // Se ainda não terminou de selecionar todas as opções necessárias
+        setTimeout(() => {
+          setAnimatingOptionId(null)
+        }, 300)
       }
     }
   }
@@ -264,9 +284,17 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
     const state = optionStates[optionId]
     switch (state) {
       case "correct":
-        return <Check size={20} color="#fff" />
+        return (
+          <View className="flex-row items-center justify-center ml-2 rounded-full w-8 h-8 bg-lime-600 elevation-1 ">
+            <Check size={20} color="#fff" />
+          </View>
+        )
       case "incorrect":
-        return <X size={20} color="#fff" />
+        return (
+          <View className="flex-row items-center justify-center ml-2 rounded-full w-8 h-8 bg-red-800 elevation-1 ">
+            <X size={20} color="#fff" />
+          </View>
+        )
       default:
         return null
     }
@@ -275,10 +303,11 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
   return (
     <ScrollView showsVerticalScrollIndicator={false} className="flex-1 p-4">
       <View className="mb-5">
-        <Text className="text-md font-medium text-gray-100 mb-4">Questão {questionNumber}:</Text>
-        <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
-        </View>
+        {question.description && (
+          <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
+          </View>
+        )}
       </View>
 
       {renderImage()}
@@ -287,59 +316,62 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
         <Text className="text-center text-lg font-semibold text-zinc-100">{statementText}</Text>
       </View>
 
-      <View
-        style={{
-          flexDirection: gridColumns === 1 ? ("column" as const) : ("row" as const),
-          flexWrap: "wrap" as const,
-          justifyContent: "space-between",
-          gap: 10,
-        }}
-      >
-        {question.options.map((option) => (
-          <View
-            key={option.id}
-            style={{
-              width: gridColumns === 1 ? "100%" : "48%",
-              marginBottom: 10,
-            }}
-          >
-            <TouchableOpacity
-              className={`p-4 elevation-4 shadow-lg rounded-lg border-2 ${getOptionBackgroundColor(option.id)}`}
+      <View className="flex flex-col space-y-4">
+        {question.options.map((option) => {
+          const isAnimating = animatingOptionId === option.id
+
+          return (
+            <Animated.View
+              key={option.id}
               style={{
-                minHeight: 60, // Altura mínima para acomodar textos maiores
-                opacity: disabledOptions[option.id] && optionStates[option.id] === "unselected" ? 0.6 : 1,
+                width: "100%",
+                transform: [{ scale: isAnimating ? scaleAnim : 1 }],
               }}
-              onPress={() => handleOptionPress(option.id)}
-              disabled={disabledOptions[option.id]}
-              activeOpacity={0.8}
             >
-              <View className="flex-row items-center">
-                <View
-                  className={`w-8 h-8 elevation-1 shadow-lg rounded-full justify-center items-center mr-3 ${
-                    optionStates[option.id] !== "unselected" ? "bg-white" : "bg-gray-200"
-                  }`}
-                >
-                  <Text
-                    className={`font-bold ${
-                      optionStates[option.id] !== "unselected"
-                        ? optionStates[option.id] === "correct"
-                          ? "text-green-500"
-                          : "text-red-500"
-                        : "text-gray-700"
+              <TouchableOpacity
+                className={`flex-row items-center px-4 py-6 elevation-4 shadow-lg rounded-lg border-2 ${getOptionBackgroundColor(option.id)}`}
+                style={{
+                  minHeight: 60,
+                  opacity: disabledOptions[option.id] && optionStates[option.id] === "unselected" ? 0.6 : 1,
+                }}
+                onPress={() => handleOptionPress(option.id)}
+                disabled={disabledOptions[option.id] || animatingOptionId !== null}
+                activeOpacity={0.8}
+              >
+                <View className="flex-row items-center w-full">
+                  <View
+                    className={`w-8 h-8 min-w-[2rem] elevation-1 shadow-lg rounded-full justify-center items-center mr-3 ${
+                      optionStates[option.id] !== "unselected" ? "bg-white" : "bg-gray-200"
                     }`}
                   >
-                    {option.id.toUpperCase()}
+                    <Text
+                      className={`font-bold ${
+                        optionStates[option.id] !== "unselected"
+                          ? optionStates[option.id] === "correct"
+                            ? "text-green-500"
+                            : "text-red-500"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {option.id.toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text
+                    className={`flex-1 text-base font-medium ${getOptionTextColor(option.id)}`}
+                    style={{ flexShrink: 1 }}
+                  >
+                    {option.text}
                   </Text>
+                  {renderOptionIcon(option.id)}
                 </View>
-                <Text className={`flex-1 text-base font-medium ${getOptionTextColor(option.id)}`}>{option.text}</Text>
-                {renderOptionIcon(option.id)}
-              </View>
-            </TouchableOpacity>
-          </View>
-        ))}
+              </TouchableOpacity>
+            </Animated.View>
+          )
+        })}
       </View>
     </ScrollView>
   )
 }
 
 export default MultipleChoice
+

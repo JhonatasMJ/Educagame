@@ -94,10 +94,11 @@ const TrueOrFalse = ({ question, onAnswer, questionNumber }: TrueOrFalseProps) =
   return (
     <View className="flex-1 p-4">
       <View className="mb-5">
-        <Text className="text-md font-medium text-gray-100 mb-4">Questão {questionNumber}:</Text>
+        {question.description && (
         <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
         </View>
+        )}
       </View>
 
       {renderImage()}

@@ -70,7 +70,6 @@ export const trilhas = [
           {
             id: "q1",
             type: QuestionType.ORDERING,
-            description: "Coloque os eventos históricos na ordem cronológica correta.",
             items: [
               { id: "a", text: "Independência do Brasil" },
               { id: "b", text: "Proclamação da República" },

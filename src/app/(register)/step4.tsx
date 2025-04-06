@@ -28,6 +28,9 @@ const Step04 = () => {
       lgpdAccepted: string
       password: string
     }>()
+    
+  // Move this hook call to the component level
+  const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
   const handleFinalRegister = async () => {
     if (!email || !password) {
@@ -38,7 +41,6 @@ const Step04 = () => {
       })
       return
     }
-    const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
 
     try {
       // Create user in Firebase Authentication
