@@ -21,4 +21,5 @@ export interface Etapa  {
     phone?: string;
     sobrenome?: string;
     avatarSource?: string;
+    points?: number;
   }

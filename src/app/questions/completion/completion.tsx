@@ -45,6 +45,9 @@ const CompletionPage = () => {
   const wrongAnswerDeduction = wrongAnswers * 10 // Deduct 10 points per wrong answer
   const totalPoints = Math.max(basePoints - timeDeduction - wrongAnswerDeduction, 10) // Minimum 10 points
 
+  // Obter pontos totais do usuário
+  const userTotalPoints = userData?.points || 0
+
   // Format time from seconds to MM:SS
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
@@ -107,7 +110,6 @@ const CompletionPage = () => {
             transform: [{ scale: scaleAnim }, { translateY: slideAnim }],
           }}
         >
-         
           <View className="mb-6 items-center">
             <View className="w-42 h-42 rounded-full  items-center justify-center bg-primary border-4 border-blue-900  shadow-lg overflow-hidden">
               <AvatarComponent width={220} height={220} />
@@ -121,7 +123,6 @@ const CompletionPage = () => {
           <Text className="text-3xl font-bold text-green-600 mb-2">Parabéns, {userData?.nome || "Aluno"}!</Text>
           <Text className="text-xl text-gray-800 mb-6">Você completou esta fase!</Text>
 
-      
           <View className="flex-row mb-8">
             {[1, 2, 3].map((star) => (
               <Star
@@ -142,6 +143,7 @@ const CompletionPage = () => {
               </View>
               <Text className="text-2xl font-bold text-[#4361ee]">+{totalPoints}</Text>
               <Text className="text-gray-500 text-sm">Pontos</Text>
+              <Text className="text-xs text-gray-400 mt-1">Total: {userTotalPoints}</Text>
             </View>
 
             <View className="bg-white rounded-2xl p-4 items-center shadow-md border border-gray-100 flex-1 mx-1">
@@ -185,3 +187,4 @@ const CompletionPage = () => {
 }
 
 export default CompletionPage
+
