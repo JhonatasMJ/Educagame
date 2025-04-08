@@ -1,9 +1,9 @@
 "use client"
 
-import React from "react"
+import  React from "react"
 import { createContext, useState, useContext, useEffect, type ReactNode } from "react"
 import type { User as FirebaseUser } from "firebase/auth"
-import { getDatabase, ref, get } from "firebase/database"
+import { getDatabase, ref, get, update } from "firebase/database"
 import { auth } from "../services/firebaseConfig"
 import type { User } from "../types/types"
 
@@ -15,6 +15,7 @@ interface AuthContextData {
   refreshUserData: () => Promise<void>
   getAllUsers: () => Promise<User[]>
   logout: () => Promise<void> // Nova função de logout
+  updateUserPoints: (points: number) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined)
@@ -99,6 +100,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  // Adicione esta função ao AuthContext
+  const updateUserPoints = async (points: number) => {
+    try {
+      if (!authUser?.uid) return
+
+      setLoading(true)
+      const db = getDatabase()
+      const userRef = ref(db, "users/" + authUser.uid)
+
+      // Primeiro, obtenha os dados atuais do usuário
+      const snapshot = await get(userRef)
+      if (snapshot.exists()) {
+        const userData = snapshot.val()
+        const currentPoints = userData.points || 0
+
+        // Atualize os pontos (adicione aos pontos existentes)
+        await update(userRef, {
+          points: currentPoints + points,
+        })
+
+        // Atualize os dados do usuário no estado local
+        setUserData((prev) => ({
+          ...prev,
+          points: (prev?.points || 0) + points,
+        }))
+
+        setError(null)
+      }
+    } catch (err) {
+      setError("Erro ao atualizar pontos do usuário.")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setAuthUser(user)
@@ -123,7 +160,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error,
     refreshUserData,
     getAllUsers,
-    logout, // Adicionando a função de logout ao contexto
+    logout,
+    updateUserPoints, // Adicione esta linha
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
@@ -136,4 +174,3 @@ export const useAuth = (): AuthContextData => {
   }
   return context
 }
-

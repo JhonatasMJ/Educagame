@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, TouchableOpacity, Modal, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Animated, Dimensions, Platform, TouchableOpacity, Modal, StatusBar, ActivityIndicator } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
@@ -111,15 +111,12 @@ const { isAuthenticated, isLoading } = useRequireAuth();
           <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
         <SafeAreaView style={{ backgroundColor: '#56A6DC', flex: 1 }}>
         {loading ? (
-  <View style={{ 
-    flex: 1,           // This ensures the view takes full available space
-    backgroundColor: '#56A6DC', 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    height: '100%',    // Optional, given flex: 1
-    width: '100%'      // Optional, given flex: 1
-  }}>
-    <Text className="text-white text-lg">Carregando perfil...</Text>
+  <View  
+  className='text-center flex- justify-center items-center h-screen'
+
+  >
+    <ActivityIndicator color="#fff" size={32}/>
+    <Text className="text-white text-lg mt-6">Carregando perfil...</Text>
   </View>
 ) : (
         <>

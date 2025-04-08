@@ -1,31 +1,35 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Animated, StatusBar } from "react-native"
-import { Feather } from "@expo/vector-icons"
-import { useAuth } from "@/src/context/AuthContext"
+import { useState, useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  SafeAreaView,
+  Animated,
+  StatusBar,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useAuth } from "@/src/context/AuthContext";
 
 // Importando os componentes de avatar
-import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
-import BigAvatar2 from "../../../assets/images/grande-avatar2.svg"
-import BigAvatar3 from "../../../assets/images/grande-avatar3.svg"
-import BigAvatar4 from "../../../assets/images/grande-avatar4.svg"
-
-import React from "react"
-
+import BigAvatar1 from "../../../assets/images/grande-avatar1.svg";
+import BigAvatar2 from "../../../assets/images/grande-avatar2.svg";
+import BigAvatar3 from "../../../assets/images/grande-avatar3.svg";
+import BigAvatar4 from "../../../assets/images/grande-avatar4.svg";
+import React from "react";
 // Types para nossos dados
 interface User {
-  id: string
-  name: string
-  result: number
-  avatarSource: string
-}
-
-interface UserDetails {
-  miles: number
-  hours: number
-  consecutiveDays: number
-  totalConsecutiveDays: number
+  id: string;
+  name: string;
+  points: number; // Alterado de result para points
+  avatarSource: string;
+  hours: number;
+  consecutiveDays: number;
+  consecutiveCorrect: number;
+  totalConsecutiveDays: number;
 }
 
 // Mapeamento dos componentes de avatar
@@ -34,62 +38,64 @@ const avatarComponents = {
   avatar2: BigAvatar2,
   avatar3: BigAvatar3,
   avatar4: BigAvatar4,
-}
+};
 
-// Dados mock para os detalhes do usuário logado
-const userDetailsData: UserDetails = {
-  miles: 120,
-  hours: 120,
-  consecutiveDays: 25,
-  totalConsecutiveDays: 120,
-}
+
 
 const RankingScreen = () => {
-  const [isHeaderExpanded, setIsHeaderExpanded] = useState(true)
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // Usando o contexto de autenticação para obter o usuário atual
-  const { userData, authUser, getAllUsers } = useAuth()
+  const { userData, authUser, getAllUsers } = useAuth();
+
 
   // ID do usuário atual
-  const currentUserId = authUser?.uid || ""
+  const currentUserId = authUser?.uid || "";
 
   // Buscar usuários do Firebase
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        setLoading(true)
-        const firebaseUsers = await getAllUsers()
-        
+        setLoading(true);
+        const firebaseUsers = await getAllUsers();
+
         // Mapear os usuários para o formato esperado pelo componente
-        const formattedUsers = firebaseUsers.map(user => ({
+        const formattedUsers = firebaseUsers.map((user) => ({
           id: user.id,
           name: user.nome || "Usuário",
-         /*  result: user.result || 0, */
-          avatarSource: user.avatarSource || "avatar1"
-        }))
-        
-        setUsers(formattedUsers)
+          points: user.points || 0, // Use points em vez de result
+          avatarSource: user.avatarSource || "avatar1",
+        }));
+
+        // Ordenar usuários por pontos (do maior para o menor)
+        formattedUsers.sort((a, b) => b.points - a.points);
+
+        setUsers(formattedUsers);
       } catch (error) {
-        console.error("Erro ao buscar usuários:", error)
+        console.error("Erro ao buscar usuários:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    
-    fetchUsers()
-  }, [])
+    };
+
+    fetchUsers();
+  }, []);
 
   // Animated values
-  const statsHeight = useRef(new Animated.Value(isHeaderExpanded ? 1 : 0)).current
-  const arrowRotation = useRef(new Animated.Value(isHeaderExpanded ? 0 : 1)).current
+  const statsHeight = useRef(
+    new Animated.Value(isHeaderExpanded ? 1 : 0)
+  ).current;
+  const arrowRotation = useRef(
+    new Animated.Value(isHeaderExpanded ? 0 : 1)
+  ).current;
 
   // Calculate the rotation for the arrow icon
   const arrowRotationDegree = arrowRotation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '180deg']
-  })
+    outputRange: ["0deg", "180deg"],
+  });
 
   // Effect to animate when isHeaderExpanded changes
   useEffect(() => {
@@ -103,25 +109,32 @@ const RankingScreen = () => {
         toValue: isHeaderExpanded ? 0 : 1,
         duration: 300,
         useNativeDriver: true,
-      })
-    ]).start()
-  }, [isHeaderExpanded])
+      }),
+    ]).start();
+  }, [isHeaderExpanded]);
 
   const toggleHeader = () => {
-    setIsHeaderExpanded(!isHeaderExpanded)
-  }
+    setIsHeaderExpanded(!isHeaderExpanded);
+  };
 
+  // Atualize o renderItem para exibir pontos em vez de result
   const renderItem = ({ item, index }: { item: User; index: number }) => {
-    const position = index + 1
-    const isThirdPosition = position === 3
-    const isCurrentUser = item.id === currentUserId
+    const position = index + 1;
+    const isThirdPosition = position === 3;
+    const isCurrentUser = item.id === currentUserId;
 
     // Determina o componente de avatar baseado no avatarSource do usuário
-    const AvatarComponent = avatarComponents[item.avatarSource as keyof typeof avatarComponents] || BigAvatar1
+    const AvatarComponent =
+      avatarComponents[item.avatarSource as keyof typeof avatarComponents] ||
+      BigAvatar1;
 
     return (
       <View
-        style={[styles.rankingItem, isThirdPosition && styles.highlightedItem, isCurrentUser && styles.currentUserItem]}
+        style={[
+          styles.rankingItem,
+          isThirdPosition && styles.highlightedItem,
+          isCurrentUser && styles.currentUserItem,
+        ]}
       >
         <View style={styles.positionContainer}>
           <Text style={styles.positionText}>{position}</Text>
@@ -131,32 +144,49 @@ const RankingScreen = () => {
         </View>
         <Text style={styles.userName}>{item.name}</Text>
         <View style={styles.resultContainer}>
-          <Feather name="flag" size={16} color="#FFA500" />
-          <Text style={styles.resultText}>{item.result}</Text>
+          <Feather name="award" size={16} color="#FFA500" />
+          <Text style={styles.resultText}>{item.points}</Text>
         </View>
       </View>
-    )
-  }
+    );
+  };
+
+
+    // Dados mock para os detalhes do usuário logado
+const userDetailsData: User = {
+  points: userData?.points || 0,
+  hours: 120,
+  consecutiveDays: 25,
+  consecutiveCorrect: 10,
+  totalConsecutiveDays: 120,
+  id: "",
+  name: "",
+  avatarSource: ""
+};
 
   // Calculate the max height for the stats container
-  const maxStatsHeight = 170 // Reduzido para eliminar espaço vazio
+  const maxStatsHeight = 170; // Reduzido para eliminar espaço vazio
 
   // Interpolate the height for the stats container
   const animatedStatsHeight = statsHeight.interpolate({
     inputRange: [0, 1],
     outputRange: [0, maxStatsHeight],
-  })
+  });
 
   // Interpolate opacity for the stats container
   const statsOpacity = statsHeight.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [0, 0.7, 1],
-  })
+  });
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
-    
+      <StatusBar
+        barStyle="dark-content"
+        translucent={false}
+        backgroundColor="#F6A608"
+      />
+
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.titleContainer}>
@@ -164,36 +194,46 @@ const RankingScreen = () => {
             <Text style={styles.title}>RANKING</Text>
           </View>
           <TouchableOpacity onPress={toggleHeader} style={styles.arrowButton}>
-            <Animated.View style={{ transform: [{ rotate: arrowRotationDegree }] }}>
+            <Animated.View
+              style={{ transform: [{ rotate: arrowRotationDegree }] }}
+            >
               <Feather name="chevron-up" size={24} color="white" />
             </Animated.View>
           </TouchableOpacity>
         </View>
 
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.userStatsContainer, 
-            { 
+            styles.userStatsContainer,
+            {
               height: animatedStatsHeight,
               opacity: statsOpacity,
-              overflow: 'hidden'
-            }
+              overflow: "hidden",
+            },
           ]}
         >
-          <Text style={styles.statsTitle}>Confira seus resultados detalhados:</Text>
+          <Text style={styles.statsTitle}>
+            Confira seus resultados detalhados:
+          </Text>
 
           <View style={styles.statsGrid}>
             {/* Primeira linha do grid */}
-            <View style={[styles.statsRow, {
-    marginBottom: 10,}]}>
-              {/* Item 1 - Milhas */}
+            <View
+              style={[
+                styles.statsRow,
+                {
+                  marginBottom: 10,
+                },
+              ]}
+            >
+              {/* Item 1 - Onocash */}
               <View style={styles.statItemGrid}>
                 <View style={styles.statIconContainer}>
-                  <Feather name="flag" size={20} color="#4A90E2" />
+                  <Feather name="award" size={20} color="#4A90E2" />
                 </View>
                 <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>{userDetailsData.miles}</Text>
-                  <Text style={styles.statLabel}>milhas</Text>
+                  <Text style={styles.statValue}>{userDetailsData.points}</Text>
+                  <Text style={styles.statLabel}>Onocash</Text>
                 </View>
               </View>
 
@@ -217,7 +257,9 @@ const RankingScreen = () => {
                   <Feather name="calendar" size={20} color="#4A90E2" />
                 </View>
                 <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>{userDetailsData.consecutiveDays}</Text>
+                  <Text style={styles.statValue}>
+                    {userDetailsData.consecutiveDays}
+                  </Text>
                   <Text style={styles.statLabel}>dias seguidos</Text>
                 </View>
               </View>
@@ -228,7 +270,9 @@ const RankingScreen = () => {
                   <Feather name="award" size={20} color="#4A90E2" />
                 </View>
                 <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>{userDetailsData.totalConsecutiveDays}</Text>
+                  <Text style={styles.statValue}>
+                    {userDetailsData.totalConsecutiveDays}
+                  </Text>
                   <Text style={styles.statLabel}>dias seguidos</Text>
                 </View>
               </View>
@@ -252,8 +296,8 @@ const RankingScreen = () => {
         />
       )}
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -291,7 +335,7 @@ const styles = StyleSheet.create({
   arrowButton: {
     width: 32,
     height: 32,
-    backgroundColor: '#BF720C',
+    backgroundColor: "#BF720C",
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
@@ -301,8 +345,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
-  userStatsContainer: {
-  },
+  userStatsContainer: {},
   statsTitle: {
     color: "white",
     fontSize: 16,
@@ -311,11 +354,11 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     marginTop: 10,
-    width: '100%',
+    width: "100%",
   },
   statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   statItemGrid: {
     flexDirection: "row",
@@ -323,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 8,
     padding: 10,
-    width: '49%',
+    width: "49%",
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -331,9 +374,9 @@ const styles = StyleSheet.create({
     shadowRadius: 1.5,
   },
   statTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
   statItem: {
     flexDirection: "row",
@@ -367,7 +410,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   listContent: {
-    paddingBottom: '35%',
+    paddingBottom: "35%",
   },
   rankingItem: {
     flexDirection: "row",
@@ -430,14 +473,14 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
-})
+});
 
-export default RankingScreen
+export default RankingScreen;

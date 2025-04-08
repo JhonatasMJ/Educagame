@@ -53,9 +53,9 @@ export const trilhas = [
     image: require("@/assets/images/fundo.svg"),
     etapas: [
       {
-        id: "1",
-        titulo: "Introdução ao React Native",
-        descricao: "Conceitos básicos e configuração do ambiente",
+        id: "2",
+        titulo: "Componentes Básicos",
+        descricao: "Aprenda sobre os componentes fundamentais",
         concluida: true,
         icone: "book",
         questions: [
@@ -71,12 +71,12 @@ export const trilhas = [
             id: "q1",
             type: QuestionType.ORDERING,
             items: [
-              { id: "a", text: "Independência do Brasil" },
-              { id: "b", text: "Proclamação da República" },
-              { id: "c", text: "Descobrimento do Brasil" },
-              { id: "d", text: "Abolição da Escravatura" }
+              { id: "a", text: "1" },
+              { id: "b", text: "2" },
+              { id: "c", text: "3" },
+              { id: "d", text: "4" }
             ],
-            correctOrder: ["c", "a", "d", "b"],
+            correctOrder: ["a", "b", "c", "d"],
             statementText: "Coloque a ordem correta!",
             explanation: "A ordem cronológica correta é: Descobrimento (1500), Independência (1822), Abolição (1888) e República (1889)."
           },
@@ -116,31 +116,6 @@ export const trilhas = [
             isTrue: false,
             explanation:
               "Incorreto! React Native não usa WebView, ele renderiza componentes nativos reais da plataforma.",
-          },
-        ],
-      },
-      {
-        id: "2",
-        titulo: "Componentes Básicos",
-        descricao: "Aprenda sobre os componentes fundamentais",
-        concluida: true,
-        icone: "book",
-        questions: [
-          {
-            id: "q1",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "React Native usa a mesma base de código para iOS e Android.",
-            isTrue: true,
-            explanation:
-              "Correto! Você escreve uma única base de código JavaScript que funciona em ambas as plataformas.",
-          },
-          {
-            id: "q2",
-            type: QuestionType.TRUE_OR_FALSE,
-            description: "StyleSheet no React Native funciona exatamente como CSS na web.",
-            isTrue: false,
-            explanation:
-              "Incorreto! Embora similar, StyleSheet no React Native tem diferenças importantes, como uso de camelCase e suporte limitado a algumas propriedades CSS.",
           },
         ],
       },

@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, Animated } from "react-native"
 import { Menu, Trophy, Target, Flame } from "lucide-react-native"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import React from "react"
+import { useAuth } from "../context/AuthContext"
 
 interface DuolingoHeaderProps {
   nome: string
@@ -12,13 +13,35 @@ interface DuolingoHeaderProps {
   } | null
 }
 
-const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps) => {
-  const { progress } = useGameProgress()
 
-  // Get points and consecutive correct answers from context
-  const points = progress.totalPoints
-  const consecutiveCorrect = progress.consecutiveCorrect
-  const streak = 7 // This could also come from the context if needed
+interface User {
+  id?: string;
+  name?: string;
+  points: number; // Alterado de result para points
+  avatarSource?: string;
+  hours: number;
+  consecutiveDays: number;
+  consecutiveCorrect: number;
+  totalConsecutiveDays: number;
+}
+
+
+const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps) => {
+  const { userData, authUser, getAllUsers } = useAuth();
+
+
+  const userDetailsData: User = {
+    points: userData?.points || 0,
+    hours: 120,
+    consecutiveDays: 25,
+    consecutiveCorrect: 10,
+    totalConsecutiveDays: 120,
+    id: "",
+    name: "",
+    avatarSource: ""
+  };
+  
+
 
   // Animation values for header transformation
   const titleHeight = 60 // Height of the title section that will hide
@@ -93,7 +116,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
           <View className="flex-row items-center">
             <Trophy size={20} color="#FFD700" />
-            <Text className="text-white font-bold ml-1">{points} Onocash</Text>
+            <Text className="text-white font-bold ml-1">{userDetailsData.points} Onocash</Text>
           </View>
         </TouchableOpacity>
 
@@ -101,7 +124,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
           <View className="flex-row items-center">
             <Target size={20} color="#FF4500" />
-            <Text className="text-white font-bold ml-1">{streak} dias</Text>
+            <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveDays} dias</Text>
           </View>
         </TouchableOpacity>
 
@@ -109,7 +132,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
           <View className="flex-row items-center">
             <Flame size={20} color="#FF4500" />
-            <Text className="text-white font-bold ml-1">{consecutiveCorrect}</Text>
+            <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveCorrect}</Text>
           </View>
         </TouchableOpacity>
       </View>

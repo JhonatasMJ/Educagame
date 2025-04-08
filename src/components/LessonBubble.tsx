@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { View, Text, Pressable, Animated, Easing } from "react-native"
+import React, { useEffect, useRef } from "react"
+import { View, Text, Pressable, Animated, Easing, StyleSheet } from "react-native"
 import { Crown, Zap, Target, BookOpen, Lock } from "lucide-react-native"
 import { useGameProgress } from "@/src/context/GameProgressContext"
+import Svg, { Circle } from "react-native-svg"
 
+// Tipos
 interface LessonBubbleProps {
   number: number
   isActive: boolean
@@ -17,114 +19,72 @@ interface LessonBubbleProps {
   phaseId: string
 }
 
-const LessonBubble = ({
-  number,
-  isActive,
-  isCompleted,
-  isNext,
-  onPress,
-  title,
-  icon,
-  description,
-  phaseId,
-}: LessonBubbleProps) => {
-  const bubbleSize = 80
-  const numberSize = 30
-  const progressRingSize = bubbleSize + 16
-  const progressRingThickness = 4
+// Constantes para dimensões e estilos
+const BUBBLE_SIZE = 90
+const NUMBER_SIZE = 30
+const PROGRESS_RING_SIZE = BUBBLE_SIZE + 35.5
+const PROGRESS_RING_THICKNESS = 6
+const CHECK_ICON_SIZE = 24
 
+// Componente principal
+const LessonBubble = ({ number, isActive, isCompleted, isNext, onPress, title, icon, phaseId }: LessonBubbleProps) => {
+  // Hooks e estados
   const { getPhaseCompletionPercentage } = useGameProgress()
   const completionPercentage = getPhaseCompletionPercentage(phaseId)
-
-  // Valor de animação apenas para a próxima etapa
   const pulseAnim = useRef(new Animated.Value(1)).current
   const progressAnim = useRef(new Animated.Value(0)).current
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
-  // Função para renderizar o ícone correto
-  const renderIcon = () => {
-    // If not completed, show lock icon
-    if (!isCompleted && !isActive && !isNext) {
-      return <Lock size={24} color="white" />
-    }
-
-    // Otherwise show the lesson icon
-    switch (icon) {
-      case "crown":
-        return <Crown size={24} color="white" />
-      case "zap":
-        return <Zap size={24} color="white" />
-      case "target":
-        return <Target size={24} color="white" />
-      case "book":
-        return <BookOpen size={24} color="white" />
-      default:
-        return <Crown size={24} color="white" />
-    }
-  }
-
-  // Efeito para iniciar animação de pulso apenas na próxima etapa
+  // Efeito para animação de pulso
   useEffect(() => {
     if (isNext) {
-      // Animação de pulso contínua apenas para a próxima etapa
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start()
+      startPulseAnimation()
     } else {
-      // Parar animação para outras etapas
-      pulseAnim.setValue(1)
-      pulseAnim.stopAnimation()
+      stopPulseAnimation()
     }
   }, [isNext])
 
-  // Animate progress ring when completion percentage changes
+  // Efeito para animação do anel de progresso
   useEffect(() => {
+    animateProgressRing(completionPercentage)
+  }, [completionPercentage])
+
+  // Funções de animação
+  const startPulseAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start()
+  }
+
+  const stopPulseAnimation = () => {
+    pulseAnim.setValue(1)
+    pulseAnim.stopAnimation()
+  }
+
+  const animateProgressRing = (percentage: number) => {
     Animated.timing(progressAnim, {
-      toValue: completionPercentage / 100,
+      toValue: percentage / 100,
       duration: 1000,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start()
-  }, [completionPercentage])
-
-  // Determine background color based on completion status
-  const getBubbleBackgroundColor = () => {
-    if (isCompleted) {
-      return "bg-[#83AD11]" // Using the exact color provided
-    } else if (isActive || isNext) {
-      return "bg-purple-600" // Purple for active or next
-    } else {
-      return "bg-gray-500" // Gray for locked/uncompleted
-    }
   }
 
-  // Get border style based on active state and background color
-  const getBorderStyle = () => {
-    if (!isActive) return ""
-
-    if (isCompleted) {
-      return "border-4 border-[#5A7A0C]" // Darker green for completed
-    } else if (isNext) {
-      return "border-4 border-purple-800" // Darker purple for next
-    } else {
-      return "border-4 border-gray-700" // Darker gray for others
-    }
-  }
-
-  // Calculate the progress ring stroke dash
-  const circumference = 2 * Math.PI * (progressRingSize / 2)
+  // Cálculos para o anel de progresso
+  const circumference = 2 * Math.PI * (PROGRESS_RING_SIZE / 2 - PROGRESS_RING_THICKNESS / 2)
   const progressStrokeDashoffset = progressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [circumference, 0],
@@ -132,131 +92,269 @@ const LessonBubble = ({
 
   return (
     <Pressable onPress={onPress} className="stage-bubble">
-      <Animated.View
-        className="items-center my-8 relative"
-        style={{
-          transform: [{ scale: isNext ? pulseAnim : 1 }],
-        }}
-      >
-        <View className="items-center">
-          {/* Progress Ring */}
-          <View
-            style={{
-              position: "absolute",
-              width: progressRingSize,
-              height: progressRingSize,
-              borderRadius: progressRingSize / 2,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Svg width={progressRingSize} height={progressRingSize} style={{ position: "absolute" }}>
-              {/* Background Circle */}
-              <Circle
-                cx={progressRingSize / 2}
-                cy={progressRingSize / 2}
-                r={progressRingSize / 2 - progressRingThickness / 2}
-                
-                strokeWidth={progressRingThickness}
-                fill="transparent"
-              />
-              {/* Progress Circle */}
-              <AnimatedCircle
-                cx={progressRingSize / 2}
-                cy={progressRingSize / 2}
-                r={progressRingSize / 2 - progressRingThickness / 2}
-                stroke={isCompleted ? "#83AD11" : "#8B5CF6"}
-                strokeWidth={progressRingThickness}
-                fill="transparent"
-                strokeDasharray={circumference}
-                strokeDashoffset={progressStrokeDashoffset}
-                strokeLinecap="round"
-                rotation="-90"
-                origin={`${progressRingSize / 2}, ${progressRingSize / 2}`}
-              />
-            </Svg>
-          </View>
-
-          {/* 3D effect base layer */}
-          <View
-            className={`absolute rounded-full ${isCompleted ? "bg-green" : "bg-gray-700"}`}
-            style={{
-              width: bubbleSize + 8,
-              height: bubbleSize + 8,
-              top: 6, // Offset to create 3D effect
-              zIndex: 0,
-              borderRadius: (bubbleSize + 8) / 2,
-            }}
+      <Animated.View style={[styles.bubbleContainer, { transform: [{ scale: isNext ? pulseAnim : 1 }] }]}>
+        <View style={styles.contentContainer}>
+          {/* Anel de Progresso */}
+          <ProgressRing
+            size={PROGRESS_RING_SIZE}
+            thickness={PROGRESS_RING_THICKNESS}
+            isCompleted={isCompleted}
+            circumference={circumference}
+            progressStrokeDashoffset={progressStrokeDashoffset}
           />
 
-          {/* Contêiner principal com borda condicional */}
+          {/* Efeito 3D (sombra) */}
           <View
-            className={`items-center justify-center rounded-full ${getBubbleBackgroundColor()} ${getBorderStyle()}`}
-            style={{
-              width: bubbleSize + 8,
-              height: bubbleSize + 8,
-              zIndex: 2,
-              elevation: 4,
-              shadowColor: "#86a531",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.2,
-              shadowRadius: 2,
-            }}
-          >
-            <View className="items-center justify-center">{renderIcon()}</View>
+            style={[
+              styles.shadowLayer,
+              isCompleted ? styles.completedShadow : styles.defaultShadow,
+              { width: BUBBLE_SIZE + 8, height: BUBBLE_SIZE + 8, borderRadius: (BUBBLE_SIZE + 8) / 2 },
+            ]}
+          />
 
-            {isCompleted && (
-              <View className="bg-green-700 absolute top-0 right-0 w-6 h-6 rounded-full items-center justify-center">
-                <Text className="text-white font-bold">✓</Text>
-              </View>
-            )}
-          </View>
+          {/* Bolha Principal */}
+          <MainBubble size={BUBBLE_SIZE} isActive={isActive} isCompleted={isCompleted} isNext={isNext} icon={icon} />
 
-          <View
-            className="bg-secondary rounded-full absolute items-center justify-center z-10"
-            style={{
-              width: numberSize,
-              height: numberSize,
-              top: -2,
-              elevation: 6,
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-            }}
-          >
-            <Text className="text-white font-bold">{number}</Text>
-          </View>
+          {/* Indicador de Número */}
+          <NumberIndicator number={number} size={NUMBER_SIZE} />
 
-          {/* Título e descrição abaixo da bolha */}
-          <View className="mt-4 items-center max-w-[200px]">
-            <View
-              className="bg-secondary px-3 py-1 rounded-lg mb-2 w-full"
-              style={{
-                elevation: 5,
-                shadowColor: "#000",
-                shadowOffset: { width: 2, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3,
-              }}
-            >
-              <Text className="text-white font-medium text-sm text-center" numberOfLines={2}>
-                {title}
-              </Text>
-            </View>
-          </View>
+          {/* Título */}
+          <TitleCard title={title} />
         </View>
       </Animated.View>
     </Pressable>
   )
 }
 
-// Import these at the top of the file
-import Svg, { Circle } from "react-native-svg"
-import React from "react"
-// import { Animated } from "react-native" // Removed duplicated import
+// Componentes auxiliares
+const ProgressRing = ({
+  size,
+  thickness,
+  isCompleted,
+  circumference,
+  progressStrokeDashoffset,
+}: {
+  size: number
+  thickness: number
+  isCompleted: boolean
+  circumference: number
+  progressStrokeDashoffset: Animated.AnimatedInterpolation<string | number>
+}) => {
+  const progressColor = isCompleted ? "#5A7A0C" : "transparent"
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
-// Create an animated circle component
-const AnimatedCircle = Animated.createAnimatedComponent(Circle)
+  return (
+    <View style={[styles.progressRingContainer, { width: size, height: size, top: -size / 11, elevation: 2, shadowColor: "#000" }]}>
+      <Svg width={size} height={size} style={styles.progressRingSvg}>
+        {/* Círculo de fundo */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={size / 2 - thickness / 2}
+          stroke="transparent"
+          strokeWidth={thickness}
+          fill="transparent"
+          opacity={0.7}
+        />
+        {/* Círculo de progresso */}
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={size / 2 - thickness / 2}
+          stroke={progressColor}
+          strokeWidth={thickness}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={progressStrokeDashoffset}
+          strokeLinecap="round"
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+    </View>
+  )
+}
+
+const MainBubble = ({
+  size,
+  isActive,
+  isCompleted,
+  isNext,
+  icon,
+}: {
+  size: number
+  isActive: boolean
+  isCompleted: boolean
+  isNext: boolean
+  icon: string
+}) => {
+  // Determinar a cor de fundo da bolha
+  const getBubbleStyle = () => {
+    let bgColorClass = "bg-gray-500"
+    let borderClass = ""
+
+    if (isCompleted) {
+      bgColorClass = "bg-[#83AD11]"
+    } else if (isActive || isNext) {
+      bgColorClass = "bg-purple-600"
+    }
+
+    if (isActive) {
+      if (isCompleted) {
+        borderClass = "border-4 border-[#5A7A0C]"
+      } else if (isNext) {
+        borderClass = "border-4 border-purple-800"
+      } else {
+        borderClass = "border-4 border-gray-700"
+      }
+    }
+
+    return `${bgColorClass} ${borderClass}`
+  }
+
+  return (
+    <View
+      className={`items-center justify-center rounded-full ${getBubbleStyle()}`}
+      style={[styles.mainBubble, { width: size + 8, height: size + 8, borderRadius: (size + 8) / 2 }]}
+    >
+      <View style={styles.iconContainer}>{renderBubbleIcon(icon, isCompleted, isActive, isNext)}</View>
+
+      {isCompleted && (
+        <View style={styles.checkmarkBadge}>
+          <Text style={styles.checkmarkText}>✓</Text>
+        </View>
+      )}
+    </View>
+  )
+}
+
+const NumberIndicator = ({ number, size }: { number: number; size: number }) => (
+  <View
+    className="bg-secondary rounded-full absolute items-center justify-center z-10"
+    style={[styles.numberIndicator, { width: size, height: size, borderRadius: size / 2 }]}
+  >
+    <Text style={styles.numberText}>{number}</Text>
+  </View>
+)
+
+const TitleCard = ({ title }: { title: string }) => (
+  <View style={styles.titleContainer}>
+    <View className="bg-secondary px-3 py-1 rounded-lg mb-2 w-full" style={styles.titleCard}>
+      <Text style={styles.titleText} numberOfLines={2}>
+        {title}
+      </Text>
+    </View>
+  </View>
+)
+
+// Função auxiliar para renderizar o ícone correto
+const renderBubbleIcon = (iconName: string, isCompleted: boolean, isActive: boolean, isNext: boolean) => {
+  // Se não estiver completo, ativo ou próximo, mostrar cadeado
+  if (!isCompleted && !isActive && !isNext) {
+    return <Lock size={CHECK_ICON_SIZE} color="white" />
+  }
+
+  // Caso contrário, mostrar o ícone da lição
+  switch (iconName) {
+    case "crown":
+      return <Crown size={CHECK_ICON_SIZE} color="white" />
+    case "zap":
+      return <Zap size={CHECK_ICON_SIZE} color="white" />
+    case "target":
+      return <Target size={CHECK_ICON_SIZE} color="white" />
+    case "book":
+      return <BookOpen size={CHECK_ICON_SIZE} color="white" />
+    default:
+      return <Crown size={CHECK_ICON_SIZE} color="white" />
+  }
+}
+
+// Estilos
+const styles = StyleSheet.create({
+  bubbleContainer: {
+    alignItems: "center",
+    marginVertical: 32,
+    position: "relative",
+  },
+  contentContainer: {
+    alignItems: "center",
+  },
+  progressRingContainer: {
+    position: "absolute",
+    borderRadius: PROGRESS_RING_SIZE / 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressRingSvg: {
+    position: "absolute",
+  },
+  shadowLayer: {
+    position: "absolute",
+    top: 6,
+    zIndex: 0,
+  },
+  completedShadow: {
+    backgroundColor: "#365314", // verde escuro
+  },
+  defaultShadow: {
+    backgroundColor: "#374151", // cinza escuro
+  },
+  mainBubble: {
+    zIndex: 2,
+    elevation: 4,
+    shadowColor: "#86a531",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  iconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkmarkBadge: {
+    backgroundColor: "#365314", // verde escuro
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkmarkText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  numberIndicator: {
+    top: -2,
+    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  numberText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  titleContainer: {
+    marginTop: 20,
+    alignItems: "center",
+    maxWidth: 200,
+  },
+  titleCard: {
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+  },
+  titleText: {
+    color: "white",
+    fontWeight: "500",
+    fontSize: 14,
+    textAlign: "center",
+  },
+})
 
 export default LessonBubble
-

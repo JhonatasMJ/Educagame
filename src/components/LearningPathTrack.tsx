@@ -1,15 +1,18 @@
-import { View, ImageBackground, type ImageSourcePropType } from "react-native"
+"use client"
+
+import  React from "react"
+import { View, ImageBackground, StyleSheet, type ImageSourcePropType } from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
-import React from "react"
 
+// Tipos
 interface Stage {
   number: number
   completed: boolean
   title: string
   icon: string
   description?: string
-  id: string // Added id to identify the phase
+  id: string
 }
 
 interface LearningPathTrackProps {
@@ -17,129 +20,212 @@ interface LearningPathTrackProps {
   currentStage: number
   onStagePress: (index: number) => void
   containerHeight: number
-  backgroundImage?: ImageSourcePropType // Can be a local or remote image
-  trailId?: string // Added trail ID
+  backgroundImage?: ImageSourcePropType
+  trailId?: string
 }
 
+// Constantes
+const STAGE_HEIGHT = 200
+const BOTTOM_SPACE_ADJUSTMENT = 120
+const TRACK_WIDTH = 8
+const TRACK_BORDER_RADIUS = 4
+const STAGE_SPACING = 4
+
+// Componente principal
 const LearningPathTrack = ({
   stages,
   currentStage,
   onStagePress,
   containerHeight,
   backgroundImage,
-  trailId = "1", // Default to first trail
+  trailId = "1",
 }: LearningPathTrackProps) => {
-  // Encontrar o índice da próxima etapa não concluída
+  // Cálculos para layout
   const nextStageIndex = stages.findIndex((stage) => !stage.completed)
+  const totalContentHeight = stages.length * STAGE_HEIGHT
+  const topPadding = Math.max(0, containerHeight - totalContentHeight - BOTTOM_SPACE_ADJUSTMENT)
 
-  // Calcular a altura disponível para distribuir os estágios
-  const stageHeight = 200 // Altura aproximada de cada estágio
-  const totalContentHeight = stages.length * stageHeight
-
-  // Calcular o padding superior para alinhar ao fundo quando há poucos estágios
-  const topPadding = Math.max(0, containerHeight - totalContentHeight - 120) // 120 é um ajuste para considerar o espaço da barra inferior
-
-  // Check if the backgroundImage is an SVG (for local SVGs, we need to handle differently)
-  const isSvgImage = typeof backgroundImage === "string" && (backgroundImage as string).endsWith(".svg")
-
-  // Helper function to determine if it's a local or remote image
-  const isLocalImage = backgroundImage && typeof backgroundImage !== "string"
-
-  // Render with or without background image
-  if (backgroundImage) {
-    // For SVG backgrounds
-    if (isSvgImage) {
-      return (
-        <View className="items-center" style={{ paddingTop: topPadding, width: "100%" }}>
-          <SvgUri
-            uri={backgroundImage as string}
-            style={{
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              opacity: 0.3,
-            }}
-          />
-          {renderTrackContent()}
-        </View>
-      )
-    }
-
-    // For regular image backgrounds
-    return (
-      <ImageBackground
-        source={backgroundImage} // Works with both require() and {uri: '...'}
-        style={{ width: "100%", paddingTop: topPadding }}
-        imageStyle={{ opacity: 0.3 }}
-        className="items-center"
-      >
-        {renderTrackContent()}
-      </ImageBackground>
-    )
-  }
-
-  // No background image
+  // Renderiza o conteúdo principal com o fundo apropriado
   return (
-    <View className="items-center" style={{ paddingTop: topPadding }}>
-      {renderTrackContent()}
-    </View>
+    <BackgroundContainer backgroundImage={backgroundImage} topPadding={topPadding}>
+      <TrackContent
+        stages={stages}
+        currentStage={currentStage}
+        nextStageIndex={nextStageIndex}
+        onStagePress={onStagePress}
+        trailId={trailId}
+      />
+    </BackgroundContainer>
   )
-
-  // Helper function to render the track content
-  function renderTrackContent() {
-    return (
-      <>
-        {/* Trilha de fundo contínua */}
-        <View
-          className="absolute bg-tertiary/80"
-          style={{
-            width: 8,
-            height: "100%",
-            borderRadius: 4,
-            zIndex: 1,
-          }}
-        />
-        {/* Trilha de progresso */}
-        <View
-          className="absolute bg-secondary"
-          style={{
-            width: 8,
-            height: `${Math.max((stages.filter((s) => s.completed).length / stages.length) * 100, 10)}%`,
-            borderRadius: 4,
-            zIndex: 2,
-            bottom: 0, // Começa de baixo
-          }}
-        />
-        {/* Estágios em ordem reversa (de baixo para cima) */}
-        {[...stages].reverse().map((stage, index) => {
-          // Calcular o índice original (antes da inversão)
-          const originalIndex = stages.length - 1 - index
-          // Verificar se esta é a próxima etapa a ser concluída
-          const isNextStage = originalIndex === nextStageIndex
-
-          return (
-            <View key={originalIndex} className="items-center z-10">
-              <LessonBubble
-                number={stage.number}
-                isActive={currentStage === originalIndex}
-                isCompleted={stage.completed}
-                isNext={isNextStage}
-                onPress={() => onStagePress(originalIndex)}
-                title={stage.title}
-                icon={stage.icon as "crown" | "zap" | "target" | "book"}
-                description={stage.description}
-                phaseId={stage.id} // Pass the phase ID to the bubble
-              />
-
-              {/* Espaço entre bolhas - aumentado */}
-              {index < stages.length - 1 && <View style={{ height: 60 }} />}
-            </View>
-          )
-        })}
-      </>
-    )
-  }
 }
 
-export default LearningPathTrack
+// Componente para o container de fundo
+const BackgroundContainer = ({
+  backgroundImage,
+  topPadding,
+  children,
+}: {
+  backgroundImage?: ImageSourcePropType
+  topPadding: number
+  children: React.ReactNode
+}) => {
+  // Verifica se a imagem de fundo é um SVG
+  const isSvgImage = typeof backgroundImage === "string" && (backgroundImage as string).endsWith(".svg")
 
+  if (!backgroundImage) {
+    return (
+      <View className="items-center" style={[styles.container, { paddingTop: topPadding }]}>
+        {children}
+      </View>
+    )
+  }
+
+  if (isSvgImage) {
+    return (
+      <View className="items-center" style={[styles.container, { paddingTop: topPadding }]}>
+        <SvgUri uri={backgroundImage as string} style={styles.svgBackground} />
+        {children}
+      </View>
+    )
+  }
+
+  return (
+    <ImageBackground
+      source={backgroundImage}
+      style={[styles.container, { paddingTop: topPadding }]}
+      imageStyle={styles.imageBackground}
+      className="items-center"
+    >
+      {children}
+    </ImageBackground>
+  )
+}
+
+// Componente para o conteúdo da trilha
+const TrackContent = ({
+  stages,
+  currentStage,
+  nextStageIndex,
+  onStagePress,
+  trailId,
+}: {
+  stages: Stage[]
+  currentStage: number
+  nextStageIndex: number
+  onStagePress: (index: number) => void
+  trailId: string
+}) => {
+  // Calcula a altura da trilha de progresso
+  const completedStagesPercentage = Math.max((stages.filter((s) => s.completed).length / stages.length) * 100, 10)
+
+  return (
+    <>
+      {/* Trilha de fundo */}
+      <TrackLine className="bg-tertiary/80" height="100%" zIndex={1} />
+
+      {/* Trilha de progresso */}
+      <TrackLine
+        className="bg-secondary"
+        height={`${completedStagesPercentage}%`}
+        zIndex={2}
+        style={styles.progressTrack}
+      />
+
+      {/* Estágios em ordem reversa */}
+      <StagesList
+        stages={stages}
+        currentStage={currentStage}
+        nextStageIndex={nextStageIndex}
+        onStagePress={onStagePress}
+        trailId={trailId}
+      />
+    </>
+  )
+}
+
+// Componente para a linha da trilha
+const TrackLine = ({
+  className,
+  height,
+  zIndex,
+  style,
+}: {
+  className: string
+  height: string
+  zIndex: number
+  style?: any
+}) => <View className={className} style={[styles.trackLine, { height, zIndex }, style]} />
+
+// Componente para a lista de estágios
+const StagesList = ({
+  stages,
+  currentStage,
+  nextStageIndex,
+  onStagePress,
+  trailId,
+}: {
+  stages: Stage[]
+  currentStage: number
+  nextStageIndex: number
+  onStagePress: (index: number) => void
+  trailId: string
+}) => {
+  // Inverte os estágios para renderizar de baixo para cima
+  const reversedStages = [...stages].reverse()
+
+  return (
+    <>
+      {reversedStages.map((stage, index) => {
+        // Calcula o índice original (antes da inversão)
+        const originalIndex = stages.length - 1 - index
+        // Verifica se esta é a próxima etapa a ser concluída
+        const isNextStage = originalIndex === nextStageIndex
+
+        return (
+          <View key={originalIndex} className="items-center z-10">
+            <LessonBubble
+              number={stage.number}
+              isActive={currentStage === originalIndex}
+              isCompleted={stage.completed}
+              isNext={isNextStage}
+              onPress={() => onStagePress(originalIndex)}
+              title={stage.title}
+              icon={stage.icon as "crown" | "zap" | "target" | "book"}
+              description={stage.description}
+              phaseId={stage.id}
+            />
+
+            {/* Espaço entre bolhas */}
+            {index < stages.length - 1 && <View style={{ height: STAGE_SPACING }} />}
+          </View>
+        )
+      })}
+    </>
+  )
+}
+
+// Estilos
+const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+  },
+  svgBackground: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    opacity: 0.3,
+  },
+  imageBackground: {
+    opacity: 0.3,
+  },
+  trackLine: {
+    position: "absolute",
+    width: TRACK_WIDTH,
+    borderRadius: TRACK_BORDER_RADIUS,
+  },
+  progressTrack: {
+    bottom: 0, // Começa de baixo
+  },
+})
+
+export default LearningPathTrack

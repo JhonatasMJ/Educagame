@@ -1,8 +1,10 @@
 "use client"
 
-import React from "react"
+import  React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+// Importe o contexto de autenticação
+import { useAuth } from "./AuthContext"
 
 // Define types for our progress data
 interface QuestionProgress {
@@ -55,9 +57,11 @@ const initialProgress: GameProgress = {
   trails: [],
 }
 
+// Modifique o GameProgressProvider para usar o contexto de autenticação
 export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [progress, setProgress] = useState<GameProgress>(initialProgress)
   const [isLoading, setIsLoading] = useState(true)
+  const { updateUserPoints } = useAuth() // Use o contexto de autenticação
 
   // Load progress from AsyncStorage on mount
   useEffect(() => {
@@ -126,7 +130,7 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }
 
-  // Answer a question
+  // Modifique a função answerQuestion para atualizar pontos no Firebase
   const answerQuestion = (correct: boolean, questionId: string) => {
     setProgress((prev) => {
       const newProgress = { ...prev }
@@ -159,7 +163,11 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
             // Add points for correct answers
             if (correct) {
-              newProgress.totalPoints += 10
+              const pointsPerCorrectAnswer = 10
+              newProgress.totalPoints += pointsPerCorrectAnswer
+
+              // Atualizar pontos no Firebase
+              updateUserPoints(pointsPerCorrectAnswer)
             }
 
             break
@@ -171,8 +179,8 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }
 
-  // Complete a phase
-  const completePhase = (phaseId: string, timeSpent: number) => {
+  // Modifique a função completePhase para atualizar pontos no Firebase
+  const completePhase = async (phaseId: string, timeSpent: number) => {
     setProgress((prev) => {
       const newProgress = { ...prev }
 
@@ -184,7 +192,11 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
           phase.timeSpent = timeSpent
 
           // Add completion bonus
-          newProgress.totalPoints += 50
+          const completionBonus = 50
+          newProgress.totalPoints += completionBonus
+
+          // Atualizar pontos no Firebase
+          updateUserPoints(completionBonus)
           break
         }
       }
@@ -250,4 +262,3 @@ export const useGameProgress = () => {
   }
   return context
 }
-
