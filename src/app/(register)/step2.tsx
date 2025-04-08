@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-around",
     height: "15%",
-    marginTop: 0,
+    marginTop: 40,
   },
 })
 
