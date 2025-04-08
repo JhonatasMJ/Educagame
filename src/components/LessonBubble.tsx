@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { View, Text, Pressable, Animated, Easing, StyleSheet } from "react-native"
 import { Crown, Zap, Target, BookOpen, Lock } from "lucide-react-native"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import Svg, { Circle } from "react-native-svg"
+import React from "react"
 
 // Tipos
 interface LessonBubbleProps {
@@ -12,6 +13,7 @@ interface LessonBubbleProps {
   isActive: boolean
   isCompleted: boolean
   isNext: boolean
+  isLocked?: boolean // Nova propriedade para indicar se a etapa está bloqueada
   onPress: () => void
   title: string
   icon: "crown" | "zap" | "target" | "book"
@@ -27,7 +29,17 @@ const PROGRESS_RING_THICKNESS = 6
 const CHECK_ICON_SIZE = 24
 
 // Componente principal
-const LessonBubble = ({ number, isActive, isCompleted, isNext, onPress, title, icon, phaseId }: LessonBubbleProps) => {
+const LessonBubble = ({
+  number,
+  isActive,
+  isCompleted,
+  isNext,
+  isLocked = false, // Valor padrão para compatibilidade
+  onPress,
+  title,
+  icon,
+  phaseId,
+}: LessonBubbleProps) => {
   // Hooks e estados
   const { getPhaseCompletionPercentage } = useGameProgress()
   const completionPercentage = getPhaseCompletionPercentage(phaseId)
@@ -113,7 +125,14 @@ const LessonBubble = ({ number, isActive, isCompleted, isNext, onPress, title, i
           />
 
           {/* Bolha Principal */}
-          <MainBubble size={BUBBLE_SIZE} isActive={isActive} isCompleted={isCompleted} isNext={isNext} icon={icon} />
+          <MainBubble
+            size={BUBBLE_SIZE}
+            isActive={isActive}
+            isCompleted={isCompleted}
+            isNext={isNext}
+            isLocked={isLocked}
+            icon={icon}
+          />
 
           {/* Indicador de Número */}
           <NumberIndicator number={number} size={NUMBER_SIZE} />
@@ -144,7 +163,7 @@ const ProgressRing = ({
   const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
   return (
-    <View style={[styles.progressRingContainer, { width: size, height: size, top: -size / 11, elevation: 2, shadowColor: "#000" }]}>
+    <View       style={[        styles.progressRingContainer,         { width: size, height: size, top: -size / 11, elevation: 2, shadowColor: "#000" }]}    >
       <Svg width={size} height={size} style={styles.progressRingSvg}>
         {/* Círculo de fundo */}
         <Circle
@@ -180,12 +199,14 @@ const MainBubble = ({
   isActive,
   isCompleted,
   isNext,
+  isLocked,
   icon,
 }: {
   size: number
   isActive: boolean
   isCompleted: boolean
   isNext: boolean
+  isLocked?: boolean
   icon: string
 }) => {
   // Determinar a cor de fundo da bolha
@@ -217,7 +238,7 @@ const MainBubble = ({
       className={`items-center justify-center rounded-full ${getBubbleStyle()}`}
       style={[styles.mainBubble, { width: size + 8, height: size + 8, borderRadius: (size + 8) / 2 }]}
     >
-      <View style={styles.iconContainer}>{renderBubbleIcon(icon, isCompleted, isActive, isNext)}</View>
+      <View style={styles.iconContainer}>{renderBubbleIcon(icon, isCompleted, isActive, isNext, isLocked)}</View>
 
       {isCompleted && (
         <View style={styles.checkmarkBadge}>
@@ -248,9 +269,15 @@ const TitleCard = ({ title }: { title: string }) => (
 )
 
 // Função auxiliar para renderizar o ícone correto
-const renderBubbleIcon = (iconName: string, isCompleted: boolean, isActive: boolean, isNext: boolean) => {
-  // Se não estiver completo, ativo ou próximo, mostrar cadeado
-  if (!isCompleted && !isActive && !isNext) {
+const renderBubbleIcon = (
+  iconName: string,
+  isCompleted: boolean,
+  isActive: boolean,
+  isNext: boolean,
+  isLocked?: boolean,
+) => {
+  // Se estiver bloqueado ou não estiver completo/ativo/próximo, mostrar cadeado
+  if (isLocked || (!isCompleted && !isActive && !isNext)) {
     return <Lock size={CHECK_ICON_SIZE} color="white" />
   }
 

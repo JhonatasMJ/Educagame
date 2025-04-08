@@ -1,6 +1,6 @@
 "use client"
 
-import  React from "react"
+import React from "react"
 import { View, ImageBackground, StyleSheet, type ImageSourcePropType } from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
@@ -45,6 +45,24 @@ const LearningPathTrack = ({
   const totalContentHeight = stages.length * STAGE_HEIGHT
   const topPadding = Math.max(0, containerHeight - totalContentHeight - BOTTOM_SPACE_ADJUSTMENT)
 
+  // Função para verificar se uma etapa está bloqueada
+  const isStageBlocked = (index: number) => {
+    // Uma etapa está bloqueada se:
+    // 1. Não estiver completa
+    // 2. Não for a próxima disponível (a primeira não completa)
+    // 3. Não for a etapa atual
+    return !stages[index].completed && index !== nextStageIndex && index !== currentStage
+  }
+
+  // Função para lidar com o clique em uma etapa
+  const handleStagePress = (index: number) => {
+    // Só permite navegação se a etapa não estiver bloqueada
+    if (!isStageBlocked(index)) {
+      onStagePress(index)
+    }
+    // Se estiver bloqueada, não faz nada (ou poderia mostrar uma mensagem)
+  }
+
   // Renderiza o conteúdo principal com o fundo apropriado
   return (
     <BackgroundContainer backgroundImage={backgroundImage} topPadding={topPadding}>
@@ -52,7 +70,8 @@ const LearningPathTrack = ({
         stages={stages}
         currentStage={currentStage}
         nextStageIndex={nextStageIndex}
-        onStagePress={onStagePress}
+        onStagePress={handleStagePress}
+        isStageBlocked={isStageBlocked}
         trailId={trailId}
       />
     </BackgroundContainer>
@@ -107,12 +126,14 @@ const TrackContent = ({
   currentStage,
   nextStageIndex,
   onStagePress,
+  isStageBlocked,
   trailId,
 }: {
   stages: Stage[]
   currentStage: number
   nextStageIndex: number
   onStagePress: (index: number) => void
+  isStageBlocked: (index: number) => boolean
   trailId: string
 }) => {
   // Calcula a altura da trilha de progresso
@@ -137,6 +158,7 @@ const TrackContent = ({
         currentStage={currentStage}
         nextStageIndex={nextStageIndex}
         onStagePress={onStagePress}
+        isStageBlocked={isStageBlocked}
         trailId={trailId}
       />
     </>
@@ -162,12 +184,14 @@ const StagesList = ({
   currentStage,
   nextStageIndex,
   onStagePress,
+  isStageBlocked,
   trailId,
 }: {
   stages: Stage[]
   currentStage: number
   nextStageIndex: number
   onStagePress: (index: number) => void
+  isStageBlocked: (index: number) => boolean
   trailId: string
 }) => {
   // Inverte os estágios para renderizar de baixo para cima
@@ -180,6 +204,8 @@ const StagesList = ({
         const originalIndex = stages.length - 1 - index
         // Verifica se esta é a próxima etapa a ser concluída
         const isNextStage = originalIndex === nextStageIndex
+        // Verifica se a etapa está bloqueada
+        const isLocked = isStageBlocked(originalIndex)
 
         return (
           <View key={originalIndex} className="items-center z-10">
@@ -188,6 +214,7 @@ const StagesList = ({
               isActive={currentStage === originalIndex}
               isCompleted={stage.completed}
               isNext={isNextStage}
+              isLocked={isLocked}
               onPress={() => onStagePress(originalIndex)}
               title={stage.title}
               icon={stage.icon as "crown" | "zap" | "target" | "book"}
