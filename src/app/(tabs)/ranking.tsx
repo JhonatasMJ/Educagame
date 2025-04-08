@@ -142,7 +142,7 @@ const RankingScreen = () => {
         <View style={styles.avatarContainer}>
           <AvatarComponent width={40} height={40} style={styles.avatar} />
         </View>
-        <Text style={styles.userName}>{item.name}</Text>
+        <Text className="capitalize" style={styles.userName}>{item.name}</Text>
         <View style={styles.resultContainer}>
           <Feather name="award" size={16} color="#FFA500" />
           <Text style={styles.resultText}>{item.points}</Text>
