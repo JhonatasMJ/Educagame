@@ -88,7 +88,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
           overflow: "hidden", // Prevent content from showing outside the animated height
         }}
       >
-        <Text className="text-2xl font-bold text-white">{nome}</Text>
+        <Text className="text-2xl font-bold text-white capitalize">{nome}</Text>
         {/* Fixed menu button styling */}
         <TouchableOpacity
           className="bg-tertiary p-2 rounded-lg"
