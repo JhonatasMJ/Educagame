@@ -164,7 +164,7 @@ const { isAuthenticated, isLoading } = useRequireAuth();
         </View>
 
         <View className="flex-1 w-full h-screen rounded-t-3xl bg-menu p-6 pb-20 mt-32 z-30">
-          <View className="flex-row justify-between items-center mb-6 pb-2 mt-6 border-b border-zinc-600">
+          <View className="flex-row justify-between items-center mb-6 pb-4 mt-4 border-b border-zinc-600">
             <View>
               <Text className="text-white text-2xl font-bold">Perfil</Text>
               <Text className="text-secondary text-sm">
@@ -173,7 +173,7 @@ const { isAuthenticated, isLoading } = useRequireAuth();
             </View>
 
             <TouchableOpacity
-              className={`flex-row items-center py-2 px-4 rounded-lg ${editar ? "bg-primary" : "bg-secondary"
+              className={`flex-row items-center py-5 px-8 rounded-lg ${editar ? "bg-primary" : "bg-secondary"
                 }`}
               onPress={()=> {
                 handleEdit()
@@ -182,10 +182,10 @@ const { isAuthenticated, isLoading } = useRequireAuth();
             >
               <FontAwesome
                 name={editar ? "save" : "edit"}
-                size={16}
+                size={26}
                 color="#111"
               />
-              <Text className="ml-2 font-medium text-zinc-800">
+              <Text className="ml-4 text-xl font-medium text-zinc-800">
                 {editar ? "Salvar" : "Editar"}
               </Text>
             </TouchableOpacity>
