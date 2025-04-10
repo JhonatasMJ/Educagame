@@ -17,6 +17,7 @@ import Logo from "../../assets/images/logo.svg"
 import CustomButton from "@/src/components/CustomButton"
 import { useRequireAuth } from "../hooks/useRequireAuth"
 import { usePasswordReset } from "@/src/hooks/useReset"
+import ArrowBack from "../components/ArrowBack"
 
 const ForgotPasswordScreen = () => {
   // Step states
@@ -299,6 +300,7 @@ const ForgotPasswordScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
+        <ArrowBack onPress={() => router.back()} className="bg-primary" color="#f2f2f2" />
         <ScrollView
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}

@@ -12,6 +12,7 @@ import Avatar3 from "../../../assets/images/avatar3.svg";
 import Avatar4 from "../../../assets/images/avatar4.svg";
 import Toast from "react-native-toast-message";
 import { useRequireAuth } from "@/src/hooks/useRequireAuth";
+import ArrowBack from "@/src/components/ArrowBack";
 
 const avatars = [
   { id: 1, source: Avatar1, sourceName: "avatar1" },
@@ -48,6 +49,8 @@ const Register = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white justify-around">
+       <ArrowBack onPress={() => router.back()} className="bg-primary" color="#f2f2f2" />
+        
       <View style={{ alignItems: "center" }}>
         <Logo style={{ width: 315, height: 65, marginTop: "3%" }} />
       </View>

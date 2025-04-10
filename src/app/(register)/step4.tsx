@@ -10,6 +10,7 @@ import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import React from "react"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
+import ArrowBack from "@/src/components/ArrowBack"
 
 const { height } = Dimensions.get("window")
 
@@ -84,6 +85,7 @@ const Step04 = () => {
     <SafeAreaView style={styles.container}>
           <StatusBar barStyle="light-content" backgroundColor="transparent"  translucent={true} />
 
+          <ArrowBack onPress={() => router.back()} className="bg-white" color="#56A6DC" /> 
       <View style={styles.backgroundContainer}>
         <Cloudsvg width="90%" height="40%" />
       </View>

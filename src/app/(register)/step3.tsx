@@ -22,6 +22,7 @@ import ProgressDots from "@/src/components/ProgressDots"
 import Toast from "react-native-toast-message"
 import React from "react"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
+import ArrowBack from "@/src/components/ArrowBack"
 
 const { height } = Dimensions.get("window")
 
@@ -124,6 +125,7 @@ const Step03 = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       
+      <ArrowBack onPress={() => router.back()} className="bg-white" color="#56A6DC" /> 
       {/* Replace KeyboardAvoidingView with ScrollView */}
       <ScrollView
         ref={scrollViewRef}

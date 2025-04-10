@@ -21,6 +21,7 @@ import ProgressDots from "@/src/components/ProgressDots"
 import { getAvatarTop } from "@/src/utils/layoutHelpers"
 import React from "react"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
+import ArrowBack from "@/src/components/ArrowBack"
 
 const { width, height } = Dimensions.get("window")
 
@@ -110,6 +111,7 @@ const Step01 = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <ArrowBack onPress={() => router.back()} className="bg-white" color="#56A6DC" /> 
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
