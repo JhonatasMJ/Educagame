@@ -329,7 +329,7 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
               }}
             >
               <TouchableOpacity
-                className={`flex-row items-center px-4 py-6 elevation-4 shadow-lg rounded-lg border-2 ${getOptionBackgroundColor(option.id)}`}
+                className={`flex-row items-center px-4 py-4 elevation-4 shadow-lg rounded-lg border-2 ${getOptionBackgroundColor(option.id)}`}
                 style={{
                   minHeight: 60,
                   opacity: disabledOptions[option.id] && optionStates[option.id] === "unselected" ? 0.6 : 1,
