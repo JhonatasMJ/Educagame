@@ -1,6 +1,7 @@
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native"
 import { Check, X } from "lucide-react-native"
 import React from "react"
+import { MOBILE_WIDTH } from "@/PlataformWrapper"
 
 interface FeedbackModalProps {
   visible: boolean
@@ -62,8 +63,8 @@ const FeedbackModal = ({
       backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalContent: {
-      width: "85%",
-      borderRadius: 12,
+      width: MOBILE_WIDTH - 20,
+      borderRadius: 14,
       padding: 24,
       backgroundColor: "white",
       shadowColor: "#000",
