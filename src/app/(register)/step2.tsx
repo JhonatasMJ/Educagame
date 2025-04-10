@@ -123,7 +123,7 @@ const Step02 = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
-     <ArrowBack onPress={() => router.back()} className="bg-white" color="#56A6DC" /> 
+     <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-white" color="#56A6DC" /> 
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}

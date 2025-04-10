@@ -49,7 +49,7 @@ const Register = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white justify-around">
-       <ArrowBack onPress={() => router.back()} className="bg-primary" color="#f2f2f2" />
+       <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-primary" color="#f2f2f2" />
         
       <View style={{ alignItems: "center" }}>
         <Logo style={{ width: 315, height: 65, marginTop: "3%" }} />

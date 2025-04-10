@@ -7,7 +7,8 @@ const  ArrowBack = ({
     className,
     color,
     onPress,
-}: { className?: string; color?: string; onPress?: () => void }) => {
+    size
+}: { className?: string; color?: string; size?: number; onPress?: () => void }) => {
   const router = useRouter();
   return (
     <TouchableOpacity
@@ -18,9 +19,9 @@ const  ArrowBack = ({
               router.back()
             }
       }
-      className={`absolute top-3 left-3 z-10 p-2 rounded-full shadow ${className}`}
+      className={`z-10 p-2 rounded-full shadow ${className}`}
     >
-      <ChevronLeft size={26} color={color ?? "#f2f2f2"} />
+      <ChevronLeft size={size ? size : 26} color={color ?? "#f2f2f2"} />
     </TouchableOpacity>
   )
 }   
