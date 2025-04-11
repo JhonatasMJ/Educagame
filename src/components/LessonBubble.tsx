@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { View, Text, Pressable, Animated, Easing, StyleSheet, Image } from "react-native"
-import { Crown, Zap, Target, BookOpen, Lock, BookOpenCheck, BookOpenText } from "lucide-react-native"
+import { View, Text, Pressable, Animated, Easing, StyleSheet } from "react-native"
+import { Lock } from "lucide-react-native"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import Svg, { Circle } from "react-native-svg"
+import IconRenderer, { type IconLibrary } from "../services/IconRenderer"
 import React from "react"
 
 // Tipos
@@ -16,7 +17,8 @@ interface LessonBubbleProps {
   isLocked?: boolean
   onPress: () => void
   title: string
-  icon?: string // Pode ser nome do ícone ou URL de imagem
+  icon?: string // Nome do ícone ou URL de imagem
+  iconLibrary?: IconLibrary // Biblioteca de ícones (opcional)
   description?: string
   phaseId: string
 }
@@ -29,18 +31,6 @@ const PROGRESS_RING_THICKNESS = 6
 const ICON_SIZE = 24
 const DEFAULT_ICON = "book-open-text" // Ícone padrão caso nenhum seja fornecido
 
-// Mapeamento de nomes de ícones para componentes
-const ICON_MAP: Record<string, React.ReactNode> = {
-  crown: <Crown size={ICON_SIZE} color="white" />,
-  zap: <Zap size={ICON_SIZE} color="white" />,
-  target: <Target size={ICON_SIZE} color="white" />,
-  book: <BookOpen size={ICON_SIZE} color="white" />,
-  "book-open": <BookOpen size={ICON_SIZE} color="white" />,
-  "book-open-check": <BookOpenCheck size={ICON_SIZE} color="white" />,
-  "book-open-text": <BookOpenText size={ICON_SIZE} color="white" />,
-  lock: <Lock size={ICON_SIZE} color="white" />,
-}
-
 // Componente principal
 const LessonBubble = ({
   number,
@@ -51,6 +41,7 @@ const LessonBubble = ({
   onPress,
   title,
   icon,
+  iconLibrary = "lucide",
   phaseId,
 }: LessonBubbleProps) => {
   // Hooks e estados
@@ -144,6 +135,7 @@ const LessonBubble = ({
             isNext={isNext}
             isLocked={isLocked}
             icon={icon}
+            iconLibrary={iconLibrary}
           />
 
           {/* Indicador de Número */}
@@ -218,6 +210,7 @@ const MainBubble = ({
   isNext,
   isLocked,
   icon,
+  iconLibrary,
 }: {
   size: number
   isActive: boolean
@@ -225,6 +218,7 @@ const MainBubble = ({
   isNext: boolean
   isLocked?: boolean
   icon?: string
+  iconLibrary?: IconLibrary
 }) => {
   // Determinar a cor de fundo da bolha
   const getBubbleStyle = () => {
@@ -255,7 +249,19 @@ const MainBubble = ({
       className={`items-center justify-center rounded-full ${getBubbleStyle()}`}
       style={[styles.mainBubble, { width: size + 8, height: size + 8, borderRadius: (size + 8) / 2 }]}
     >
-      <View style={styles.iconContainer}>{renderBubbleContent(icon, isLocked, isCompleted, isActive, isNext)}</View>
+      <View style={styles.iconContainer}>
+        {isLocked || (!isCompleted && !isActive && !isNext) ? (
+          <Lock size={ICON_SIZE} color="white" />
+        ) : (
+          <IconRenderer
+            name={icon || DEFAULT_ICON}
+            library={iconLibrary}
+            size={ICON_SIZE}
+            color="white"
+            imageUrl={isValidUrl(icon || "") ? icon : undefined}
+          />
+        )}
+      </View>
 
       {isCompleted && (
         <View style={styles.checkmarkBadge}>
@@ -292,46 +298,6 @@ const isValidUrl = (str: string): boolean => {
   } catch (e) {
     return false
   }
-}
-
-// Função auxiliar para renderizar o conteúdo da bolha (ícone ou imagem)
-const renderBubbleContent = (
-  iconOrUrl?: string,
-  isLocked?: boolean,
-  isCompleted?: boolean,
-  isActive?: boolean,
-  isNext?: boolean,
-) => {
-  // Se estiver bloqueado, mostrar cadeado
-  if (isLocked || (!isCompleted && !isActive && !isNext)) {
-    return <Lock size={ICON_SIZE} color="white" />
-  }
-
-  // Se não houver ícone, usar o padrão
-  if (!iconOrUrl) {
-    return ICON_MAP[DEFAULT_ICON] || <BookOpenText size={ICON_SIZE} color="white" />
-  }
-
-  // Verificar se é uma URL de imagem
-  if (isValidUrl(iconOrUrl)) {
-    return (
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: iconOrUrl }}
-          style={{ width: ICON_SIZE * 1.5, height: ICON_SIZE * 1.5 }}
-          resizeMode="contain"
-        />
-      </View>
-    )
-  }
-
-  // Verificar se é um nome de ícone conhecido
-  if (ICON_MAP[iconOrUrl.toLowerCase()]) {
-    return ICON_MAP[iconOrUrl.toLowerCase()]
-  }
-
-  // Caso não seja reconhecido, usar o ícone padrão
-  return ICON_MAP[DEFAULT_ICON] || <BookOpenText size={ICON_SIZE} color="white" />
 }
 
 // Estilos
@@ -378,12 +344,6 @@ const styles = StyleSheet.create({
     width: ICON_SIZE * 1.5,
     height: ICON_SIZE * 1.5,
   },
-  imageContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    borderRadius: ICON_SIZE,
-  },
   checkmarkBadge: {
     backgroundColor: "#365314", // verde escuro
     position: "absolute",
@@ -400,7 +360,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   numberIndicator: {
-    top: -2,
+    top: -8,
     elevation: 6,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,

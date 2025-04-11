@@ -4,13 +4,15 @@ import React from "react"
 import { View, ImageBackground, StyleSheet, type ImageSourcePropType } from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
+import type { IconLibrary } from "./IconRenderer"
 
 // Tipos
 interface Stage {
   number: number
   completed: boolean
   title: string
-  icon?: string // Agora pode ser nome do ícone ou URL de imagem
+  icon?: string // Nome do ícone ou URL de imagem
+  iconLibrary?: IconLibrary // Biblioteca de ícones (opcional)
   description?: string
   id: string
 }
@@ -218,6 +220,7 @@ const StagesList = ({
               onPress={() => onStagePress(originalIndex)}
               title={stage.title}
               icon={stage.icon}
+              iconLibrary={stage.iconLibrary}
               description={stage.description}
               phaseId={stage.id}
             />

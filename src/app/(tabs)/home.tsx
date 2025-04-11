@@ -18,8 +18,8 @@ import { router } from "expo-router"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
-import React from "react"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
+import React from "react"
 
 const { width, height } = Dimensions.get("window")
 
@@ -59,7 +59,7 @@ export const trilhas = [
         descricao: "Aprenda sobre os componentes fundamentais",
         concluida: true,
         icon: "book-open-text", // Nome do ícone do Lucide
-        // Também pode ser uma URL de imagem: "https://exemplo.com/imagem.png"
+        iconLibrary: "lucide", // Opcional, padrão é "lucide"
         questions: [
           {
             id: "q1",
@@ -127,6 +127,7 @@ export const trilhas = [
         titulo: "Navegação",
         concluida: false,
         icon: "target", // Nome do ícone do Lucide
+        iconLibrary: "lucide",
         descricao: "Aprenda sobre navegação entre telas",
         questions: [
           {
@@ -166,7 +167,8 @@ export const trilhas = [
         id: "4",
         titulo: "Estado e Props",
         concluida: false,
-        icone: "book",
+        icon: "book", // Nome do ícone do Lucide
+        iconLibrary: "lucide",
         descricao: "Gerenciamento de estado e propriedades",
         questions: [
           {
@@ -198,7 +200,8 @@ export const trilhas = [
         id: "5",
         titulo: "APIs Nativas",
         concluida: false,
-        icone: "crown",
+        icon: "crown", // Nome do ícone do Lucide
+        iconLibrary: "lucide",
         descricao: "Acesso a recursos nativos do dispositivo",
         questions: [
           {
@@ -246,7 +249,7 @@ export const trilhas = [
         id: "1",
         titulo: "Roupas",
         concluida: false,
-        icone: "zap",
+        icon: "https://cdn-icons-png.flaticon.com/512/69/69544.png",
         descricao: "Vocabulário de vestuário",
         questions: [
           {
@@ -271,7 +274,8 @@ export const trilhas = [
         id: "2",
         titulo: "Cores",
         concluida: false,
-        icone: "target",
+        icon: "palette", // Nome do ícone do MaterialIcons
+        iconLibrary: "material", // Especifica a biblioteca MaterialIcons
         descricao: "Aprenda as cores",
         questions: [
           {
@@ -317,7 +321,7 @@ const Home = () => {
 
   const { userData, authUser, refreshUserData } = useAuth()
   const { getPhaseCompletionPercentage } = useGameProgress()
-  const { isAuthenticated, isLoading } = useRequireAuth();
+  const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
@@ -353,7 +357,8 @@ const Home = () => {
       number: index + 1,
       title: etapa.titulo,
       completed: etapa.concluida,
-      icon: etapa.icone || "crown",
+      icon: etapa.icon || "crown",
+      iconLibrary: etapa.iconLibrary || "lucide",
       description: etapa.descricao || "Descrição da etapa não disponível",
       id: etapa.id, // Add the id property
       progressPercentage: progressPercentage, // Add progress percentage
