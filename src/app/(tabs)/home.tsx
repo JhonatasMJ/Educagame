@@ -19,6 +19,7 @@ import { useGameProgress } from "@/src/context/GameProgressContext"
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
 import React from "react"
+import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
 const { width, height } = Dimensions.get("window")
 
@@ -57,7 +58,8 @@ export const trilhas = [
         titulo: "Componentes Básicos",
         descricao: "Aprenda sobre os componentes fundamentais",
         concluida: true,
-        icone: "book",
+        icon: "book-open-text", // Nome do ícone do Lucide
+        // Também pode ser uma URL de imagem: "https://exemplo.com/imagem.png"
         questions: [
           {
             id: "q1",
@@ -74,13 +76,14 @@ export const trilhas = [
               { id: "a", text: "1" },
               { id: "b", text: "2" },
               { id: "c", text: "3" },
-              { id: "d", text: "4" }
+              { id: "d", text: "4" },
             ],
             correctOrder: ["a", "b", "c", "d"],
             statementText: "Coloque a ordem correta!",
-            explanation: "A ordem cronológica correta é: Descobrimento (1500), Independência (1822), Abolição (1888) e República (1889)."
+            explanation:
+              "A ordem cronológica correta é: Descobrimento (1500), Independência (1822), Abolição (1888) e República (1889).",
           },
-         /*  {
+          /*  {
             id: "q2",
             type: QuestionType.ORDERING,
             description: "Coloque as fases do desenvolvimento de uma planta em ordem.",
@@ -123,7 +126,7 @@ export const trilhas = [
         id: "3",
         titulo: "Navegação",
         concluida: false,
-        icone: "target",
+        icon: "target", // Nome do ícone do Lucide
         descricao: "Aprenda sobre navegação entre telas",
         questions: [
           {
@@ -307,7 +310,6 @@ export const trilhas = [
   },
 ]
 
-
 // Main Home component
 const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
@@ -315,7 +317,7 @@ const Home = () => {
 
   const { userData, authUser, refreshUserData } = useAuth()
   const { getPhaseCompletionPercentage } = useGameProgress()
-
+  const { isAuthenticated, isLoading } = useRequireAuth();
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
@@ -562,4 +564,3 @@ const Home = () => {
 }
 
 export default Home
-

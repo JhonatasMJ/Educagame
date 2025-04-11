@@ -91,6 +91,10 @@ const { isAuthenticated, isLoading } = useRequireAuth();
 
   const handleAvatarChange = (newAvatarSource: string) => {
     setAvatarSource(newAvatarSource);
+  };
+
+  const handleSelectAvatar =  (newAvatarSource: string) => {
+    setAvatarSource(newAvatarSource);
     setShowAvatarModal(false);
   };
 
@@ -248,7 +252,7 @@ const { isAuthenticated, isLoading } = useRequireAuth();
           onRequestClose={() => setShowAvatarModal(false)}
         >
           <View className="flex-1 justify-center items-center bg-black/50">
-            <View className="w-[90%] bg-zinc-800 rounded-3xl p-8 items-center">
+            <View className={`w-[${MOBILE_WIDTH - 150}] bg-zinc-800 rounded-3xl p-8 items-center`}>
               <Text className="text-xl font-bold mb-5 text-white">Escolha seu avatar</Text>
 
               <View className="flex-row flex-wrap justify-center gap-8">
@@ -282,7 +286,7 @@ const { isAuthenticated, isLoading } = useRequireAuth();
 
                 <TouchableOpacity
                   className="flex-1 bg-secondary py-3 rounded-xl items-center"
-                  onPress={() => setShowAvatarModal(false)}
+                  onPress={() => handleSelectAvatar(avatarSource)}
                 >
                   <Text className="text-zinc-800 font-semibold">Confirmar</Text>
                 </TouchableOpacity>

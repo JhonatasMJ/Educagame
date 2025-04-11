@@ -10,7 +10,7 @@ interface Stage {
   number: number
   completed: boolean
   title: string
-  icon: string
+  icon?: string // Agora pode ser nome do ícone ou URL de imagem
   description?: string
   id: string
 }
@@ -217,7 +217,7 @@ const StagesList = ({
               isLocked={isLocked}
               onPress={() => onStagePress(originalIndex)}
               title={stage.title}
-              icon={stage.icon as "crown" | "zap" | "target" | "book"}
+              icon={stage.icon}
               description={stage.description}
               phaseId={stage.id}
             />

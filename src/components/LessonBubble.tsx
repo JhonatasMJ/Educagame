@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { View, Text, Pressable, Animated, Easing, StyleSheet } from "react-native"
-import { Crown, Zap, Target, BookOpen, Lock } from "lucide-react-native"
+import { View, Text, Pressable, Animated, Easing, StyleSheet, Image } from "react-native"
+import { Crown, Zap, Target, BookOpen, Lock, BookOpenCheck, BookOpenText } from "lucide-react-native"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import Svg, { Circle } from "react-native-svg"
 import React from "react"
@@ -13,10 +13,10 @@ interface LessonBubbleProps {
   isActive: boolean
   isCompleted: boolean
   isNext: boolean
-  isLocked?: boolean // Nova propriedade para indicar se a etapa está bloqueada
+  isLocked?: boolean
   onPress: () => void
   title: string
-  icon: "crown" | "zap" | "target" | "book"
+  icon?: string // Pode ser nome do ícone ou URL de imagem
   description?: string
   phaseId: string
 }
@@ -26,7 +26,20 @@ const BUBBLE_SIZE = 90
 const NUMBER_SIZE = 30
 const PROGRESS_RING_SIZE = BUBBLE_SIZE + 35.5
 const PROGRESS_RING_THICKNESS = 6
-const CHECK_ICON_SIZE = 24
+const ICON_SIZE = 24
+const DEFAULT_ICON = "book-open-text" // Ícone padrão caso nenhum seja fornecido
+
+// Mapeamento de nomes de ícones para componentes
+const ICON_MAP: Record<string, React.ReactNode> = {
+  crown: <Crown size={ICON_SIZE} color="white" />,
+  zap: <Zap size={ICON_SIZE} color="white" />,
+  target: <Target size={ICON_SIZE} color="white" />,
+  book: <BookOpen size={ICON_SIZE} color="white" />,
+  "book-open": <BookOpen size={ICON_SIZE} color="white" />,
+  "book-open-check": <BookOpenCheck size={ICON_SIZE} color="white" />,
+  "book-open-text": <BookOpenText size={ICON_SIZE} color="white" />,
+  lock: <Lock size={ICON_SIZE} color="white" />,
+}
 
 // Componente principal
 const LessonBubble = ({
@@ -34,7 +47,7 @@ const LessonBubble = ({
   isActive,
   isCompleted,
   isNext,
-  isLocked = false, // Valor padrão para compatibilidade
+  isLocked = false,
   onPress,
   title,
   icon,
@@ -45,7 +58,6 @@ const LessonBubble = ({
   const completionPercentage = getPhaseCompletionPercentage(phaseId)
   const pulseAnim = useRef(new Animated.Value(1)).current
   const progressAnim = useRef(new Animated.Value(0)).current
-  const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
   // Efeito para animação de pulso
   useEffect(() => {
@@ -163,7 +175,12 @@ const ProgressRing = ({
   const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
   return (
-    <View       style={[        styles.progressRingContainer,         { width: size, height: size, top: -size / 11, elevation: 2, shadowColor: "#000" }]}    >
+    <View
+      style={[
+        styles.progressRingContainer,
+        { width: size, height: size, top: -size / 11, elevation: 2, shadowColor: "#000" },
+      ]}
+    >
       <Svg width={size} height={size} style={styles.progressRingSvg}>
         {/* Círculo de fundo */}
         <Circle
@@ -207,7 +224,7 @@ const MainBubble = ({
   isCompleted: boolean
   isNext: boolean
   isLocked?: boolean
-  icon: string
+  icon?: string
 }) => {
   // Determinar a cor de fundo da bolha
   const getBubbleStyle = () => {
@@ -238,7 +255,7 @@ const MainBubble = ({
       className={`items-center justify-center rounded-full ${getBubbleStyle()}`}
       style={[styles.mainBubble, { width: size + 8, height: size + 8, borderRadius: (size + 8) / 2 }]}
     >
-      <View style={styles.iconContainer}>{renderBubbleIcon(icon, isCompleted, isActive, isNext, isLocked)}</View>
+      <View style={styles.iconContainer}>{renderBubbleContent(icon, isLocked, isCompleted, isActive, isNext)}</View>
 
       {isCompleted && (
         <View style={styles.checkmarkBadge}>
@@ -268,32 +285,53 @@ const TitleCard = ({ title }: { title: string }) => (
   </View>
 )
 
-// Função auxiliar para renderizar o ícone correto
-const renderBubbleIcon = (
-  iconName: string,
-  isCompleted: boolean,
-  isActive: boolean,
-  isNext: boolean,
+// Função para verificar se uma string é uma URL
+const isValidUrl = (str: string): boolean => {
+  try {
+    return str.startsWith("http://") || str.startsWith("https://") || str.startsWith("data:image/")
+  } catch (e) {
+    return false
+  }
+}
+
+// Função auxiliar para renderizar o conteúdo da bolha (ícone ou imagem)
+const renderBubbleContent = (
+  iconOrUrl?: string,
   isLocked?: boolean,
+  isCompleted?: boolean,
+  isActive?: boolean,
+  isNext?: boolean,
 ) => {
-  // Se estiver bloqueado ou não estiver completo/ativo/próximo, mostrar cadeado
+  // Se estiver bloqueado, mostrar cadeado
   if (isLocked || (!isCompleted && !isActive && !isNext)) {
-    return <Lock size={CHECK_ICON_SIZE} color="white" />
+    return <Lock size={ICON_SIZE} color="white" />
   }
 
-  // Caso contrário, mostrar o ícone da lição
-  switch (iconName) {
-    case "crown":
-      return <Crown size={CHECK_ICON_SIZE} color="white" />
-    case "zap":
-      return <Zap size={CHECK_ICON_SIZE} color="white" />
-    case "target":
-      return <Target size={CHECK_ICON_SIZE} color="white" />
-    case "book":
-      return <BookOpen size={CHECK_ICON_SIZE} color="white" />
-    default:
-      return <Crown size={CHECK_ICON_SIZE} color="white" />
+  // Se não houver ícone, usar o padrão
+  if (!iconOrUrl) {
+    return ICON_MAP[DEFAULT_ICON] || <BookOpenText size={ICON_SIZE} color="white" />
   }
+
+  // Verificar se é uma URL de imagem
+  if (isValidUrl(iconOrUrl)) {
+    return (
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: iconOrUrl }}
+          style={{ width: ICON_SIZE * 1.5, height: ICON_SIZE * 1.5 }}
+          resizeMode="contain"
+        />
+      </View>
+    )
+  }
+
+  // Verificar se é um nome de ícone conhecido
+  if (ICON_MAP[iconOrUrl.toLowerCase()]) {
+    return ICON_MAP[iconOrUrl.toLowerCase()]
+  }
+
+  // Caso não seja reconhecido, usar o ícone padrão
+  return ICON_MAP[DEFAULT_ICON] || <BookOpenText size={ICON_SIZE} color="white" />
 }
 
 // Estilos
@@ -337,6 +375,14 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: "center",
     justifyContent: "center",
+    width: ICON_SIZE * 1.5,
+    height: ICON_SIZE * 1.5,
+  },
+  imageContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderRadius: ICON_SIZE,
   },
   checkmarkBadge: {
     backgroundColor: "#365314", // verde escuro
