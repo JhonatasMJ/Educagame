@@ -1,7 +1,17 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { View, Text, SafeAreaView, ActivityIndicator, Animated, StatusBar, TouchableOpacity, Modal } from "react-native"
+import {
+  View,
+  Text,
+  SafeAreaView,
+  ActivityIndicator,
+  Animated,
+  StatusBar,
+  TouchableOpacity,
+  Modal,
+  BackHandler, // Import BackHandler for Android back button
+} from "react-native"
 import { Clock, Award, AlertTriangle } from "lucide-react-native"
 import { router, useLocalSearchParams } from "expo-router"
 import StepIndicator from "@/src/components/StepIndicator"
@@ -299,6 +309,23 @@ const MainGame = () => {
     }
   }, [isTimerRunning])
 
+  // Adicione este useEffect para lidar com o botão de voltar do Android
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      // Se o modal de confirmação já estiver visível, não faça nada
+      if (showExitConfirmation) {
+        return true
+      }
+
+      // Caso contrário, mostre o modal de confirmação
+      setShowExitConfirmation(true)
+      return true // Retorna true para impedir o comportamento padrão de voltar
+    })
+
+    // Limpe o event listener quando o componente for desmontado
+    return () => backHandler.remove()
+  }, [showExitConfirmation])
+
   // Função para lidar com o clique no botão de voltar
   const handleBackPress = () => {
     setShowExitConfirmation(true)
@@ -542,8 +569,7 @@ const MainGame = () => {
       <View className="px-4 py-5 bg-secondary border-tertiary border-b-4 shadow-sm">
         <View className="flex-row justify-between items-center">
           {/* Botão de voltar */}
-          {/* <TouchableOpacity onPress={handleBackPress} className="bg-tertiary p-2 rounded-full absolute top-3 left-3 z-10">*/}
-            <ArrowBack color="#fff" size={22} className="absolute bg-tertiary" onPress={handleBackPress} />
+          <ArrowBack color="#fff" size={22} className="absolute bg-tertiary" onPress={handleBackPress} />
 
           <View className="ml-2 px-11 flex-row items-center">
             <Clock size={16} color="#666" />

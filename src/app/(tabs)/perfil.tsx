@@ -27,7 +27,7 @@ const avatarComponents = {
 }
 
 const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
-  const { isDesktop, isMobileDevice } = useDeviceType();
+
   const { userData, authUser, refreshUserData, loading } = useAuth();
   const [editar, setEditar] = useState(false);
   const [nome, setNome] = useState("");
@@ -43,7 +43,7 @@ const { isAuthenticated, isLoading } = useRequireAuth();
 
 
 
-  // Atualiza os estados locais quando userData for carregado ou atualizado
+
   useEffect(() => {
     if (userData) {
       setNome(userData.nome || "");
@@ -58,7 +58,7 @@ const { isAuthenticated, isLoading } = useRequireAuth();
   }, [userData, authUser]);
   
 
-  // Força uma atualização dos dados do usuário quando o componente montar
+ 
   useEffect(() => {
     refreshUserData();
   }, []);
@@ -170,14 +170,16 @@ const { isAuthenticated, isLoading } = useRequireAuth();
         <View className="flex-1 w-full h-screen rounded-t-3xl bg-menu p-6 pb-20 mt-32 z-30">
           <View className="flex-row justify-between items-center mb-6 pb-4 mt-4 border-b border-zinc-600">
             <View>
-              <Text className="text-white text-2xl font-bold">Perfil</Text>
-              <Text className="text-secondary text-sm">
+              <Text className="text-white text-4xl font-bold mb-1">Perfil</Text>
+              <Text className="text-secondary text-md">
                 {editar ? "Editando informações" : "Suas informações pessoais"}
               </Text>
             </View>
 
-            <TouchableOpacity
-              className={`flex-row items-center py-5 px-8 rounded-lg ${editar ? "bg-primary" : "bg-secondary"
+      
+          </View>
+          <TouchableOpacity
+              className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${editar ? "bg-primary" : "bg-secondary"
                 }`}
               onPress={()=> {
                 handleEdit()
@@ -193,9 +195,8 @@ const { isAuthenticated, isLoading } = useRequireAuth();
                 {editar ? "Salvar" : "Editar"}
               </Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Form fields */}
+      
           <View className="space-y-4">
             <TextInputLabel
               label="Nome"
@@ -301,14 +302,13 @@ const { isAuthenticated, isLoading } = useRequireAuth();
   )
 };
 
-// Drawer que participa da tela como um componente a parte
+
 const PerfilScreen = () => {
   const { isDesktop, isMobileDevice } = useDeviceType();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { width } = Dimensions.get('window');
 
-  // Nova lógica para o PerfilScreen
-  // Se estiver na web (desktop ou mobile), usa o CustomWebDrawer
+
   if (Platform.OS === 'web') {
     return (
       <View style={[styles.navigatorContainer, { overflow: 'hidden' }]}>
@@ -342,7 +342,7 @@ const PerfilScreen = () => {
           },
           headerShown: false,
         }}
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
+        drawerContent={(props: any) => <CustomDrawerContent {...props} />}
       >
         <Drawer.Screen
           name="PerfilContent"
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     ...(Platform.OS === 'web' && {
-      overflow: 'hidden', // Prevent drawer from breaking mobile simulator bounds
+      overflow: 'hidden', 
     }),
   },
   topSection: {

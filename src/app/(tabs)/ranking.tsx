@@ -1,35 +1,27 @@
-"use client";
+"use client"
 
-import { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  SafeAreaView,
-  Animated,
-  StatusBar,
-} from "react-native";
-import { Feather } from "@expo/vector-icons";
-import { useAuth } from "@/src/context/AuthContext";
+import { useState, useRef, useEffect } from "react"
+import { View, Text, TouchableOpacity, FlatList, SafeAreaView, Animated, StatusBar } from "react-native"
+import { Feather } from "@expo/vector-icons"
+import { useAuth } from "@/src/context/AuthContext"
 
 // Importando os componentes de avatar
-import BigAvatar1 from "../../../assets/images/grande-avatar1.svg";
-import BigAvatar2 from "../../../assets/images/grande-avatar2.svg";
-import BigAvatar3 from "../../../assets/images/grande-avatar3.svg";
-import BigAvatar4 from "../../../assets/images/grande-avatar4.svg";
-import React from "react";
-// Types para nossos dados
+import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
+import BigAvatar2 from "../../../assets/images/grande-avatar2.svg"
+import BigAvatar3 from "../../../assets/images/grande-avatar3.svg"
+import BigAvatar4 from "../../../assets/images/grande-avatar4.svg"
+import React from "react"
+
 interface User {
-  id: string;
-  name: string;
-  points: number; // Alterado de result para points
-  avatarSource: string;
-  hours: number;
-  consecutiveDays: number;
-  consecutiveCorrect: number;
-  totalConsecutiveDays: number;
+  id: string
+  name: string
+  points: number
+  avatarSource: string
+  hours: number
+  consecutiveDays: number
+  consecutiveCorrect: number
+  totalConsecutiveDays: number
+  position?: number
 }
 
 // Mapeamento dos componentes de avatar
@@ -38,66 +30,88 @@ const avatarComponents = {
   avatar2: BigAvatar2,
   avatar3: BigAvatar3,
   avatar4: BigAvatar4,
-};
-
-
+}
 
 const RankingScreen = () => {
-  const [isHeaderExpanded, setIsHeaderExpanded] = useState(true);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(true)
+  const [users, setUsers] = useState<User[]>([])
+  const [displayUsers, setDisplayUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Usando o contexto de autenticação para obter o usuário atual
-  const { userData, authUser, getAllUsers } = useAuth();
-
+  const { userData, authUser, getAllUsers } = useAuth()
 
   // ID do usuário atual
-  const currentUserId = authUser?.uid || "";
+  const currentUserId = authUser?.uid || ""
 
-  // Buscar usuários do Firebase
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        setLoading(true);
-        const firebaseUsers = await getAllUsers();
+        setLoading(true)
+        const firebaseUsers = await getAllUsers()
 
-        // Mapear os usuários para o formato esperado pelo componente
         const formattedUsers = firebaseUsers.map((user) => ({
           id: user.id,
           name: user.nome || "Usuário",
-          points: user.points || 0, // Use points em vez de result
+          points: user.points || 0,
           avatarSource: user.avatarSource || "avatar1",
-        }));
+        }))
 
-        // Ordenar usuários por pontos (do maior para o menor)
-        formattedUsers.sort((a, b) => b.points - a.points);
+        formattedUsers.sort((a, b) => b.points - a.points)
 
-        setUsers(formattedUsers);
+        const usersWithPosition = formattedUsers.map((user, index) => ({
+          ...user,
+          position: index + 1,
+        }))
+
+        setUsers(usersWithPosition)
+
+        reorganizeUsersForDisplay(usersWithPosition)
       } catch (error) {
-        console.error("Erro ao buscar usuários:", error);
+        console.error("Erro ao buscar usuários:", error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchUsers();
-  }, []);
+    fetchUsers()
+  }, [])
 
-  // Animated values
-  const statsHeight = useRef(
-    new Animated.Value(isHeaderExpanded ? 1 : 0)
-  ).current;
-  const arrowRotation = useRef(
-    new Animated.Value(isHeaderExpanded ? 0 : 1)
-  ).current;
+  const reorganizeUsersForDisplay = (usersWithPosition: User[]) => {
+    const currentUserIndex = usersWithPosition.findIndex((user) => user.id === currentUserId)
 
-  // Calculate the rotation for the arrow icon
+    if (currentUserIndex === -1) {
+      setDisplayUsers(usersWithPosition)
+      return
+    }
+
+    const currentUser = usersWithPosition[currentUserIndex]
+
+    if (currentUserIndex < 3) {
+      setDisplayUsers(usersWithPosition)
+      return
+    }
+
+    const topThree = usersWithPosition.slice(0, 3)
+    const usersAfterCurrentUser = usersWithPosition.filter((user, index) => index > currentUserIndex)
+    const usersBetweenThirdAndCurrent = usersWithPosition.filter((user, index) => index > 2 && index < currentUserIndex)
+
+    const reorganizedUsers = [...topThree, currentUser, ...usersBetweenThirdAndCurrent, ...usersAfterCurrentUser]
+
+    const uniqueUsers = reorganizedUsers.filter(
+      (user, index, self) => index === self.findIndex((u) => u.id === user.id),
+    )
+
+    setDisplayUsers(uniqueUsers)
+  }
+
+  const statsHeight = useRef(new Animated.Value(isHeaderExpanded ? 1 : 0)).current
+  const arrowRotation = useRef(new Animated.Value(isHeaderExpanded ? 0 : 1)).current
+
   const arrowRotationDegree = arrowRotation.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "180deg"],
-  });
+  })
 
-  // Effect to animate when isHeaderExpanded changes
   useEffect(() => {
     Animated.parallel([
       Animated.timing(statsHeight, {
@@ -110,170 +124,163 @@ const RankingScreen = () => {
         duration: 300,
         useNativeDriver: true,
       }),
-    ]).start();
-  }, [isHeaderExpanded]);
+    ]).start()
+  }, [isHeaderExpanded])
 
   const toggleHeader = () => {
-    setIsHeaderExpanded(!isHeaderExpanded);
-  };
+    setIsHeaderExpanded(!isHeaderExpanded)
+  }
 
-  // Atualize o renderItem para exibir pontos em vez de result
   const renderItem = ({ item, index }: { item: User; index: number }) => {
-    const position = index + 1;
-    const isThirdPosition = position === 3;
-    const isCurrentUser = item.id === currentUserId;
+    const position = item.position || index + 1
+    const isCurrentUser = item.id === currentUserId
 
-    // Determina o componente de avatar baseado no avatarSource do usuário
-    const AvatarComponent =
-      avatarComponents[item.avatarSource as keyof typeof avatarComponents] ||
-      BigAvatar1;
+    const AvatarComponent = avatarComponents[item.avatarSource as keyof typeof avatarComponents] || BigAvatar1
 
     return (
       <View
-        style={[
-          styles.rankingItem,
-          isThirdPosition && styles.highlightedItem,
-          isCurrentUser && styles.currentUserItem,
-        ]}
+        className={`flex-row items-center ${
+          isCurrentUser ? "bg-[#FFA500]  mx-1" : "bg-white"
+        } rounded-lg mb-3.5 p-3.5 shadow-md`}
+        style={
+          isCurrentUser
+            ? {
+                transform: [{ scale: 1.05 }],
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+                elevation: 8,
+                zIndex: 10,
+              }
+            : {}
+        }
       >
-        <View style={styles.positionContainer}>
-          <Text style={styles.positionText}>{position}</Text>
+        <View className={`${isCurrentUser ? "w-8" : "w-6"} items-center mr-2`}>
+          <Text className={`${isCurrentUser ? "text-xl" : "text-lg"} font-bold`}>{position}</Text>
         </View>
-        <View style={styles.avatarContainer}>
-          <AvatarComponent width={40} height={40} style={styles.avatar} />
+        <View
+          className={`${isCurrentUser ? "w-12 h-12" : "w-10 h-10"} rounded-lg bg-[#4A90E2] overflow-hidden mr-3 justify-center items-center`}
+        >
+          <AvatarComponent
+            width={isCurrentUser ? 48 : 40}
+            height={isCurrentUser ? 48 : 40}
+            className={isCurrentUser ? "w-12 h-12" : "w-10 h-10"}
+          />
         </View>
-        <Text className="capitalize" style={styles.userName}>{item.name}</Text>
-        <View style={styles.resultContainer}>
-          <Feather name="award" size={16} color="#FFA500" />
-          <Text style={styles.resultText}>{item.points}</Text>
+        <Text className={`flex-1 ${isCurrentUser ? "text-lg" : "text-base"} font-bold capitalize`}>{item.name}</Text>
+        <View className={`flex-row items-center ${isCurrentUser ? "bg-[#333]" : "bg-[#444]"} px-3 py-1.5 rounded`}>
+          <Feather name="award" size={isCurrentUser ? 20 : 16} color="#FFA500" />
+          <Text className={`text-white font-bold ml-1 ${isCurrentUser ? "text-base" : ""}`}>{item.points}</Text>
         </View>
       </View>
-    );
-  };
+    )
+  }
 
-
-    // Dados mock para os detalhes do usuário logado
-const userDetailsData: User = {
-  points: userData?.points || 0,
-  hours: 120,
-  consecutiveDays: 25,
-  consecutiveCorrect: 10,
-  totalConsecutiveDays: 120,
-  id: "",
-  name: "",
-  avatarSource: ""
-};
+  const userDetailsData: User = {
+    points: userData?.points || 0,
+    hours: 120,
+    consecutiveDays: 25,
+    consecutiveCorrect: 10,
+    totalConsecutiveDays: 120,
+    id: "",
+    name: "",
+    avatarSource: "",
+  }
 
   // Calculate the max height for the stats container
-  const maxStatsHeight = 170; // Reduzido para eliminar espaço vazio
+  const maxStatsHeight = 170
 
   // Interpolate the height for the stats container
   const animatedStatsHeight = statsHeight.interpolate({
     inputRange: [0, 1],
     outputRange: [0, maxStatsHeight],
-  });
+  })
 
   // Interpolate opacity for the stats container
   const statsOpacity = statsHeight.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [0, 0.7, 1],
-  });
+  })
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        translucent={false}
-        backgroundColor="#F6A608"
-      />
+    <SafeAreaView className="flex-1 bg-[#4A90E2]">
+      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.titleContainer}>
+      <View className="bg-[#FFA500] px-4 rounded-bl-4xl rounded-br-4xl mb-1.5 shadow-md">
+        <View className="flex-row justify-between items-center py-5">
+          <View className="flex-row items-center">
             <Feather name="award" size={24} color="white" />
-            <Text style={styles.title}>RANKING</Text>
+            <Text className="text-white text-2xl font-bold ml-2">RANKING</Text>
           </View>
-          <TouchableOpacity onPress={toggleHeader} style={styles.arrowButton}>
-            <Animated.View
-              style={{ transform: [{ rotate: arrowRotationDegree }] }}
-            >
+          <TouchableOpacity
+            onPress={toggleHeader}
+            className="w-8 h-8 bg-[#BF720C] rounded justify-center items-center shadow"
+          >
+            <Animated.View style={{ transform: [{ rotate: arrowRotationDegree }] }}>
               <Feather name="chevron-up" size={24} color="white" />
             </Animated.View>
           </TouchableOpacity>
         </View>
 
         <Animated.View
-          style={[
-            styles.userStatsContainer,
-            {
-              height: animatedStatsHeight,
-              opacity: statsOpacity,
-              overflow: "hidden",
-            },
-          ]}
+          style={{
+            height: animatedStatsHeight,
+            opacity: statsOpacity,
+            overflow: "hidden",
+          }}
         >
-          <Text style={styles.statsTitle}>
-            Confira seus resultados detalhados:
-          </Text>
+          <Text className="text-white text-base mt-1.5 mb-2">Confira seus resultados detalhados:</Text>
 
-          <View style={styles.statsGrid}>
+          <View className="mt-2.5 w-full">
             {/* Primeira linha do grid */}
-            <View
-              style={[
-                styles.statsRow,
-                {
-                  marginBottom: 10,
-                },
-              ]}
-            >
+            <View className="flex-row justify-between mb-2.5">
               {/* Item 1 - Onocash */}
-              <View style={styles.statItemGrid}>
-                <View style={styles.statIconContainer}>
+              <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
+                <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
                   <Feather name="award" size={20} color="#4A90E2" />
                 </View>
-                <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>{userDetailsData.points}</Text>
-                  <Text style={styles.statLabel}>Onocash</Text>
+                <View className="flex-row items-center flex-wrap">
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userDetailsData.points}</Text>
+                  <Text className="text-sm text-gray-500">Onocash</Text>
                 </View>
               </View>
 
               {/* Item 2 - Horas */}
-              <View style={styles.statItemGrid}>
-                <View style={styles.statIconContainer}>
+              <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
+                <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
                   <Feather name="clock" size={20} color="#4A90E2" />
                 </View>
-                <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>{userDetailsData.hours}</Text>
-                  <Text style={styles.statLabel}>horas</Text>
+                <View className="flex-row items-center flex-wrap">
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userDetailsData.hours}</Text>
+                  <Text className="text-sm text-gray-500">horas</Text>
                 </View>
               </View>
             </View>
 
             {/* Segunda linha do grid */}
-            <View style={styles.statsRow}>
+            <View className="flex-row justify-between">
               {/* Item 3 - Dias seguidos */}
-              <View style={styles.statItemGrid}>
-                <View style={styles.statIconContainer}>
+              <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
+                <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
                   <Feather name="calendar" size={20} color="#4A90E2" />
                 </View>
-                <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>
-                    {userDetailsData.consecutiveDays}
-                  </Text>
-                  <Text style={styles.statLabel}>dias seguidos</Text>
+                <View className="flex-row items-center flex-wrap">
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userDetailsData.consecutiveDays}</Text>
+                  <Text className="text-sm text-gray-500">dias seguidos</Text>
                 </View>
               </View>
 
               {/* Item 4 - Total dias seguidos */}
-              <View style={styles.statItemGrid}>
-                <View style={styles.statIconContainer}>
+              <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
+                <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
                   <Feather name="award" size={20} color="#4A90E2" />
                 </View>
-                <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>
+                <View className="flex-row items-center flex-wrap">
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">
                     {userDetailsData.totalConsecutiveDays}
                   </Text>
-                  <Text style={styles.statLabel}>dias seguidos</Text>
+                  <Text className="text-sm text-gray-500">dias seguidos</Text>
                 </View>
               </View>
             </View>
@@ -282,205 +289,21 @@ const userDetailsData: User = {
       </View>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Carregando usuários...</Text>
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-white text-base font-bold">Carregando usuários...</Text>
         </View>
       ) : (
         <FlatList
-          data={users}
+          data={displayUsers}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
+          className="flex-1 px-4 mt-4"
+          contentContainerStyle={{ paddingBottom: "35%" }}
           showsVerticalScrollIndicator={false}
         />
       )}
     </SafeAreaView>
-  );
-};
+  )
+}
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#4A90E2",
-  },
-  header: {
-    backgroundColor: "#FFA500",
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    marginBottom: 6,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  title: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-  arrowButton: {
-    width: 32,
-    height: 32,
-    backgroundColor: "#BF720C",
-    borderRadius: 4,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  userStatsContainer: {},
-  statsTitle: {
-    color: "white",
-    fontSize: 16,
-    marginTop: 6,
-    marginBottom: 8,
-  },
-  statsGrid: {
-    marginTop: 10,
-    width: "100%",
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  statItemGrid: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 10,
-    width: "49%",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  statTextContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-  },
-  statItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 8,
-    marginVertical: 4,
-    padding: 12,
-  },
-  statIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#F0F8FF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  statValue: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#4A90E2",
-    marginRight: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: "#888",
-  },
-  list: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  listContent: {
-    paddingBottom: "35%",
-  },
-  rankingItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 8,
-    marginBottom: 14,
-    padding: 14.5,
-    elevation: 3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  highlightedItem: {
-    backgroundColor: "#FFA500",
-  },
-  currentUserItem: {
-    backgroundColor: "#FFA500",
-  },
-  positionContainer: {
-    width: 24,
-    alignItems: "center",
-    marginRight: 8,
-  },
-  positionText: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "#4A90E2",
-    overflow: "hidden",
-    marginRight: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-  },
-  userName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  resultContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#444",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  resultText: {
-    color: "white",
-    fontWeight: "bold",
-    marginLeft: 4,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-});
-
-export default RankingScreen;
+export default RankingScreen
