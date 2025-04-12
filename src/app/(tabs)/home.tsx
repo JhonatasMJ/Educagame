@@ -11,7 +11,6 @@ import {
   Platform,
   Animated,
   Easing,
-  ImageBackground,
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
@@ -20,6 +19,10 @@ import { useGameProgress } from "@/src/context/GameProgressContext"
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
+
+// Import SVG backgrounds
+import Background1 from "@/assets/images/fundo.svg"
+import Background2 from "@/assets/images/fundo2.svg" // Make sure this file exists
 import React from "react"
 
 const { width, height } = Dimensions.get("window")
@@ -53,6 +56,7 @@ export const trilhas = [
     nome: "React Native Básico",
     descricao: "Aprenda os fundamentos do React Native",
     image: require("@/assets/images/fundo.svg"),
+    backgroundSvg: Background1, // SVG component for background
     etapas: [
       {
         id: "2",
@@ -232,6 +236,7 @@ export const trilhas = [
     id: "2",
     nome: "Básico 2",
     image: "",
+    backgroundSvg: Background2, // Different SVG component for background
     etapas: [
       {
         id: "1",
@@ -306,6 +311,7 @@ export const trilhas = [
 const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
+  const [currentBackgroundSvg, setCurrentBackgroundSvg] = useState(() => trilhas[0].backgroundSvg)
 
   const { userData, authUser, refreshUserData } = useAuth()
   const { getPhaseCompletionPercentage } = useGameProgress()
@@ -338,6 +344,11 @@ const Home = () => {
 
   // Dados da trilha atual
   const currentTrilha = trilhas[trilhaAtualIndex]
+
+  // Update background SVG when track changes
+  useEffect(() => {
+    setCurrentBackgroundSvg(() => trilhas[trilhaAtualIndex].backgroundSvg)
+  }, [trilhaAtualIndex])
 
   // Add id to each stage and calculate progress percentage
   const stages = currentTrilha.etapas.map((etapa, index) => {
@@ -477,37 +488,48 @@ const Home = () => {
   const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: false,
     listener: (event) => {
-      // Update the background scroll position at a slower rate for parallax effect
       const offsetY = event.nativeEvent.contentOffset.y
-      backgroundScrollY.setValue(offsetY * 0.5) // Scroll at half the speed for parallax effect
+      backgroundScrollY.setValue(-offsetY * 0.5)
     },
   })
 
-  // Background image for parallax effect
-  const backgroundImage = require("@/assets/images/fundo.png") // Replace with your actual background image
+  // Create a dynamic SVG background component with parallax effect
+  const BackgroundSvg = currentBackgroundSvg
 
   return (
     <View className="flex-1 ">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
-      {/* Background image with parallax effect */}
-      <Animated.View
+      {/* Background SVG with parallax effect */}
+      <View
         style={{
           position: "absolute",
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          transform: [{ translateY: backgroundScrollY }],
+          backgroundColor: "#F0E6D2", // Background color that shows if image ends
           zIndex: -1,
         }}
       >
-        <ImageBackground
-          source={backgroundImage}
-          style={{ width: "100%", height: height * 1.5 }} // Make image taller than screen for scrolling effect
-          resizeMode="cover"
-        />
-      </Animated.View>
+        <Animated.View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            transform: [{ translateY: backgroundScrollY }],
+          }}
+        >
+          {BackgroundSvg && (
+            <BackgroundSvg
+              width="100%"
+              height={height * 1.5} // Make SVG taller than screen for scrolling effect
+              preserveAspectRatio="xMidYMid slice"
+            />
+          )}
+        </Animated.View>
+      </View>
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 

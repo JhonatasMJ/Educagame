@@ -7,6 +7,7 @@ import CustomButton from "@/src/components/CustomButton"
 import { Video, ResizeMode } from "expo-av"
 import { useLocalSearchParams } from "expo-router"
 import { ArrowRight, BookOpen, CheckCircle, Clock, Info, Star } from "lucide-react-native"
+import ArrowBack from "@/src/components/ArrowBack"
 
 interface StartPhaseProps {
   title?: string
@@ -79,13 +80,14 @@ const StartPhase = ({
             className="flex-1 items-center justify-between"
             style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
           >
-            {/* Header Section */}
+        
             <View className="w-full">
-              <View className="w-full bg-secondary py-10 border-b-4 border-tertiary items-center justify-center">
-                <View className="absolute top-3 left-3 bg-tertiary rounded-full p-2">
-                  <BookOpen size={24} color="#fff" />
-                </View>
+              <View className="w-full bg-secondary py-8 border-b-4 border-tertiary items-center justify-center">
+                <View className="flex-row items-center">
+                <ArrowBack className="bg-tertiary rounded-full " />
                 <Text className="text-3xl font-bold text-white text-center px-5">{title}</Text>
+                </View>
+           
               </View>
 
               {subTitle && (

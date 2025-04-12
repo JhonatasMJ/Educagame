@@ -119,10 +119,10 @@ const CompletionPage = () => {
           </View>
 
           {/* Congratulations with user name */}
-          <Text className="text-3xl font-bold text-green-600 mb-2">Parabéns, {userData?.nome || "Aluno"}!</Text>
-          <Text className="text-xl text-gray-800 mb-6">Você completou esta fase!</Text>
+          <Text className="text-3xl font-bold text-green-600 mb-2 text-center">Parabéns, {userData?.nome || "Aluno"}!</Text>
+          <Text className="text-xl text-gray-800 mb-6 text-center">Você completou esta fase!</Text>
 
-          <View className="flex-row mb-8">
+          <View className="flex-row mb-8 justify-center">
             {[1, 2, 3].map((star) => (
               <Star
                 key={star}
@@ -134,7 +134,7 @@ const CompletionPage = () => {
             ))}
           </View>
 
-          {/* Stats cards */}
+
           <View className="flex-row justify-between w-full mb-8">
             <View className="bg-white rounded-2xl p-4 items-center shadow-md border border-gray-100 flex-1 mx-1">
               <View className="w-12 h-12 rounded-full bg-blue-100 items-center justify-center mb-2">
@@ -142,43 +142,39 @@ const CompletionPage = () => {
               </View>
               <Text className="text-2xl font-bold text-[#4361ee]">+{totalPoints}</Text>
               <Text className="text-gray-500 text-sm">Pontos</Text>
-              <Text className="text-xs text-gray-400 mt-1">Total: {userTotalPoints}</Text>
+             {/*  <Text className="text-xs text-gray-400 mt-1">Total: {userTotalPoints}</Text> */}
             </View>
 
             <View className="bg-white rounded-2xl p-4 items-center shadow-md border border-gray-100 flex-1 mx-1">
-              <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center mb-2">
-                <Clock size={24} color="#10B981" />
+              <View className="w-12 h-12 rounded-full bg-emerald-400/30 items-center justify-center mb-2">
+                <Clock size={24} color="#0c9164" />
               </View>
-              <Text className="text-2xl font-bold text-green-600">{formatTime(totalTime)}</Text>
+              <Text className="text-2xl font-bold ">{formatTime(totalTime)}</Text>
               <Text className="text-gray-500 text-sm">Tempo</Text>
             </View>
 
-            <View className="bg-white rounded-2xl p-4 items-center shadow-md border border-gray-100 flex-1 mx-1">
-              <View className="w-12 h-12 rounded-full bg-red-100 items-center justify-center mb-2">
-                <Target size={24} color="#EF4444" />
-              </View>
-              <Text className="text-2xl font-bold text-red-500">{wrongAnswers}</Text>
-              <Text className="text-gray-500 text-sm">Erros</Text>
-            </View>
+           
           </View>
 
-          {/* Message */}
+      
           <View className="bg-blue-50 p-4 rounded-xl border border-blue-200 mb-6 w-full">
             <Text className="text-center text-blue-800">Continue praticando para melhorar suas habilidades!</Text>
           </View>
         </Animated.View>
       </View>
 
-      {/* Button */}
-      <View className="px-5 py-4 bg-white border-t border-gray-200">
+    
+      <View className=" py-4 bg-white border-t flex-row border-gray-200 justify-center">
+        <View className="flex-row justify-between items-center">
         <CustomButton
           title="CONTINUAR APRENDIZADO"
           nextStep="../../(tabs)/home"
-          className="bg-[#4361ee] shadow-md"
+          className="bg-primary shadow-md justify-center "
           textClassName="tracking-wide"
         />
-        <View className="absolute right-10 top-0 h-full flex justify-center items-center">
-          <ChevronRight size={24} color="#fff" />
+        <View className="absolute right-0 top-0 px-1 h-full flex justify-center items-center">
+          <ChevronRight size={26} color="#fff" />
+        </View>
         </View>
       </View>
     </SafeAreaView>
