@@ -153,7 +153,7 @@ const ForgotPasswordScreen = () => {
       </View>
       
       <CustomButton
-        title={isLoading ? "Enviando..." : "Enviar código"}
+        title={isLoading ? "Enviando..." : "Enviar email"}
         onPress={handleSendResetEmail}
         disabled={isLoading || !email}
       />

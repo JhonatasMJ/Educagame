@@ -7,6 +7,10 @@ import { getDatabase, ref, get, update } from "firebase/database"
 import { auth, sendPasswordResetEmail } from "../services/firebaseConfig"
 
 interface User {
+  avatarSource: string
+  phone: string
+  sobrenome: string
+  nome: string
   id: string
   email: string
   name: string
@@ -23,7 +27,7 @@ interface AuthContextData {
   getAllUsers: () => Promise<User[]>
   logout: () => Promise<void>
   updateUserPoints: (points: number) => Promise<void>
-  resetPassword: (email: string) => Promise<boolean> // Add this line
+  resetPassword: (email: string) => Promise<boolean> 
 }
 
 interface AuthProviderProps {
