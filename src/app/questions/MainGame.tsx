@@ -17,6 +17,7 @@ import { MOBILE_WIDTH } from "@/PlataformWrapper"
 import TrueOrFalse from "./trueORfalse/trueORfalse"
 import MultipleChoice from "./multipleChoice/multipleChoice"
 import Ordering from "./ordering/ordering"
+import Matching from "./matching/matching"
 import React from "react"
 
 // Define a generic question interface
@@ -60,7 +61,22 @@ interface OrderingQuestion extends BaseQuestion {
   statementText?: string
 }
 
-type Question = TrueOrFalseQuestion | MultipleChoiceQuestion | OrderingQuestion
+// Atualize a definição de MatchingQuestion para usar a mesma estrutura do componente Matching
+interface ColumnItem {
+  id: string
+  text?: string
+  image?: string | any
+}
+
+interface MatchingQuestion extends BaseQuestion {
+  type: QuestionType.MATCHING
+  leftColumn: ColumnItem[]
+  rightColumn: ColumnItem[]
+  correctMatches: { left: string; right: string }[]
+  statementText?: string
+}
+
+type Question = TrueOrFalseQuestion | MultipleChoiceQuestion | OrderingQuestion | MatchingQuestion
 
 // Modal de confirmação para sair do jogo
 const ExitConfirmationModal = ({
@@ -160,6 +176,7 @@ const MainGame = () => {
   const params = useLocalSearchParams()
   const phaseId = params.phaseId as string
   const trailId = (params.trailId as string) || "1" // Default to first trail if not provided
+  const stageId = params.stageId as string // Novo parâmetro para identificar o stage
 
   const { startPhase, answerQuestion, completePhase } = useGameProgress()
 
@@ -196,69 +213,77 @@ const MainGame = () => {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Debug log
-  console.log("MainGame rendered, phaseId:", phaseId, "trailId:", trailId)
+  console.log("MainGame rendered, phaseId:", phaseId, "trailId:", trailId, "stageId:", stageId)
 
-  // Find the questions for this phase
+  // Find the questions for this stage
   useEffect(() => {
-    console.log("Finding questions for phase:", phaseId)
-    console.log("All trilhas:", JSON.stringify(trilhas))
+    console.log("Finding questions for phase:", phaseId, "and stage:", stageId)
 
     // Find the phase with the matching ID
-    let foundPhase = false
+    let foundStage = false
     for (const trilha of trilhas) {
-      console.log("Checking trail:", trilha.id, "with etapas:", trilha.etapas.length)
-
       const phase = trilha.etapas.find((etapa) => etapa.id === phaseId)
       if (phase) {
-        console.log("Found phase:", phase.titulo, "with", phase.questions?.length || 0, "questions")
-        console.log("Phase details:", JSON.stringify(phase))
-        foundPhase = true
+        // Encontrar o stage específico
+        const stage = phase.stages.find((s) => s.id === stageId)
+        if (stage) {
+          console.log("Found stage:", stage.title, "with", stage.questions?.length || 0, "questions")
+          foundStage = true
 
-        // Certifique-se de que as questões estão no formato correto
-        if (!phase.questions || phase.questions.length === 0) {
-          console.error("No questions found in phase:", phase.id)
-          setQuestions([])
+          // Certifique-se de que as questões estão no formato correto
+          if (!stage.questions || stage.questions.length === 0) {
+            console.error("No questions found in stage:", stage.id)
+            setQuestions([])
+            break
+          }
+
+          const typedQuestions = stage.questions.map((q: any) => {
+            console.log("Processing question:", q.id, "of type:", q.type)
+            // Garantir que o tipo está correto
+            if (q.type === QuestionType.TRUE_OR_FALSE) {
+              return {
+                ...q,
+                type: QuestionType.TRUE_OR_FALSE,
+              } as TrueOrFalseQuestion
+            } else if (q.type === QuestionType.MULTIPLE_CHOICE) {
+              return {
+                ...q,
+                type: QuestionType.MULTIPLE_CHOICE,
+                options: q.options || [],
+                correctOptions: q.correctOptions || [],
+                multipleCorrect: q.multipleCorrect || false,
+              } as MultipleChoiceQuestion
+            } else if (q.type === QuestionType.ORDERING) {
+              return {
+                ...q,
+                type: QuestionType.ORDERING,
+                items: q.items || [],
+                correctOrder: q.correctOrder || [],
+              } as OrderingQuestion
+            } else if (q.type === QuestionType.MATCHING) {
+              return {
+                ...q,
+                type: QuestionType.MATCHING,
+                leftColumn: q.leftColumn || [],
+                rightColumn: q.rightColumn || [],
+                correctMatches: q.correctMatches || [],
+              } as MatchingQuestion
+            }
+            return q as Question
+          })
+
+          console.log("Processed questions:", typedQuestions)
+          setQuestions(typedQuestions)
+
+          // Start tracking progress for this phase
+          startPhase(trailId, phaseId)
           break
         }
-
-        const typedQuestions = phase.questions.map((q: any) => {
-          console.log("Processing question:", q.id, "of type:", q.type)
-          // Garantir que o tipo está correto
-          if (q.type === QuestionType.TRUE_OR_FALSE) {
-            return {
-              ...q,
-              type: QuestionType.TRUE_OR_FALSE,
-            } as TrueOrFalseQuestion
-          } else if (q.type === QuestionType.MULTIPLE_CHOICE) {
-            return {
-              ...q,
-              type: QuestionType.MULTIPLE_CHOICE,
-              options: q.options || [],
-              correctOptions: q.correctOptions || [],
-              multipleCorrect: q.multipleCorrect || false,
-            } as MultipleChoiceQuestion
-          } else if (q.type === QuestionType.ORDERING) {
-            return {
-              ...q,
-              type: QuestionType.ORDERING,
-              items: q.items || [],
-              correctOrder: q.correctOrder || [],
-            } as OrderingQuestion
-          }
-          return q as Question
-        })
-
-        console.log("Processed questions:", typedQuestions)
-        setQuestions(typedQuestions)
-
-        // Start tracking progress for this phase
-        startPhase(trailId, phaseId)
-        break
       }
     }
 
-    if (!foundPhase) {
-      console.error("Phase not found:", phaseId)
+    if (!foundStage) {
+      console.error("Stage not found:", stageId, "in phase:", phaseId)
     }
 
     // Start entrance animations
@@ -280,7 +305,7 @@ const MainGame = () => {
         useNativeDriver: true,
       }),
     ]).start()
-  }, [phaseId, trailId])
+  }, [phaseId, trailId, stageId])
 
   // Background timer implementation
   useEffect(() => {
@@ -322,7 +347,7 @@ const MainGame = () => {
         <ActivityIndicator size="large" color="#3498db" />
         <Text className="text-gray-700 text-lg font-medium mt-4">Carregando questões...</Text>
         <Text className="text-gray-500 text-sm mt-2">Phase ID: {phaseId}</Text>
-        <Text className="text-gray-500 text-sm">Trail ID: {trailId}</Text>
+        <Text className="text-gray-500 text-sm">Stage ID: {stageId}</Text>
         <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
           <Text className="text-white">Voltar</Text>
         </TouchableOpacity>
@@ -380,6 +405,16 @@ const MainGame = () => {
     setShowLoading(true)
   }
 
+  // Função para atualizar o status de conclusão do stage atual
+  const updateStageCompletion = () => {
+    // Aqui você implementaria a lógica para marcar o stage como concluído
+    // Por enquanto, apenas simulamos isso com um console.log
+    console.log(`Stage ${stageId} completed in phase ${phaseId}!`)
+
+    // No futuro, isso seria feito através de uma API
+    // Por exemplo: api.updateStageStatus(phaseId, stageId, { completed: true })
+  }
+
   // Substitua a função handleLoadingComplete por esta versão atualizada
   const handleLoadingComplete = () => {
     setShowLoading(false)
@@ -399,11 +434,18 @@ const MainGame = () => {
         // All questions answered correctly
         setAllQuestionsCorrect(true)
         setIsTimerRunning(false)
+
+        // Marcar o stage como concluído
+        updateStageCompletion()
+
+        // Completar a fase no contexto de progresso
         completePhase(phaseId, totalTime)
+
         router.push({
           pathname: "/questions/completion/completion",
           params: {
             phaseId,
+            stageId,
             totalTime: totalTime.toString(),
             wrongAnswers: "0",
           },
@@ -439,11 +481,16 @@ const MainGame = () => {
         // Todas as questões foram respondidas corretamente na revisão
         setAllQuestionsCorrect(true)
         setIsTimerRunning(false)
+
+        // Marcar o stage como concluído
+        updateStageCompletion()
+
         completePhase(phaseId, totalTime)
         router.push({
           pathname: "/questions/completion/completion",
           params: {
             phaseId,
+            stageId,
             totalTime: totalTime.toString(),
             wrongAnswers: wrongQuestions.length.toString(),
           },
@@ -525,6 +572,15 @@ const MainGame = () => {
             questionNumber={currentQuestionIndex + 1}
           />
         )
+      case QuestionType.MATCHING:
+        return (
+          <Matching
+            key={`question-${currentQuestion.id}-${gameKey}`}
+            question={currentQuestion as MatchingQuestion}
+            onAnswer={handleAnswer}
+            questionNumber={currentQuestionIndex + 1}
+          />
+        )
       default:
         return (
           <View className="flex-1 justify-center items-center p-4">
@@ -542,8 +598,7 @@ const MainGame = () => {
       <View className="px-4 py-5 bg-secondary border-tertiary border-b-4 shadow-sm">
         <View className="flex-row justify-between items-center">
           {/* Botão de voltar */}
-          {/* <TouchableOpacity onPress={handleBackPress} className="bg-tertiary p-2 rounded-full absolute top-3 left-3 z-10">*/}
-            <ArrowBack color="#fff" size={22} className="absolute bg-tertiary" onPress={handleBackPress} />
+          <ArrowBack color="#fff" size={22} className="absolute bg-tertiary" onPress={handleBackPress} />
 
           <View className="ml-2 px-11 flex-row items-center">
             <Clock size={16} color="#666" />
@@ -604,5 +659,4 @@ const MainGame = () => {
     </SafeAreaView>
   )
 }
-
 export default MainGame

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react"
 import { View, Text, Pressable, Animated, Easing, StyleSheet } from "react-native"
 import { Lock } from "lucide-react-native"
-import { useGameProgress } from "@/src/context/GameProgressContext"
 import Svg, { Circle } from "react-native-svg"
 import IconRenderer, { type IconLibrary } from "../services/IconRenderer"
 import React from "react"
@@ -20,7 +19,8 @@ interface LessonBubbleProps {
   icon?: string // Nome do ícone ou URL de imagem
   iconLibrary?: IconLibrary // Biblioteca de ícones (opcional)
   description?: string
-  phaseId: string
+  progress: number // Progresso de 0 a 100
+  phaseId: string // Mantido para compatibilidade, mas não será usado para obter o progresso
 }
 
 // Constantes para dimensões e estilos
@@ -42,11 +42,11 @@ const LessonBubble = ({
   title,
   icon,
   iconLibrary = "lucide",
+  progress = 0, // Valor padrão de 0
   phaseId,
 }: LessonBubbleProps) => {
   // Hooks e estados
-  const { getPhaseCompletionPercentage } = useGameProgress()
-  const completionPercentage = getPhaseCompletionPercentage(phaseId)
+  const completionPercentage = progress
   const pulseAnim = useRef(new Animated.Value(1)).current
   const progressAnim = useRef(new Animated.Value(0)).current
 
@@ -109,13 +109,14 @@ const LessonBubble = ({
     <Pressable onPress={onPress} className="stage-bubble">
       <Animated.View style={[styles.bubbleContainer, { transform: [{ scale: isNext ? pulseAnim : 1 }] }]}>
         <View style={styles.contentContainer}>
-          {/* Anel de Progresso */}
+          {/* Anel de Progresso - Agora sempre visível, mesmo quando não está completo */}
           <ProgressRing
             size={PROGRESS_RING_SIZE}
             thickness={PROGRESS_RING_THICKNESS}
             isCompleted={isCompleted}
             circumference={circumference}
             progressStrokeDashoffset={progressStrokeDashoffset}
+            progress={progress}
           />
 
           {/* Efeito 3D (sombra) */}
@@ -156,14 +157,24 @@ const ProgressRing = ({
   isCompleted,
   circumference,
   progressStrokeDashoffset,
+  progress,
 }: {
   size: number
   thickness: number
   isCompleted: boolean
   circumference: number
   progressStrokeDashoffset: Animated.AnimatedInterpolation<string | number>
+  progress: number
 }) => {
-  const progressColor = isCompleted ? "#5A7A0C" : "transparent"
+  // Determinar a cor do progresso com base no estado de conclusão e no valor do progresso
+  let progressColor = "transparent"
+
+  if (isCompleted) {
+    progressColor = "#5A7A0C" // Verde escuro para etapas completamente concluídas
+  } else if (progress > 0) {
+    progressColor = "#83AD11" // Verde mais claro para etapas parcialmente concluídas
+  }
+
   const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
   return (
@@ -179,7 +190,6 @@ const ProgressRing = ({
           cx={size / 2}
           cy={size / 2}
           r={size / 2 - thickness / 2}
-          stroke="transparent"
           strokeWidth={thickness}
           fill="transparent"
           opacity={0.7}
@@ -360,7 +370,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   numberIndicator: {
-    top: -8,
+    top: -18,
     elevation: 6,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
