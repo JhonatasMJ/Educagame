@@ -11,7 +11,6 @@ import {
   Platform,
   Animated,
   Easing,
-  ImageBackground,
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
@@ -561,9 +560,6 @@ const Home = () => {
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
 
-  // Animated value for background parallax effect
-  const backgroundScrollY = useRef(new Animated.Value(0)).current
-
   // Animação para transição de trilhas
   const slideAnim = useRef(new Animated.Value(0)).current
   const [isAnimating, setIsAnimating] = useState(false)
@@ -775,38 +771,12 @@ const Home = () => {
   // Handle scroll events for header animation with improved performance
   const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: false,
-    listener: (event) => {
-      // Update the background scroll position at a slower rate for parallax effect
-      const offsetY = event.nativeEvent.contentOffset.y
-      backgroundScrollY.setValue(offsetY * 0.5) // Scroll at half the speed for parallax effect
-    },
+    listener: () => {}, // Empty listener to ensure the event is processed
   })
 
-  // Background image for parallax effect
-  const backgroundImage = require("@/assets/images/fundo.png") // Replace with your actual background image
-
   return (
-    <View className="flex-1 ">
+    <View className="flex-1 bg-primary ">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
-
-      {/* Background image with parallax effect */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          transform: [{ translateY: backgroundScrollY }],
-          zIndex: -1,
-        }}
-      >
-        <ImageBackground
-          source={backgroundImage}
-          style={{ width: "100%", height: height * 1.5 }} // Make image taller than screen for scrolling effect
-          resizeMode="cover"
-        />
-      </Animated.View>
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
@@ -862,12 +832,17 @@ const Home = () => {
         <ScrollView
           ref={scrollViewRef}
           className="flex-1"
-          contentContainerStyle={{ alignItems: "center", paddingHorizontal: 16, paddingBottom: 96 }}
+          contentContainerStyle={{
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingBottom: 96,
+          }}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16} // Standard value for smooth animation
           decelerationRate="normal" // Smoother deceleration
         >
+          <View style={{ height: 60 }} /> {/* Increased padding to create more space between header and content */}
           <LearningPathTrack
             etapas={stages}
             currentEtapaIndex={etapaAtualIndex}
