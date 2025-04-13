@@ -862,16 +862,7 @@ const Home = () => {
         <ScrollView
           ref={scrollViewRef}
           className="flex-1"
-          contentContainerStyle={{
-           
-            alignItems: "center",
-           
-            paddingHorizontal: 16,
-           
-            paddingBottom: 96,
-         ,
-            paddingTop: 60, // Added padding to create space at the top
-          }}
+          contentContainerStyle={{ alignItems: "center", paddingHorizontal: 16, paddingBottom: 96 }}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16} // Standard value for smooth animation
