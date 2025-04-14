@@ -20,6 +20,10 @@ import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
+// At the top of the file, add these imports for the SVG backgrounds
+import Background1 from "@/assets/images/fundo.svg"
+import Background2 from "@/assets/images/fundo2.svg" // Make sure this file exists
+
 const { width, height } = Dimensions.get("window")
 
 // Define question types
@@ -45,47 +49,27 @@ export interface Question {
 }
 
 // Define stage interface
-// Also update the StageInfo interface if it exists
-interface StageInfo {
-  id: string
-  title: string
-  description?: string
-  completed: boolean
-  pontos_chave?: string[]
-  image?: string
-  video?: string
-  tempo_estimado?: string
-  tips?: {
-    title: string
-    content: string[] | string
-  }
-  questions: Question[]
-}
-
-// Define stage interface
 export interface Stage {
   id: string
   title: string
   description?: string
   completed: boolean
-  pontos_chave?: string[]
-  image?: string
-  video?: string
-  tempo_estimado?: string
-  tips?: {
-    title: string
-    content: string[] | string
-  }
+  pontos_chave?: string[] // Novos pontos-chave específicos do stage
+  image?: string // Imagem específica do stage
+  video?: string // URL do vídeo específico do stage
+  tempo_estimado?: string // Tempo estimado para completar o stage
   questions: Question[]
 }
 
-// Mock data for trilhas (courses) with stages and questions
+// Update the trilhas data structure to include backgroundSvg property
+// Find the trilhas declaration and modify the first two objects:
 export const trilhas = [
   {
     id: "1",
     nome: "React Native Básico",
     descricao: "Aprenda os fundamentos do React Native",
     image: require("@/assets/images/fundo.svg"),
+    backgroundSvg: Background1, // SVG component for background
     etapas: [
       {
         id: "2",
@@ -100,18 +84,46 @@ export const trilhas = [
             id: "stage1",
             title: "Introdução aos Componentes", // Título exibido no StartPhase
             description: "Conceitos básicos de componentes React Native",
-            completed: false, // Este stage está concluído
-            tips: {
-              title: "Dicas importantes",
-              content: [
-                "Leia com atenção todo o conteúdo antes de prosseguir.",
-                "Pratique os exemplos de código para melhor compreensão.",
-                "Faça anotações dos conceitos mais importantes.",
-              ],
-            },
+            completed: true, // Este stage está concluído
+            pontos_chave: [
+              "Entender o que são componentes no React Native",
+              "Conhecer os componentes básicos da plataforma",
+              "Aprender a criar componentes personalizados",
+            ],
             image: "https://reactnative.dev/img/tiny_logo.png",
             video: "https://www.youtube.com/watch?v=0-S5a0eXPoc",
             tempo_estimado: "15-20 minutos",
+            questions: [
+              {
+                id: "q1",
+                type: QuestionType.TRUE_OR_FALSE,
+                description: "React Native permite escrever código uma vez e executar em múltiplas plataformas.",
+                isTrue: true,
+                explanation:
+                  "Correto! React Native permite que você escreva código JavaScript que funciona tanto em iOS quanto em Android.",
+              },
+              {
+                id: "q2",
+                type: QuestionType.TRUE_OR_FALSE,
+                description: "React Native usa WebView para renderizar a interface do usuário.",
+                isTrue: false,
+                explanation:
+                  "Incorreto! React Native não usa WebView, ele renderiza componentes nativos reais da plataforma.",
+              },
+            ],
+          },
+          {
+            id: "stage2",
+            title: "Componentes Avançados",
+            description: "Aprofundamento em componentes complexos",
+            completed: false, // Este stage está concluído
+            pontos_chave: [
+              "Trabalhar com FlatList e SectionList",
+              "Implementar componentes com animações",
+              "Otimizar o desempenho de listas longas",
+            ],
+            image: "https://t2.tudocdn.net/720005?w=1200&h=1200",
+            tempo_estimado: "25-30 minutos",
             questions: [
               {
                 id: "q1",
@@ -196,6 +208,37 @@ export const trilhas = [
               },
             ],
           },
+          {
+            id: "stage3",
+            title: "Estilização de Componentes",
+            description: "Como estilizar componentes no React Native",
+            completed: false, // Este stage não está concluído
+            pontos_chave: [
+              "Entender o sistema de estilização do React Native",
+              "Aplicar estilos usando StyleSheet",
+              "Trabalhar com estilos condicionais",
+            ],
+            video: "https://www.youtube.com/watch?v=KcC8KZ_Ga2M",
+            tempo_estimado: "20-25 minutos",
+            questions: [
+              {
+                id: "q4",
+                type: QuestionType.MULTIPLE_CHOICE,
+                description: "Quais são as formas de estilizar componentes no React Native?",
+                options: [
+                  { id: "a", text: "StyleSheet" },
+                  { id: "b", text: "Inline styles" },
+                  { id: "c", text: "CSS" },
+                  { id: "d", text: "Styled Components" },
+                ],
+                correctOptions: ["a", "b", "d"],
+                multipleCorrect: true,
+                statementText: "Selecione todas as opções corretas:",
+                explanation:
+                  "React Native suporta StyleSheet, estilos inline e bibliotecas como Styled Components. CSS tradicional não é suportado diretamente.",
+              },
+            ],
+          },
         ],
       },
       {
@@ -211,7 +254,6 @@ export const trilhas = [
             id: "stage1",
             title: "Conceitos de Navegação",
             description: "Entendendo os conceitos básicos de navegação",
-tips: {},
             completed: false, // Este stage está concluído
             pontos_chave: [
               "Compreender os tipos de navegação em apps móveis",
@@ -224,8 +266,7 @@ tips: {},
               {
                 id: "q1",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Quais das seguintes são bibliotecas de navegação para React Native?",
+                description: "Quais das seguintes são bibliotecas de navegação para React Native?",
                 options: [
                   { id: "a", text: "React Navigation" },
                   { id: "b", text: "Expo Router" },
@@ -252,13 +293,11 @@ tips: {},
             ],
             video: "https://www.youtube.com/watch?v=nQVCkqvU1uE",
             tempo_estimado: "20-25 minutos",
-tips: {},
             questions: [
               {
                 id: "q2",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Qual navegador no React Navigation permite navegação em pilha entre telas?",
+                description: "Qual navegador no React Navigation permite navegação em pilha entre telas?",
                 options: [
                   { id: "a", text: "Stack Navigator" },
                   { id: "b", text: "Tab Navigator" },
@@ -295,13 +334,11 @@ tips: {},
             ],
             image: "https://legacy.reactjs.org/logo-og.png",
             tempo_estimado: "15-20 minutos",
-tips: {},
             questions: [
               {
                 id: "q1",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Quais dos seguintes são hooks do React para gerenciamento de estado?",
+                description: "Quais dos seguintes são hooks do React para gerenciamento de estado?",
                 options: [
                   { id: "a", text: "useState" },
                   { id: "b", text: "useEffect" },
@@ -310,8 +347,7 @@ tips: {},
                 ],
                 correctOptions: ["a", "c", "d"],
                 multipleCorrect: true,
-                statementText:
-                  "Selecione todas as opções que são hooks de estado:",
+                statementText: "Selecione todas as opções que são hooks de estado:",
                 explanation:
                   "useState, useReducer e useContext são hooks relacionados ao gerenciamento de estado. useEffect é um hook para efeitos colaterais, não diretamente para estado.",
               },
@@ -335,8 +371,7 @@ tips: {},
                 type: QuestionType.TRUE_OR_FALSE,
                 description: "Props são imutáveis em componentes React.",
                 isTrue: true,
-                explanation:
-                  "Correto! Props são somente leitura e não devem ser modificadas dentro do componente.",
+                explanation: "Correto! Props são somente leitura e não devem ser modificadas dentro do componente.",
               },
             ],
           },
@@ -363,13 +398,11 @@ tips: {},
             ],
             image: "https://docs.expo.dev/static/images/og.png",
             tempo_estimado: "20-25 minutos",
-tips: {},
             questions: [
               {
                 id: "q1",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Quais das seguintes APIs são usadas para armazenamento de dados em React Native?",
+                description: "Quais das seguintes APIs são usadas para armazenamento de dados em React Native?",
                 options: [
                   { id: "a", text: "AsyncStorage" },
                   { id: "b", text: "SQLite" },
@@ -389,8 +422,7 @@ tips: {},
             id: "stage2",
             title: "Geolocalização",
             description: "Acessando a localização do dispositivo",
-            completed: false, // Este stage não está concluído,
-tips: {},
+            completed: false, // Este stage não está concluído
             pontos_chave: [
               "Solicitar permissões de localização",
               "Obter a posição atual do usuário",
@@ -402,8 +434,7 @@ tips: {},
               {
                 id: "q2",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Qual API é usada para acessar a localização do dispositivo em React Native?",
+                description: "Qual API é usada para acessar a localização do dispositivo em React Native?",
                 options: [
                   { id: "a", text: "react-native-geolocation" },
                   { id: "b", text: "expo-location" },
@@ -425,6 +456,7 @@ tips: {},
     id: "2",
     nome: "Básico 2",
     image: "",
+    backgroundSvg: Background2, // Different SVG component for background
     etapas: [
       {
         id: "1",
@@ -447,13 +479,11 @@ tips: {},
             image:
               "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Y2xvdGhpbmd8ZW58MHx8MHx8fDA%3D&w=1000&q=80",
             tempo_estimado: "10-15 minutos",
-tips: {},
             questions: [
               {
                 id: "q1",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Quais das seguintes são peças de roupa para a parte superior do corpo?",
+                description: "Quais das seguintes são peças de roupa para a parte superior do corpo?",
                 options: [
                   { id: "a", text: "Camisa" },
                   { id: "b", text: "Calça" },
@@ -496,8 +526,7 @@ tips: {},
               {
                 id: "q1",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Quais das seguintes são cores primárias no sistema de cores subtrativas?",
+                description: "Quais das seguintes são cores primárias no sistema de cores subtrativas?",
                 options: [
                   { id: "a", text: "Vermelho" },
                   { id: "b", text: "Verde" },
@@ -517,15 +546,18 @@ tips: {},
             title: "Mistura de Cores",
             description: "Aprendendo a misturar cores",
             completed: false, // Este stage não está concluído
-            
+            pontos_chave: [
+              "Entender como misturar cores primárias",
+              "Criar cores secundárias e terciárias",
+              "Aplicar misturas de cores em exemplos práticos",
+            ],
             video: "https://www.youtube.com/watch?v=_2LLXnUdUIc",
             tempo_estimado: "15-20 minutos",
             questions: [
               {
                 id: "q2",
                 type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Qual é a cor resultante da mistura de azul e amarelo?",
+                description: "Qual é a cor resultante da mistura de azul e amarelo?",
                 options: [
                   { id: "a", text: "Verde" },
                   { id: "b", text: "Roxo" },
@@ -534,8 +566,7 @@ tips: {},
                 ],
                 correctOptions: ["a"],
                 multipleCorrect: false,
-                explanation:
-                  "A mistura de azul e amarelo resulta na cor verde.",
+                explanation: "A mistura de azul e amarelo resulta na cor verde.",
               },
             ],
           },
@@ -543,7 +574,7 @@ tips: {},
       },
     ],
   },
-];
+]
 
 // Main Home component
 const Home = () => {
@@ -560,6 +591,9 @@ const Home = () => {
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
 
+  // Add a new animated value for background parallax effect after the scrollY declaration
+  const backgroundScrollY = useRef(new Animated.Value(0)).current
+
   // Animação para transição de trilhas
   const slideAnim = useRef(new Animated.Value(0)).current
   const [isAnimating, setIsAnimating] = useState(false)
@@ -567,6 +601,9 @@ const Home = () => {
     titulo: string
     descricao: string
   } | null>(null)
+
+  // Add state to track the current background SVG after the selectedQuestion state
+  const [currentBackgroundSvg, setCurrentBackgroundSvg] = useState(() => trilhas[0].backgroundSvg)
 
   // Estatísticas do usuário para o cabeçalho
   const [userStats, setUserStats] = useState({
@@ -604,6 +641,17 @@ const Home = () => {
   // 1. Primeiro, vamos definir interfaces mais claras para os tipos que estamos usando
 
   // Interface para o Stage (fase dentro de uma etapa)
+  interface StageInfo {
+    id: string
+    title: string
+    description?: string
+    completed: boolean
+    pontos_chave?: string[]
+    image?: string
+    video?: string
+    tempo_estimado?: string
+    questions: Question[]
+  }
 
   // Interface para a Etapa (que contém stages)
   interface EtapaInfo {
@@ -664,7 +712,6 @@ const Home = () => {
         video: (currentStage as StageInfo).video || "", // Type assertion to StageInfo
         tempo_estimado: currentStage.tempo_estimado || "10-15 minutos",
         pontos_chave: JSON.stringify(currentStage.pontos_chave || []),
-        tips: JSON.stringify(currentStage.tips || []),
       },
     } as any)
 
@@ -768,15 +815,57 @@ const Home = () => {
     }
   }
 
-  // Handle scroll events for header animation with improved performance
+  // Add this effect to update the background SVG when the trail changes
+  useEffect(() => {
+    setCurrentBackgroundSvg(() => trilhas[trilhaAtualIndex].backgroundSvg)
+  }, [trilhaAtualIndex])
+
+  // Update the handleScroll function to include background parallax effect
   const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: false,
-    listener: () => {}, // Empty listener to ensure the event is processed
+    listener: (event) => {
+      const offsetY = event.nativeEvent.contentOffset.y
+      backgroundScrollY.setValue(-offsetY * 0.5)
+    },
   })
 
+  // Create a dynamic SVG background component variable before the return statement
+  const BackgroundSvg = currentBackgroundSvg
+
   return (
-    <View className="flex-1 bg-primary ">
+    <View className="flex-1">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
+
+      {/* Background SVG with parallax effect */}
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "#F0E6D2", // Background color that shows if image ends
+          zIndex: -1,
+        }}
+      >
+        <Animated.View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            transform: [{ translateY: backgroundScrollY }],
+          }}
+        >
+          {BackgroundSvg && (
+            <BackgroundSvg
+              width="100%"
+              height={height * 1.5} // Make SVG taller than screen for scrolling effect
+              preserveAspectRatio="xMidYMid slice"
+            />
+          )}
+        </Animated.View>
+      </View>
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
@@ -836,6 +925,7 @@ const Home = () => {
             alignItems: "center",
             paddingHorizontal: 16,
             paddingBottom: 96,
+            paddingTop: 60, // Added padding to create space at the top
           }}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}

@@ -112,7 +112,7 @@ const StartPhase = ({
     <SafeAreaView className="flex-1 bg-primary">
       <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608" translucent={false} />
       <View className="flex-1">
-        <ScrollView className="flex-1 pb-20">
+        <ScrollView className="flex-1 pb-20" showsVerticalScrollIndicator={false}>
           <Animated.View
             className="flex-1 items-center justify-between"
             style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
