@@ -21,7 +21,7 @@ const  ArrowBack = ({
       }
       className={`z-10 p-2 rounded-full ${className}`}
     >
-      <ChevronLeft size={size ? size : 26} color={color ?? "#f2f2f2"} />
+      <ChevronLeft size={size ? size : 24} color={color ?? "#f2f2f2"} />
     </TouchableOpacity>
   )
 }   

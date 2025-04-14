@@ -1,13 +1,15 @@
-"use client"
+ "use client"
 
 import  React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Text, View, SafeAreaView, Image, ScrollView, Animated, Dimensions, StatusBar } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { Video, ResizeMode, type AVPlaybackStatus } from "expo-av"
+import YoutubeIframe from 'react-native-youtube-iframe'
 import { useLocalSearchParams } from "expo-router"
 import { ArrowRight, BookOpen, CheckCircle, Clock, Info, Star } from "lucide-react-native"
 import ArrowBack from "@/src/components/ArrowBack"
+import { MOBILE_WIDTH } from "@/PlataformWrapper"
 
 interface StartPhaseProps {
   title?: string
@@ -112,7 +114,10 @@ const StartPhase = ({
     <SafeAreaView className="flex-1 bg-primary">
       <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608" translucent={false} />
       <View className="flex-1">
-        <ScrollView className="flex-1 pb-20" showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          className="flex-1 pb-20" 
+          showsVerticalScrollIndicator={true} 
+        >
           <Animated.View
             className="flex-1 items-center justify-between"
             style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
@@ -120,9 +125,9 @@ const StartPhase = ({
             {/* Header Section */}
             <View className="w-full">
               <View className="w-full bg-secondary py-10 border-b-4 border-tertiary items-center justify-center">
-              <ArrowBack color="#fff" size={22} className="absolute bg-tertiary top-3 left-3" />
+              <ArrowBack color="#fff" size={20} className="absolute bg-tertiary top-2 left-2" />
               
-                <Text className="text-3xl font-bold text-white text-center px-5">{title}</Text>
+                <Text className="text-3xl font-bold text-white text-center pt-2 px-5">{title}</Text>
               </View>
 
               {subTitle && (
@@ -138,44 +143,12 @@ const StartPhase = ({
               </View>
             </View>
 
+
+
             {/* Content Section */}
             <View className="flex-1 w-full px-6 items-center my-4">
-              {image && (
-                <View className="w-full items-center mb-5 rounded-xl overflow-hidden shadow-lg">
-                  <Image source={{ uri: image }} className="w-full rounded-xl h-52" resizeMode="cover" />
-                </View>
-              )}
-
-              {video && (
-                <View className="w-full mb-5 rounded-xl overflow-hidden shadow-lg">
-                  <Video
-                    source={{ uri: video }}
-                    className="w-full h-52 rounded-xl"
-                    useNativeControls
-                    resizeMode={ResizeMode.CONTAIN}
-                    isLooping
-                  />
-                </View>
-              )}
-
-              {keyPoints.length > 0 && (
-                <View className="w-full bg-[#f8f9fa] p-5 rounded-xl mb-5 border border-gray-200">
-                <View className="flex-row items-center mb-3">
-                  <Star size={20} color="#FFD700" />
-                  <Text className="text-lg font-bold text-gray-800 ml-2">Pontos-chave</Text>
-                </View>
-                {keyPoints.map((point, index) => (
-                  <View key={index} className="flex-row items-start mt-2">
-                    <CheckCircle size={18} color="#56A6DC" className="mt-0.5" />
-                    <Text className="text-base text-gray-700 ml-2 flex-1">{point}</Text>
-                  </View>
-                ))}
-              </View>
-              )}
-
-              {additionalFeature}
-
-              {description && (
+                          
+            {description && (
                 <View className="w-full bg-white p-5 rounded-xl mb-5 shadow-sm border border-gray-100">
                   <View className="flex-row items-center mb-3">
                     <Info size={20} color="#56A6DC" />
@@ -192,6 +165,57 @@ const StartPhase = ({
                   <Text className="text-base text-[#795548]">{tips.content}</Text>
                 </View>
               )}
+
+              
+{keyPoints.length > 0 && (
+                <View className="w-full bg-[#f8f9fa] p-5 rounded-xl mb-5 border border-gray-200">
+                <View className="flex-row items-center mb-3">
+                  <Star size={20} color="#FFD700" />
+                  <Text className="text-lg font-bold text-gray-800 ml-2">Pontos-chave</Text>
+                </View>
+                {keyPoints.map((point, index) => (
+                  <View key={index} className="flex-row items-start mt-2">
+                    <CheckCircle size={18} color="#56A6DC" className="mt-0.5" />
+                    <Text className="text-base text-gray-700 ml-2 flex-1">{point}</Text>
+                  </View>
+                ))}
+              </View>
+              )}
+
+
+
+              {image && (
+                <View className="w-full items-center mb-5 rounded-xl overflow-hidden shadow-lg">
+                  <Image source={{ uri: image }} className="w-full rounded-xl h-52" resizeMode="cover" />
+                </View>
+              )}
+
+              {video && (
+                <View className="w-full mb-5 rounded-xl overflow-hidden shadow-lg bg-red-500">
+                  {video.includes('youtube.com') ? (
+                    <YoutubeIframe
+                      height={208}
+                      videoId={video.split('v=')[1].split('&')[0]}
+                      width={MOBILE_WIDTH - 48}
+                      play={true}
+                      onChangeState={(state) => console.log('YouTube player state:', state)}
+                      onError={(e) => console.log('YouTube player error:', e)}
+                    />
+                  ) : (
+                    <Video
+                      source={{ uri: video }}
+                      className="w-full h-52 rounded-xl"
+                      useNativeControls
+                      resizeMode={ResizeMode.CONTAIN}
+                      isLooping
+                      onError={(e) => console.log('Video error:', e)}
+                      onReadyForDisplay={() => console.log('Video ready')}
+                    />
+                  )}
+                </View>
+              )}
+              {additionalFeature}
+
             </View>
           </Animated.View>
         </ScrollView>

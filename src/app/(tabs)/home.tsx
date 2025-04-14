@@ -123,6 +123,7 @@ export const trilhas = [
               "Otimizar o desempenho de listas longas",
             ],
             image: "https://t2.tudocdn.net/720005?w=1200&h=1200",
+            video: "https://www.youtube.com/watch?v=0-S5a0eXPoc",
             tempo_estimado: "25-30 minutos",
             questions: [
               {
