@@ -144,58 +144,65 @@ const Step03 = () => {
             <Text style={styles.title}>Vamos criar uma senha!</Text>
 
             <View style={styles.inputsContainer}>
-              <Text style={styles.label}>E-mail</Text>
-              <TextInput
-                style={[styles.input, { borderColor: getBorderColor("email", emailFocused) },
-                  Platform.select({
-                    web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                  })
-                ]}
-                placeholder="Digite seu e-mail"
-                placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+              <View style={styles.inputCada}>
+                <Text style={styles.label}>E-mail</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: getBorderColor("email", emailFocused) },
+                    Platform.select({
+                      web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                    })
+                  ]}
+                  placeholder="Digite seu e-mail"
+                  placeholderTextColor="#999"
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
 
-              <Text style={styles.label}>Senha</Text>
-              <TextInput
-                style={[styles.input, { borderColor: getBorderColor("password", field1Focused) },
-                  Platform.select({
-                    web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                  })
-                ]}
-                placeholder="Digite sua senha"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                onFocus={() => setField1Focused(true)}
-                onBlur={() => setField1Focused(false)}
-                secureTextEntry
-              />
+              <View style={styles.inputCada}>
+                <Text style={styles.label}>Senha</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: getBorderColor("password", field1Focused) },
+                    Platform.select({
+                      web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                    })
+                  ]}
+                  placeholder="Digite sua senha"
+                  placeholderTextColor="#999"
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setField1Focused(true)}
+                  onBlur={() => setField1Focused(false)}
+                  secureTextEntry
+                />
+              </View>
 
-              <Text style={styles.label}>Confirme sua senha</Text>
-              <TextInput
-                style={[styles.input, { borderColor: getBorderColor("confirmPassword", field2Focused) },
-                  Platform.select({
-                    web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                  })
-                ]}
-                placeholder="Confirme sua senha"
-                placeholderTextColor="#999"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                onFocus={() => setField2Focused(true)}
-                onBlur={() => setField2Focused(false)}
-                secureTextEntry
-              />
+              <View style={styles.inputCada}>
+                <Text style={styles.label}>Confirme sua senha</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: getBorderColor("confirmPassword", field2Focused) },
+                    Platform.select({
+                      web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                    })
+                  ]}
+                  placeholder="Confirme sua senha"
+                  placeholderTextColor="#999"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  onFocus={() => setField2Focused(true)}
+                  onBlur={() => setField2Focused(false)}
+                  secureTextEntry
+                />
+              </View>
             </View>
 
             <View style={styles.buttonContainer}>
               <CustomButton title="Continuar" onPress={handleContinue} />
+              <View style={{height: 5}}/>
               <ProgressDots currentStep={3} />
             </View>
           </View>
@@ -223,7 +230,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     paddingTop: getAvatarTop(),
-    paddingBottom: 50,
   },
   contentContainer: {
     width: "100%",
@@ -243,26 +249,34 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     alignItems: "center",
     paddingBottom: 20,
-    minHeight: height * 0.2,
+    height: height <= 732 ? "60%" : "65%",
   },
   inputsContainer: {
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
     paddingVertical: 10,
-    height: "55%",
-    gap: 5,
+    top: height <= 732 ? "0%" : "0%",
+    height: "60%",
+    gap: 8,
+  },
+  inputCada: {
+    width: "100%",
+    height: "30%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: height <= 732 ? 5 : 5,
   },
   label: {
     fontSize: 16,
     fontWeight: "500",
     color: "#1F2937",
     width: "80%",
-    marginBottom: 0,
+    marginBottom: 5,
   },
   input: {
     width: "80%",
-    height: "21%",
+    height: 55,
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 16,
@@ -270,15 +284,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#F7F8F9",
     color: "#000000",
-    marginBottom: 8,
   },
   buttonContainer: {
     width: "100%",
     alignItems: "center",
-    justifyContent: "space-around",
-    height: "15%",
-    marginTop: 0,
+    justifyContent: "space-between",
+    height: "5%",
+    marginTop: 5,
+    bottom: bottomHeight(),
   },
 })
-
 export default Step03

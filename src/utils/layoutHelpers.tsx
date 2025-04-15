@@ -11,7 +11,7 @@ export const getAvatarTop = () => {
   } else if (width >= 820 && width <= 1020) {
     return "16%";
   } else if (height <= 732) {
-    return "0%";
+    return "2%";
   } else if (width >= 1800) {
     return "12%";
   } else {
@@ -21,8 +21,24 @@ export const getAvatarTop = () => {
 
 export const bottomHeight = () => {
   if (width >= 940) {
-    return "7%"; 
-  } else {
-    return "5%";
+    return "1%"; 
+  }else if (height <= 732) {
+    return "-2%";
+   } else {
+    return 0;
   }
+
+};
+
+export const bottomHeight1 = () => {
+  if (width >= 940) {
+    return "1%"; 
+  }else if (height <= 732) {
+    return "10%";
+   } else {
+    return 0;
+  }
+
+
+
 };

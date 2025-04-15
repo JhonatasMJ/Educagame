@@ -141,39 +141,43 @@ const Step02 = () => {
             <Text style={styles.title}>{nome}, falta pouco!</Text>
 
             <View style={styles.inputsContainer}>
-              <Text style={styles.label}>Data Nascimento</Text>
-              <MaskedTextInput
-                style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) },
-                  Platform.select({
-                    web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                  })
-                ]}
-                onFocus={() => setField1Focused(true)}
-                onBlur={() => setField1Focused(false)}
-                placeholder="DD/MM/AAAA"
-                placeholderTextColor="#999"
-                value={birthDate}
-                onChangeText={setBirthDate}
-                keyboardType="numeric"
-                mask="99/99/9999"
-              />
+              <View style={styles.inputCada}>
+                <Text style={styles.label}>Data Nascimento</Text>
+                <MaskedTextInput
+                  style={[styles.input, { borderColor: getBorderColor("birthDate", field1Focused) },
+                    Platform.select({
+                      web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                    })
+                  ]}
+                  onFocus={() => setField1Focused(true)}
+                  onBlur={() => setField1Focused(false)}
+                  placeholder="DD/MM/AAAA"
+                  placeholderTextColor="#999"
+                  value={birthDate}
+                  onChangeText={setBirthDate}
+                  keyboardType="numeric"
+                  mask="99/99/9999"
+                />
+              </View>
 
-              <Text style={styles.label}>Celular</Text>
-              <MaskedTextInput
-                style={[styles.input, { borderColor: getBorderColor("phone", field2Focused) },
-                  Platform.select({
-                    web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                  })
-                ]}
-                onFocus={() => setField2Focused(true)}
-                onBlur={() => setField2Focused(false)}
-                placeholder="+55 __ _____-____"
-                placeholderTextColor="#999"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="numeric"
-                mask="+55 99 99999-9999"
-              />
+              <View style={styles.inputCada}>
+                <Text style={styles.label}>Celular</Text>
+                <MaskedTextInput
+                  style={[styles.input, { borderColor: getBorderColor("phone", field2Focused) },
+                    Platform.select({
+                      web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
+                    })
+                  ]}
+                  onFocus={() => setField2Focused(true)}
+                  onBlur={() => setField2Focused(false)}
+                  placeholder="+55 __ _____-____"
+                  placeholderTextColor="#999"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="numeric"
+                  mask="+55 99 99999-9999"
+                />
+              </View>
 
               <View style={styles.checkboxesContainer}>
                 <Checkbox title="Termos de uso" isChecked={termsAccepted} onCheck={setTermsAccepted} />
@@ -183,6 +187,7 @@ const Step02 = () => {
 
             <View style={styles.buttonContainer}>
               <CustomButton title="Continuar" onPress={handleContinue} />
+              <View style={{height: 5}}/>
               <ProgressDots currentStep={2} />
             </View>
           </View>
@@ -210,7 +215,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     paddingTop: getAvatarTop(),
-    paddingBottom: 50,
   },
   contentContainer: {
     width: "100%",
@@ -230,35 +234,30 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     alignItems: "center",
     paddingBottom: 20,
-    minHeight: height * 0.2,
+    height: height <= 732 ? "60%" : "65%",
   },
   inputsContainer: {
     flexDirection: "column",
     width: "100%",
     alignItems: "center",
     paddingVertical: 10,
-    top: "2%",
-    height: "55%",
+    top: height <= 732 ? "0%" : "0%",
+    height: "60%",
     gap: 15,
+  },
+  inputCada: {
+    width: "100%",
+    height: "30%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: height <= 732 ? 5 : 5,
   },
   label: {
     fontSize: 16,
     fontWeight: "500",
     color: "#1F2937",
     width: "80%",
-    marginBottom: 0,
-  },
-  input: {
-    width: "80%",
-    height: "21%",
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#F7F8F9",
-    color: "#000000",
-    marginBottom: 8,
+    marginBottom: 5,
   },
   checkboxesContainer: {
     width: "100%",
@@ -267,12 +266,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 10,
   },
+  input: {
+    width: "80%",
+    height: 55,
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: "#F7F8F9",
+    color: "#000000",
+  },
   buttonContainer: {
     width: "100%",
     alignItems: "center",
-    justifyContent: "space-around",
-    height: "15%",
-    marginTop: 40,
+    justifyContent: "space-between",
+    height: "5%",
+    marginTop: 5,
+    bottom: bottomHeight(),
   },
 })
 
