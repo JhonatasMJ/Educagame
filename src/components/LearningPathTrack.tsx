@@ -4,63 +4,77 @@ import React from "react"
 import { View, ImageBackground, StyleSheet, type ImageSourcePropType } from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
-import type { IconLibrary } from "./IconRenderer"
+import type { IconLibrary } from "../services/IconRenderer"
 
-// Tipos
-interface Stage {
-  number: number
-  completed: boolean
-  title: string
-  icon?: string // Nome do ícone ou URL de imagem
-  iconLibrary?: IconLibrary // Biblioteca de ícones (opcional)
-  description?: string
-  id: string
+// Tipos atualizados para refletir a nova estrutura
+interface StageInfo {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  pontos_chave?: string[];
+  image?: string;
+  video?: string;
+  tempo_estimado?: string;
+  questions: any[];
+}
+
+// Interface para a Etapa (que contém stages)
+interface EtapaInfo {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  concluida: boolean;
+  icon?: string;
+  iconLibrary?: string;
+  stages: StageInfo[];
+  progress: number;
 }
 
 interface LearningPathTrackProps {
-  stages: Stage[]
-  currentStage: number
-  onStagePress: (index: number) => void
+  etapas: EtapaInfo[] // Renomeado de stages para etapas para maior clareza
+  currentEtapaIndex: number // Renomeado de currentStage para currentEtapaIndex
+  onEtapaPress: (index: number) => void // Renomeado de onStagePress para onEtapaPress
   containerHeight: number
   backgroundImage?: ImageSourcePropType
   trailId?: string
 }
 
 // Constantes
-const STAGE_HEIGHT = 200
+const ETAPA_HEIGHT = 200
 const BOTTOM_SPACE_ADJUSTMENT = 120
 const TRACK_WIDTH = 8
 const TRACK_BORDER_RADIUS = 4
-const STAGE_SPACING = 4
+const ETAPA_SPACING = 4
 
 // Componente principal
 const LearningPathTrack = ({
-  stages,
-  currentStage,
-  onStagePress,
+  etapas,
+  currentEtapaIndex,
+  onEtapaPress,
   containerHeight,
   backgroundImage,
   trailId = "1",
 }: LearningPathTrackProps) => {
   // Cálculos para layout
-  const nextStageIndex = stages.findIndex((stage) => !stage.completed)
-  const totalContentHeight = stages.length * STAGE_HEIGHT
+  const nextEtapaIndex = etapas.findIndex((etapa) => !etapa.concluida)
+  const totalContentHeight = etapas.length * ETAPA_HEIGHT
   const topPadding = Math.max(0, containerHeight - totalContentHeight - BOTTOM_SPACE_ADJUSTMENT)
 
   // Função para verificar se uma etapa está bloqueada
-  const isStageBlocked = (index: number) => {
+  const isEtapaBlocked = (index: number) => {
     // Uma etapa está bloqueada se:
     // 1. Não estiver completa
     // 2. Não for a próxima disponível (a primeira não completa)
     // 3. Não for a etapa atual
-    return !stages[index].completed && index !== nextStageIndex && index !== currentStage
+    return !etapas[index].concluida && index !== nextEtapaIndex && index !== currentEtapaIndex
   }
 
   // Função para lidar com o clique em uma etapa
-  const handleStagePress = (index: number) => {
+  const handleEtapaPress = (index: number) => {
     // Só permite navegação se a etapa não estiver bloqueada
-    if (!isStageBlocked(index)) {
-      onStagePress(index)
+    if (!isEtapaBlocked(index)) {
+      onEtapaPress(index)
     }
     // Se estiver bloqueada, não faz nada (ou poderia mostrar uma mensagem)
   }
@@ -69,11 +83,11 @@ const LearningPathTrack = ({
   return (
     <BackgroundContainer backgroundImage={backgroundImage} topPadding={topPadding}>
       <TrackContent
-        stages={stages}
-        currentStage={currentStage}
-        nextStageIndex={nextStageIndex}
-        onStagePress={handleStagePress}
-        isStageBlocked={isStageBlocked}
+        etapas={etapas}
+        currentEtapaIndex={currentEtapaIndex}
+        nextEtapaIndex={nextEtapaIndex}
+        onEtapaPress={handleEtapaPress}
+        isEtapaBlocked={isEtapaBlocked}
         trailId={trailId}
       />
     </BackgroundContainer>
@@ -124,22 +138,22 @@ const BackgroundContainer = ({
 
 // Componente para o conteúdo da trilha
 const TrackContent = ({
-  stages,
-  currentStage,
-  nextStageIndex,
-  onStagePress,
-  isStageBlocked,
+  etapas,
+  currentEtapaIndex,
+  nextEtapaIndex,
+  onEtapaPress,
+  isEtapaBlocked,
   trailId,
 }: {
-  stages: Stage[]
-  currentStage: number
-  nextStageIndex: number
-  onStagePress: (index: number) => void
-  isStageBlocked: (index: number) => boolean
+  etapas: EtapaInfo[]
+  currentEtapaIndex: number
+  nextEtapaIndex: number
+  onEtapaPress: (index: number) => void
+  isEtapaBlocked: (index: number) => boolean
   trailId: string
 }) => {
   // Calcula a altura da trilha de progresso
-  const completedStagesPercentage = Math.max((stages.filter((s) => s.completed).length / stages.length) * 100, 10)
+  const completedEtapasPercentage = Math.max((etapas.filter((e) => e.concluida).length / etapas.length) * 100, 10)
 
   return (
     <>
@@ -149,18 +163,18 @@ const TrackContent = ({
       {/* Trilha de progresso */}
       <TrackLine
         className="bg-secondary"
-        height={`${completedStagesPercentage}%`}
+        height={`${completedEtapasPercentage}%`}
         zIndex={2}
         style={styles.progressTrack}
       />
 
-      {/* Estágios em ordem reversa */}
-      <StagesList
-        stages={stages}
-        currentStage={currentStage}
-        nextStageIndex={nextStageIndex}
-        onStagePress={onStagePress}
-        isStageBlocked={isStageBlocked}
+      {/* Etapas em ordem reversa */}
+      <EtapasList
+        etapas={etapas}
+        currentEtapaIndex={currentEtapaIndex}
+        nextEtapaIndex={nextEtapaIndex}
+        onEtapaPress={onEtapaPress}
+        isEtapaBlocked={isEtapaBlocked}
         trailId={trailId}
       />
     </>
@@ -180,57 +194,57 @@ const TrackLine = ({
   style?: any
 }) => <View className={className} style={[styles.trackLine, { height, zIndex }, style]} />
 
-// Componente para a lista de estágios
-const StagesList = ({
-  stages,
-  currentStage,
-  nextStageIndex,
-  onStagePress,
-  isStageBlocked,
+// Componente para a lista de etapas
+const EtapasList = ({
+  etapas,
+  currentEtapaIndex,
+  nextEtapaIndex,
+  onEtapaPress,
+  isEtapaBlocked,
   trailId,
 }: {
-  stages: Stage[]
-  currentStage: number
-  nextStageIndex: number
-  onStagePress: (index: number) => void
-  isStageBlocked: (index: number) => boolean
+  etapas: EtapaInfo[]
+  currentEtapaIndex: number
+  nextEtapaIndex: number
+  onEtapaPress: (index: number) => void
+  isEtapaBlocked: (index: number) => boolean
   trailId: string
 }) => {
-  // Inverte os estágios para renderizar de baixo para cima
-  const reversedStages = [...stages].reverse()
+  // Inverte as etapas para renderizar de baixo para cima
+  const reversedEtapas = [...etapas].reverse()
 
   return (
     <>
-      {reversedStages.map((stage, index) => {
+      {reversedEtapas.map((etapa, index) => {
         // Calcula o índice original (antes da inversão)
-        const originalIndex = stages.length - 1 - index
+        const originalIndex = etapas.length - 1 - index
         // Verifica se esta é a próxima etapa a ser concluída
-        const isNextStage = originalIndex === nextStageIndex
+        const isNextEtapa = originalIndex === nextEtapaIndex
         // Verifica se a etapa está bloqueada
-        const isLocked = isStageBlocked(originalIndex)
+        const isLocked = isEtapaBlocked(originalIndex)
 
         return (
           <View key={originalIndex} className="items-center z-10">
             <LessonBubble
-              number={stage.number}
-              isActive={currentStage === originalIndex}
-              isCompleted={stage.completed}
-              isNext={isNextStage}
+              number={originalIndex + 1} // Número da etapa (1-based)
+              isActive={currentEtapaIndex === originalIndex}
+              isCompleted={etapa.concluida}
+              isNext={isNextEtapa}
               isLocked={isLocked}
-              onPress={() => onStagePress(originalIndex)}
-              title={stage.title}
-              icon={stage.icon}
-              iconLibrary={stage.iconLibrary}
-              description={stage.description}
-              phaseId={stage.id}
+              onPress={() => onEtapaPress(originalIndex)}
+              title={etapa.titulo}
+              icon={etapa.icon}
+              iconLibrary={etapa.iconLibrary as IconLibrary}
+              description={etapa.descricao}
+              progress={etapa.progress} // Progresso calculado com base nos stages
+              phaseId={etapa.id}
             />
 
             {/* Espaço entre bolhas */}
-            {index < stages.length - 1 && <View style={{ height: STAGE_SPACING }} />}
+            {index < etapas.length - 1 && <View style={{ height: ETAPA_SPACING }} />}
           </View>
         )
-      })}
-    </>
+      })}    </>
   )
 }
 

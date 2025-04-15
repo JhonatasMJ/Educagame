@@ -1,12 +1,15 @@
-"use client"
+ "use client"
 
-import React from "react"
-import { useState, useEffect } from "react"
+import  React from "react"
+import { useState, useEffect, useRef } from "react"
 import { Text, View, SafeAreaView, Image, ScrollView, Animated, Dimensions, StatusBar } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
-import { Video, ResizeMode } from "expo-av"
+import { Video, ResizeMode, type AVPlaybackStatus } from "expo-av"
+import YoutubeIframe from 'react-native-youtube-iframe'
 import { useLocalSearchParams } from "expo-router"
 import { ArrowRight, BookOpen, CheckCircle, Clock, Info, Star } from "lucide-react-native"
+import ArrowBack from "@/src/components/ArrowBack"
+import { MOBILE_WIDTH } from "@/PlataformWrapper"
 
 interface StartPhaseProps {
   title?: string
@@ -18,22 +21,66 @@ interface StartPhaseProps {
   nextStep?: string
 }
 
+// In the component parameter list, add a parameter for the tips
 const StartPhase = ({
   title: propTitle,
   subTitle,
   description: propDescription,
-  image,
-  video,
+  image: propImage,
+  video: propVideo,
   additionalFeature,
-  nextStep = "/question/trueORfalse",
 }: StartPhaseProps) => {
   const params = useLocalSearchParams()
+  const videoRef = useRef<Video>(null)
+  const [videoStatus, setVideoStatus] = useState<AVPlaybackStatus | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isYoutubeVideo, setIsYoutubeVideo] = useState(false)
+  const [youtubeId, setYoutubeId] = useState<string | null>(null)
 
   // Use props or params
   const title = propTitle || (params.title as string)
   const description = propDescription || (params.description as string)
   const phaseId = params.phaseId as string
   const trailId = params.trailId as string
+  const stageId = params.stageId as string
+  const image = propImage || (params.image as string)
+  const video = propVideo || (params.video as string)
+  const tempo_estimado = (params.tempo_estimado as string) 
+
+  // Add tips parameter handling
+  const tips_str = params.tips as string
+  const [tips, setTips] = useState<{ title: string; content: string } | null>(null)
+
+  // Parse pontos_chave from JSON string
+  const pontos_chave_str = params.pontos_chave as string
+  const [keyPoints, setKeyPoints] = useState<string[]>([])
+
+  useEffect(() => {
+    if (pontos_chave_str) {
+      try {
+        const parsedPoints = JSON.parse(pontos_chave_str)
+        if (Array.isArray(parsedPoints) && parsedPoints.length > 0) {
+          setKeyPoints(parsedPoints)
+        }
+      } catch (error) {
+        console.error("Error parsing pontos_chave:", error)
+      }
+    }
+  }, [pontos_chave_str])
+
+  // Parse tips from JSON string
+  useEffect(() => {
+    if (tips_str) {
+      try {
+        const parsedTips = JSON.parse(tips_str)
+        if (parsedTips && typeof parsedTips === "object") {
+          setTips(parsedTips)
+        }
+      } catch (error) {
+        console.error("Error parsing tips:", error)
+      }
+    }
+  }, [tips_str])
 
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0]
@@ -42,18 +89,11 @@ const StartPhase = ({
   const screenWidth = Dimensions.get("window").width
 
   // Estimated time to complete (mock data)
-  const estimatedTime = "5-10 minutos"
+  const estimatedTime = tempo_estimado
 
   // Phase number (mock data - could be derived from phaseId)
   const phaseNumber = Number.parseInt(phaseId) || 1
   const totalPhases = 5
-
-  // Key points (mock data)
-  const keyPoints = [
-    "Compreender os conceitos básicos",
-    "Aplicar o conhecimento na prática",
-    "Desenvolver habilidades essenciais",
-  ]
 
   useEffect(() => {
     Animated.parallel([
@@ -74,7 +114,10 @@ const StartPhase = ({
     <SafeAreaView className="flex-1 bg-primary">
       <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608" translucent={false} />
       <View className="flex-1">
-        <ScrollView showsVerticalScrollIndicator={false} className="flex-1 pb-20">
+        <ScrollView 
+          className="flex-1 pb-20" 
+          showsVerticalScrollIndicator={true} 
+        >
           <Animated.View
             className="flex-1 items-center justify-between"
             style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
@@ -82,10 +125,9 @@ const StartPhase = ({
             {/* Header Section */}
             <View className="w-full">
               <View className="w-full bg-secondary py-10 border-b-4 border-tertiary items-center justify-center">
-                <View className="absolute top-3 left-3 bg-tertiary rounded-full p-2">
-                  <BookOpen size={24} color="#fff" />
-                </View>
-                <Text className="text-3xl font-bold text-white text-center px-5">{title}</Text>
+              <ArrowBack color="#fff" size={20} className="absolute bg-tertiary top-2 left-2" />
+              
+                <Text className="text-3xl font-bold text-white text-center pt-2 px-5">{title}</Text>
               </View>
 
               {subTitle && (
@@ -101,30 +143,32 @@ const StartPhase = ({
               </View>
             </View>
 
+
+
             {/* Content Section */}
             <View className="flex-1 w-full px-6 items-center my-4">
-              {image && (
-                <View className="w-full items-center mb-5 rounded-xl overflow-hidden shadow-lg">
-                  <Image source={{ uri: image }} className="w-full h-52 rounded-xl" resizeMode="cover" />
-                  <View className="absolute bottom-0 left-0 right-0 bg-black/50 py-2 px-3">
-                    <Text className="text-white text-sm font-medium">Imagem ilustrativa</Text>
+                          
+            {description && (
+                <View className="w-full bg-white p-5 rounded-xl mb-5 shadow-sm border border-gray-100">
+                  <View className="flex-row items-center mb-3">
+                    <Info size={20} color="#56A6DC" />
+                    <Text className="text-lg font-bold text-gray-800 ml-2">Descrição</Text>
                   </View>
+                  <Text className="text-base text-gray-800 leading-6">{description}</Text>
                 </View>
               )}
 
-              {video && (
-                <View className="w-full mb-5 rounded-xl overflow-hidden shadow-lg">
-                  <Video
-                    source={{ uri: video }}
-                    className="w-full h-52 rounded-xl"
-                    useNativeControls
-                    resizeMode={ResizeMode.CONTAIN}
-                    isLooping
-                  />
+              {/* Dicas da fase */}
+              {tips && (
+                <View className="w-full bg-[#FFF8E1] p-5 rounded-xl mb-5 border border-[#FFE082]">
+                  <Text className="text-lg font-bold text-[#F57C00] mb-2">{tips.title}</Text>
+                  <Text className="text-base text-[#795548]">{tips.content}</Text>
                 </View>
               )}
 
-              <View className="w-full bg-[#f8f9fa] p-5 rounded-xl mb-5 border border-gray-200">
+              
+{keyPoints.length > 0 && (
+                <View className="w-full bg-[#f8f9fa] p-5 rounded-xl mb-5 border border-gray-200">
                 <View className="flex-row items-center mb-3">
                   <Star size={20} color="#FFD700" />
                   <Text className="text-lg font-bold text-gray-800 ml-2">Pontos-chave</Text>
@@ -136,37 +180,52 @@ const StartPhase = ({
                   </View>
                 ))}
               </View>
+              )}
 
-              {additionalFeature}
 
-              {description && (
-                <View className="w-full bg-white p-5 rounded-xl mb-5 shadow-sm border border-gray-100">
-                  <View className="flex-row items-center mb-3">
-                    <Info size={20} color="#56A6DC" />
-                    <Text className="text-lg font-bold text-gray-800 ml-2">Descrição</Text>
-                  </View>
-                  <Text className="text-base text-gray-800 leading-6">{description}</Text>
+
+              {image && (
+                <View className="w-full items-center mb-5 rounded-xl overflow-hidden shadow-lg">
+                  <Image source={{ uri: image }} className="w-full rounded-xl h-52" resizeMode="cover" />
                 </View>
               )}
 
-              {/* Additional tips section */}
-              <View className="w-full bg-[#FFF8E1] p-5 rounded-xl mb-5 border border-[#FFE082]">
-                <Text className="text-lg font-bold text-[#F57C00] mb-2">Dica importante</Text>
-                <Text className="text-base text-[#795548]">
-                  Leia com atenção todo o conteúdo antes de prosseguir. Isso ajudará você a responder corretamente as
-                  perguntas na próxima etapa.
-                </Text>
-              </View>
+              {video && (
+                <View className="w-full mb-5 rounded-xl overflow-hidden shadow-lg bg-red-500">
+                  {video.includes('youtube.com') ? (
+                    <YoutubeIframe
+                      height={208}
+                      videoId={video.split('v=')[1].split('&')[0]}
+                      width={MOBILE_WIDTH - 48}
+                      play={true}
+                      onChangeState={(state) => console.log('YouTube player state:', state)}
+                      onError={(e) => console.log('YouTube player error:', e)}
+                    />
+                  ) : (
+                    <Video
+                      source={{ uri: video }}
+                      className="w-full h-52 rounded-xl"
+                      useNativeControls
+                      resizeMode={ResizeMode.CONTAIN}
+                      isLooping
+                      onError={(e) => console.log('Video error:', e)}
+                      onReadyForDisplay={() => console.log('Video ready')}
+                    />
+                  )}
+                </View>
+              )}
+              {additionalFeature}
+
             </View>
           </Animated.View>
         </ScrollView>
 
-        {/* Fixed Button Section at the bottom */}
-        <View className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-primary border-t border-gray-200">
+         {/* Fixed Button Section at the bottom */}
+         <View className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-primary border-t border-gray-200">
           <View className="relative">
             <CustomButton
               title="CONTINUAR"
-              nextStep={`/questions/game?phaseId=${phaseId}${trailId ? `&trailId=${trailId}` : ""}`}
+              nextStep={`/questions/game?phaseId=${phaseId}${trailId ? `&trailId=${trailId}` : ""}&stageId=${stageId}`}
               className="bg-secondary shadow-md"
               textClassName="tracking-wide"
             />
@@ -175,10 +234,10 @@ const StartPhase = ({
             </View>
           </View>
         </View>
+
       </View>
     </SafeAreaView>
   )
 }
 
 export default StartPhase
-
