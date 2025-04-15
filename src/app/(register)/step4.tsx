@@ -108,6 +108,7 @@ const Step04 = () => {
         </View>
         <View style={styles.buttonContainer}>
           <CustomButton title="Continuar" onPress={handleFinalRegister} />
+          <View style={{height: 5}}/>
           <ProgressDots currentStep={4} />
         </View>
       </View>
@@ -154,11 +155,12 @@ const styles = StyleSheet.create({
     top: "5%",
   },
   buttonContainer: {
-    zIndex: 3,
-    position: "absolute",
-    bottom: bottomHeight(),
+    width: "100%",
+    alignItems: "center",
     justifyContent: "space-between",
-    height: "20%",
+    height: "5%",
+    marginTop: 5,
+    bottom: bottomHeight(),
   },
 })
 
