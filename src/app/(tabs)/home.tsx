@@ -11,6 +11,7 @@ import {
   Platform,
   Animated,
   Easing,
+  ImageBackground,
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
@@ -867,7 +868,6 @@ const Home = () => {
           )}
         </Animated.View>
       </View>
-
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
       <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
@@ -933,7 +933,6 @@ const Home = () => {
           scrollEventThrottle={16} // Standard value for smooth animation
           decelerationRate="normal" // Smoother deceleration
         >
-          <View style={{ height: 60 }} /> {/* Increased padding to create more space between header and content */}
           <LearningPathTrack
             etapas={stages}
             currentEtapaIndex={etapaAtualIndex}
