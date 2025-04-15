@@ -1,8 +1,11 @@
+"use client"
+
 import { View, Text, TouchableOpacity, Animated } from "react-native"
 import { Menu, Trophy, Target, Flame } from "lucide-react-native"
-import { useGameProgress } from "@/src/context/GameProgressContext"
-import React from "react"
+import { useState } from "react"
 import { useAuth } from "../context/AuthContext"
+import Regras from "./Regras"
+import React from "react"
 
 interface DuolingoHeaderProps {
   nome: string
@@ -13,22 +16,20 @@ interface DuolingoHeaderProps {
   } | null
 }
 
-
 interface User {
-  id?: string;
-  name?: string;
-  points: number; // Alterado de result para points
-  avatarSource?: string;
-  hours: number;
-  consecutiveDays: number;
-  consecutiveCorrect: number;
-  totalConsecutiveDays: number;
+  id?: string
+  name?: string
+  points: number // Alterado de result para points
+  avatarSource?: string
+  hours: number
+  consecutiveDays: number
+  consecutiveCorrect: number
+  totalConsecutiveDays: number
 }
 
-
 const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps) => {
-  const { userData, authUser, getAllUsers } = useAuth();
-
+  const { userData, authUser, getAllUsers } = useAuth()
+  const [showRulesModal, setShowRulesModal] = useState(false)
 
   const userDetailsData: User = {
     points: userData?.points || 0,
@@ -38,10 +39,13 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
     totalConsecutiveDays: 120,
     id: "",
     name: "",
-    avatarSource: ""
-  };
-  
+    avatarSource: "",
+  }
 
+  // Function to toggle the rules modal
+  const toggleRulesModal = () => {
+    setShowRulesModal(!showRulesModal)
+  }
 
   // Animation values for header transformation
   const titleHeight = 60 // Height of the title section that will hide
@@ -89,7 +93,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         }}
       >
         <Text className="text-2xl font-bold text-white capitalize">{nome}</Text>
-        {/* Fixed menu button styling */}
+        {/* Menu button with onPress handler */}
         <TouchableOpacity
           className="bg-tertiary p-2 rounded-lg"
           style={{
@@ -105,6 +109,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
             position: "absolute",
             right: 0,
           }}
+          onPress={toggleRulesModal}
         >
           <Menu size={20} color="white" />
         </TouchableOpacity>
@@ -113,7 +118,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
       {/* Linha de estatísticas - sempre visível e não se move */}
       <View className="flex-row justify-between items-center">
         {/* XP / Pontos */}
-        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
+        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
             <Trophy size={20} color="#FFD700" />
             <Text className="text-white font-bold ml-1">{userDetailsData.points} Onocash</Text>
@@ -121,7 +126,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         </TouchableOpacity>
 
         {/* Streak */}
-        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
+        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
             <Target size={20} color="#FF4500" />
             <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveDays} dias</Text>
@@ -129,16 +134,18 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         </TouchableOpacity>
 
         {/* Acertos consecutivos */}
-        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl">
+        <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
             <Flame size={20} color="#FF4500" />
             <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveCorrect}</Text>
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Scoring Rules Modal */}
+      <Regras visible={showRulesModal} onClose={() => setShowRulesModal(false)} />
     </View>
   )
 }
 
 export default DuolingoHeader
-
