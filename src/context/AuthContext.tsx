@@ -1,10 +1,11 @@
 "use client"
 
-import React from "react"
+import  React from "react"
 import { createContext, useState, useEffect, useContext, type ReactNode } from "react"
-import {  FirebaseUser, signOut, onAuthStateChanged } from "firebase/auth"
 import { getDatabase, ref, get, update } from "firebase/database"
-import { auth, sendPasswordResetEmail } from "../services/firebaseConfig"
+import { signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth"
+import { auth } from "../services/firebaseConfig"
+import { useRouter } from "expo-router"
 
 interface User {
   avatarSource: string
@@ -19,7 +20,7 @@ interface User {
 }
 
 interface AuthContextData {
-  authUser: FirebaseUser | null
+  authUser: any | null
   userData: User | null
   loading: boolean
   error: string | null
@@ -27,7 +28,9 @@ interface AuthContextData {
   getAllUsers: () => Promise<User[]>
   logout: () => Promise<void>
   updateUserPoints: (points: number) => Promise<void>
-  resetPassword: (email: string) => Promise<boolean> 
+  resetPassword: (email: string) => Promise<boolean>
+  showLoadingTransition: boolean
+  setShowLoadingTransition: (show: boolean) => void
 }
 
 interface AuthProviderProps {
@@ -37,40 +40,81 @@ interface AuthProviderProps {
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null)
+  const [authUser, setAuthUser] = useState<any | null>(null)
   const [userData, setUserData] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showLoadingTransition, setShowLoadingTransition] = useState(false)
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false)
+  const router = useRouter()
 
+  // This effect handles the initial auth state and listens for changes
   useEffect(() => {
+    let isMounted = true
+    console.log("Setting up auth state listener")
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
+        console.log("Auth state changed:", user ? "User logged in" : "No user")
+
+        if (!isMounted) return
+
         if (user) {
           setAuthUser(user)
-          await refreshUserData()
+          const db = getDatabase()
+          const userRef = ref(db, `users/${user.uid}`)
+
+          try {
+            const snapshot = await get(userRef)
+            if (snapshot.exists() && isMounted) {
+              const userDataFromDB = snapshot.val()
+              setUserData({ id: user.uid, ...userDataFromDB })
+              console.log("User data loaded successfully")
+            } else if (isMounted) {
+              console.log("No user data available")
+              setUserData(null)
+            }
+          } catch (dbError) {
+            console.error("Error fetching user data:", dbError)
+            if (isMounted) {
+              setError("Error fetching user data")
+            }
+          }
         } else {
-          setAuthUser(null)
-          setUserData(null)
+          if (isMounted) {
+            setAuthUser(null)
+            setUserData(null)
+          }
         }
       } catch (error) {
-        console.error("Erro ao verificar autenticação:", error)
-        setError("Erro ao verificar autenticação.")
+        console.error("Auth state change error:", error)
+        if (isMounted) {
+          setError("Error in authentication state change")
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+          setIsAuthInitialized(true)
+        }
       }
     })
 
-    return () => unsubscribe()
+    return () => {
+      console.log("Cleaning up auth state listener")
+      isMounted = false
+      unsubscribe()
+    }
   }, [])
 
   const refreshUserData = async () => {
     if (authUser) {
+      setShowLoadingTransition(true)
       const db = getDatabase()
       const userRef = ref(db, `users/${authUser.uid}`)
       try {
         const snapshot = await get(userRef)
         if (snapshot.exists()) {
-          const userDataFromDB = snapshot.val() as Omit<User, "id">
+          const userDataFromDB = snapshot.val()
           setUserData({ id: authUser.uid, ...userDataFromDB })
         } else {
           console.log("No data available")
@@ -82,9 +126,13 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserData(null)
       } finally {
         setLoading(false)
+        setTimeout(() => {
+          setShowLoadingTransition(false)
+        }, 500)
       }
     } else {
       setUserData(null)
+      setShowLoadingTransition(false)
     }
   }
 
@@ -116,15 +164,20 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true)
+      setShowLoadingTransition(true)
       await signOut(auth)
       setAuthUser(null)
       setUserData(null)
       setError(null)
+
+      // Navigate to login after logout
+      router.replace("/login")
     } catch (err) {
       setError("Erro ao fazer logout.")
       console.error(err)
     } finally {
       setLoading(false)
+      setShowLoadingTransition(false)
     }
   }
 
@@ -134,8 +187,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userRef = ref(db, `users/${authUser.uid}`)
       try {
         setLoading(true)
-        await update(userRef, { points: points })
-        setUserData({ ...userData, points: points })
+        await update(userRef, { points: userData.points + points })
+        await refreshUserData()
         setError(null)
       } catch (err) {
         setError("Erro ao atualizar pontos do usuário.")
@@ -146,7 +199,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Add the resetPassword function implementation in the AuthProvider component
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
       setLoading(true)
@@ -162,7 +214,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Add resetPassword to the contextValue
   const contextValue: AuthContextData = {
     authUser,
     userData,
@@ -172,14 +223,20 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getAllUsers,
     logout,
     updateUserPoints,
-    resetPassword, // Add this line
+    resetPassword,
+    showLoadingTransition,
+    setShowLoadingTransition,
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }
 
 const useAuth = () => {
-  return useContext(AuthContext)
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
 }
 
 export { AuthProvider, useAuth }

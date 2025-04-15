@@ -1,16 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from "firebase/auth"
-import { auth } from "../services/firebaseConfig"
-import { useRouter } from "expo-router"
-import Toast from "react-native-toast-message"
-import { useAuth } from "../context/AuthContext"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import * as WebBrowser from "expo-web-browser"
+import { useEffect } from "react"
 
-// Register for native Google authentication
-WebBrowser.maybeCompleteAuthSession()
+import { useState } from "react"
+import { useRouter } from "expo-router"
+import { signInWithEmailAndPassword } from "firebase/auth"
+import { auth } from "../services/firebaseConfig"
+import Toast from "react-native-toast-message"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useAuth } from "../context/AuthContext"
 
 export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -18,16 +16,8 @@ export const useLogin = () => {
   const [savedEmail, setSavedEmail] = useState<string | null>(null)
   const [savedPassword, setSavedPassword] = useState<string | null>(null)
   const router = useRouter()
-  const { refreshUserData } = useAuth()
+  const { refreshUserData, setShowLoadingTransition } = useAuth()
 
-  /*   const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: '192448973264-696og487kp5lovckl4lu0872sktcj8g7.apps.googleusercontent.com',
-    redirectUri: Platform.select({
-      web: 'https://auth.expo.io/@vittorpatricio/educagame',
-      default: undefined
-    })
-  });
- */
   // Load saved credentials when hook initializes
   useEffect(() => {
     const loadSavedCredentials = async () => {
@@ -41,11 +31,6 @@ export const useLogin = () => {
 
         if (password) {
           setSavedPassword(password)
-        }
-
-        // Auto login if we have both email and password
-        if (email && password) {
-          handleLogin(email, password, true)
         }
       } catch (error) {
         console.error("Error loading saved credentials:", error)
@@ -67,7 +52,11 @@ export const useLogin = () => {
     }
 
     setIsLoading(true)
+    setShowLoadingTransition(true)
+
     try {
+      console.log("Attempting login with:", email)
+
       // Save or remove credentials based on rememberMe checkbox
       if (rememberMe) {
         await AsyncStorage.setItem("rememberedEmail", email)
@@ -77,23 +66,21 @@ export const useLogin = () => {
         await AsyncStorage.removeItem("rememberedPassword")
       }
 
-      // Faz o login
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      // Sign in - this will trigger the onAuthStateChanged listener
+      await signInWithEmailAndPassword(auth, email, password)
 
-      // Atualiza os dados do usuário no contexto
-      await refreshUserData()
-
-      // Navega para a home
-      router.push("../(tabs)/home")
+      // Don't navigate here - let the auth state listener handle it
+      console.log("Login successful, auth state listener will handle navigation")
     } catch (error: any) {
+      console.error("Login error:", error.code, error.message)
+      setShowLoadingTransition(false)
+
       if (
         error.code === "auth/wrong-password" ||
         error.code === "auth/user-not-found" ||
         error.code === "auth/invalid-email" ||
         error.code === "auth/invalid-credential"
       ) {
-        console.log(error)
-        console.log(error.code)
         Toast.show({
           type: "error",
           position: "top",
@@ -101,8 +88,6 @@ export const useLogin = () => {
           text2: "Email ou senha inválidos!",
         })
       } else {
-        console.log(error)
-        console.log(error.code)
         Toast.show({
           type: "error",
           position: "top",
@@ -115,56 +100,6 @@ export const useLogin = () => {
     }
   }
 
-  const handleGoogleLogin = async (idToken: string) => {
-    try {
-      // Create a Google credential with the token
-      const credential = GoogleAuthProvider.credential(idToken)
-
-      // Sign in with credential
-      const userCredential = await signInWithCredential(auth, credential)
-
-      // Update user data in context
-      await refreshUserData()
-
-      // Navigate to home
-      router.push("../(tabs)/home")
-
-      Toast.show({
-        type: "success",
-        position: "top",
-        text1: "Sucesso",
-        text2: "Login com Google realizado!",
-      })
-    } catch (error: any) {
-      console.error("Google sign in error:", error)
-      Toast.show({
-        type: "error",
-        position: "top",
-        text1: "Erro",
-        text2: "Falha ao fazer login com Google.",
-      })
-    } finally {
-      setGoogleLoading(false)
-    }
-  }
-
-  const signInWithGoogle = async () => {
-    setGoogleLoading(true)
-    try {
-      await promptAsync()
-    } catch (error) {
-      console.error("Error starting Google sign in:", error)
-      Toast.show({
-        type: "error",
-        position: "top",
-        text1: "Erro",
-        text2: "Não foi possível iniciar o login com Google.",
-      })
-      setGoogleLoading(false)
-    }
-  }
-
-  // Function to clear saved credentials (useful for logout)
   const clearSavedCredentials = async () => {
     try {
       // 1. Desconectar do Firebase Auth
@@ -196,7 +131,6 @@ export const useLogin = () => {
 
   return {
     handleLogin,
-    signInWithGoogle,
     isLoading,
     googleLoading,
     savedEmail,
@@ -204,8 +138,3 @@ export const useLogin = () => {
     clearSavedCredentials,
   }
 }
-
-function promptAsync() {
-  throw new Error("Function not implemented.")
-}
-
