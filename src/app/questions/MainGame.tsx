@@ -110,7 +110,7 @@ const ExitConfirmationModal = ({
       >
         <View
           style={{
-            width: MOBILE_WIDTH - 15,
+            width: MOBILE_WIDTH - 25,
             backgroundColor: "white",
             borderRadius: 12,
             padding: 24,
@@ -130,7 +130,7 @@ const ExitConfirmationModal = ({
               textAlign: "center",
             }}
           >
-            Sair da etapa?
+            Sair do jogo?
           </Text>
           <Text
             style={{
@@ -140,7 +140,7 @@ const ExitConfirmationModal = ({
               textAlign: "center",
             }}
           >
-            Todo o progresso desta sessão será perdido. Tem certeza que deseja sair?
+            Todo o progresso desta sessão será perdido. Tem certeza que deseja sair? Ao clicar sim você retornará para a tela inicial.
           </Text>
           <View
             style={{
@@ -359,6 +359,7 @@ const MainGame = () => {
   // Função para confirmar a saída do jogo
   const confirmExit = () => {
     // Descartar o progresso e voltar para a home
+    setShowExitConfirmation(false);
     router.push("../../(tabs)/home")
   }
 

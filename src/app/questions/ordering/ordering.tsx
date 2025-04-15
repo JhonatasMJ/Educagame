@@ -236,7 +236,7 @@ const Ordering = ({ question, onAnswer, questionNumber }: OrderingProps) => {
   }
 
   return (
-    <ScrollView className="flex-1 pl-4 pr-4 pt-0 pb-0" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1 pl-4 pr-4 pt-0 pb-0" showsVerticalScrollIndicator={true}>
       <View className="mb-5">
         {question.description && (
           <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">

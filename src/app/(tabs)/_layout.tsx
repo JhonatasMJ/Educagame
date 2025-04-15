@@ -1,13 +1,12 @@
 "use client"
-
+import React from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome"
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons"
-import Ionicons from "@expo/vector-icons/Ionicons"
 import { Tabs } from "expo-router"
 import { View, Animated, Pressable, StyleSheet } from "react-native"
 import { useRef, useEffect } from "react"
-import React from "react"
 import { FontAwesome6 } from "@expo/vector-icons"
+import { useEditMode } from "@/src/context/EditableContext";
 
 interface TabBarButtonProps {
   accessibilityState: { selected: boolean }
@@ -23,6 +22,7 @@ interface TabButtonProps {
 function TabButton({ icon, isFocused, onPress }: TabButtonProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current
   const bgOpacityAnim = useRef(new Animated.Value(0)).current
+  const { handleNavigationWithCheck } = useEditMode()
 
   useEffect(() => {
     Animated.parallel([
@@ -40,11 +40,14 @@ function TabButton({ icon, isFocused, onPress }: TabButtonProps) {
     ]).start()
   }, [isFocused])
 
+  // Wrap the onPress with our edit mode check
+  const handlePress = () => {
+    handleNavigationWithCheck(onPress)
+  }
+
   return (
-    <Pressable onPress={onPress} style={styles.tabButtonContainer}>
-      <Animated.View
-        style={[styles.tabButtonBackground, { opacity: bgOpacityAnim }]}
-      />
+    <Pressable onPress={handlePress} style={styles.tabButtonContainer}>
+      <Animated.View style={[styles.tabButtonBackground, { opacity: bgOpacityAnim }]} />
       <Animated.View
         style={{
           transform: [{ scale: scaleAnim }],
@@ -68,7 +71,7 @@ export default function TabLayout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           paddingHorizontal: "5%",
-      
+
           borderWidth: 5,
           borderColor: "#606060",
           backgroundColor: "#606060",
@@ -114,11 +117,7 @@ export default function TabLayout() {
               isFocused={props.accessibilityState.selected}
               onPress={props.onPress}
               icon={
-                <FontAwesome
-                  size={32}
-                  name="user"
-                  color={props.accessibilityState.selected ? "#EAAE00" : "#FFFFFF"}
-                />
+                <FontAwesome size={32} name="user" color={props.accessibilityState.selected ? "#EAAE00" : "#FFFFFF"} />
               }
             />
           ),
@@ -143,7 +142,7 @@ export default function TabLayout() {
           ),
         }}
       />
-     {/*  <Tabs.Screen
+      {/*  <Tabs.Screen
         name="Ia"
         options={{
           title: "Chat",

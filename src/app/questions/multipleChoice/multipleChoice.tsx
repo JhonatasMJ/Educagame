@@ -301,7 +301,7 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
   }
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} className="flex-1 p-4">
+    <ScrollView showsVerticalScrollIndicator={true} className="flex-1 p-4">
       <View className="mb-5">
         {question.description && (
           <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">

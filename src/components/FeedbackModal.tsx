@@ -1,4 +1,4 @@
-import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native"
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions } from "react-native"
 import { Check, X } from "lucide-react-native"
 import React from "react"
 import { MOBILE_WIDTH } from "@/PlataformWrapper"
@@ -27,6 +27,8 @@ const FeedbackModal = ({
   // Use provided values or defaults
   const displayTitle = title || defaultTitle
   const displayDescription = description || defaultDescription
+
+  const {width} = Dimensions.get("window")
 
   // Use styles from StyleSheet instead of Tailwind classes
   const styles = StyleSheet.create({
@@ -63,7 +65,8 @@ const FeedbackModal = ({
       backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalContent: {
-      width: MOBILE_WIDTH - 20,
+      width: width < MOBILE_WIDTH ? '80%' : '100%',
+      maxWidth: 400,
       borderRadius: 14,
       padding: 24,
       backgroundColor: "white",

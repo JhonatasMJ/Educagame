@@ -358,7 +358,7 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
   }
 
   return (
-    <ScrollView ref={scrollViewRef} className="flex-1 p-4" showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollViewRef} className="flex-1 p-4" showsVerticalScrollIndicator={true}>
       {/* Descrição da questão */}
       {question.description && (
         <View className="mb-5">
