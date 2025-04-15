@@ -66,10 +66,10 @@ export const CustomDrawerContent = (props: any) => {
               // Fechar o drawer após o logout
               if (props.navigation) {
                 props.navigation.closeDrawer()
+                // Redirecionar para a tela de login
+                router.replace("/login")
               }
 
-              // Redirecionar para a tela de login
-              router.replace("/login")
             } catch (error) {
               console.error("Erro ao fazer logout:", error)
             }
