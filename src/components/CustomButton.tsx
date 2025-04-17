@@ -47,9 +47,9 @@ const CustomButton = ({
   }
 
   return (
-    <View className="items-center justify-center">
+    <View className="w-full items-center justify-center">
       <TouchableOpacity
-        className={`w-[350px] h-[52px] bg-[#56A6DC] items-center justify-center rounded-xl ${className}`}
+        className={`w-full p-4  bg-primary items-center justify-center rounded-xl ${className}`}
         onPress={goToNextStep}
       >
         <Text className={`text-white text-xl font-bold ${textClassName}`}>{title}</Text>

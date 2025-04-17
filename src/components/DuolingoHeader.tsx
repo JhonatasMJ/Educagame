@@ -121,14 +121,14 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
             <Trophy size={20} color="#FFD700" />
-            <Text className="text-white font-bold ml-1">{userDetailsData.points} Onocash</Text>
+            <Text className="text-white font-bold ml-1">{userDetailsData.points} Pontos</Text>
           </View>
         </TouchableOpacity>
 
         {/* Streak */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
-            <Target size={20} color="#FF4500" />
+            <Target size={20} color="#5609e4" />
             <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveDays} dias</Text>
           </View>
         </TouchableOpacity>
@@ -136,7 +136,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
         {/* Acertos consecutivos */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
-            <Flame size={20} color="#FF4500" />
+            <Flame size={20} color="#051747" />
             <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveCorrect}</Text>
           </View>
         </TouchableOpacity>

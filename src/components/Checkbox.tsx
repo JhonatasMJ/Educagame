@@ -1,57 +1,33 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { Text, View, TouchableOpacity } from 'react-native';
 
 interface CheckboxProps {
-    title: string;
-    isChecked: boolean;
-    colorText?: string;
-    onCheck: (checked: boolean) => void;
+  title: string;
+  isChecked: boolean;
+  colorText?: string;
+  onCheck: (checked: boolean) => void;
 }
 
 const Checkbox = ({ title, isChecked, onCheck, colorText }: CheckboxProps) => {
-    return (
-        <View style={styles.checkboxContainer}>
-            <TouchableOpacity 
-                style={styles.checkboxRow}
-                onPress={() => onCheck(!isChecked)}
-            >
-                <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-                    {isChecked && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={[styles.checkboxLabel,{color: colorText ? colorText : '#333'}]}>{title}</Text>
-            </TouchableOpacity>
+  return (
+    <View className="w-[80%]">
+      <TouchableOpacity
+        className="flex-row items-center"
+        onPress={() => onCheck(!isChecked)}
+      >
+        <View
+          className={`w-5 h-5 border-2 rounded border-primary mr-2 justify-center items-center ${
+            isChecked ? 'bg-primary' : ''
+          }`}
+        >
+          {isChecked && <Text className="text-white text-sm">✓</Text>}
         </View>
-    );
+        <Text className="text-base" style={{ color: colorText ?? '#333' }}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
 };
-
-const styles = StyleSheet.create({
-    checkboxContainer: {
-        width: "80%",
-    },
-    checkboxRow: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    checkbox: {
-        width: 20,
-        height: 20,
-        borderWidth: 2,
-        borderColor: "#56A6DC",
-        borderRadius: 4,
-        marginRight: 10,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    checkboxChecked: {
-        backgroundColor: "#56A6DC",
-    },
-    checkmark: {
-        color: "white",
-        fontSize: 14,
-    },
-    checkboxLabel: {
-        fontSize: 16,
-    },
-});
 
 export default Checkbox;

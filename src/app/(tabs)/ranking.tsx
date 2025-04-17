@@ -140,7 +140,7 @@ const RankingScreen = () => {
     return (
       <View
         className={`flex-row items-center ${
-          isCurrentUser ? "bg-[#FFA500]  mx-1" : "bg-white"
+          isCurrentUser ? "bg-secondary  mx-1" : "bg-white"
         } rounded-lg mb-3.5 p-3.5 shadow-md`}
         style={
           isCurrentUser
@@ -160,7 +160,7 @@ const RankingScreen = () => {
           <Text className={`${isCurrentUser ? "text-xl" : "text-lg"} font-bold`}>{position}</Text>
         </View>
         <View
-          className={`${isCurrentUser ? "w-12 h-12" : "w-10 h-10"} rounded-lg bg-[#4A90E2] overflow-hidden mr-3 justify-center items-center`}
+          className={`${isCurrentUser ? "w-12 h-12" : "w-10 h-10"} rounded-lg bg-primary overflow-hidden mr-3 justify-center items-center`}
         >
           <AvatarComponent
             width={isCurrentUser ? 48 : 40}
@@ -204,10 +204,10 @@ const RankingScreen = () => {
   })
 
   return (
-    <SafeAreaView className="flex-1 bg-[#4A90E2]">
+    <SafeAreaView className="flex-1 bg-tertiary">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
-      <View className="bg-[#FFA500] px-4 rounded-bl-4xl rounded-br-4xl mb-1.5 shadow-md">
+      <View className="bg-primary px-4 rounded-bl-4xl rounded-br-4xl mb-1.5 shadow-md">
         <View className="flex-row justify-between items-center py-5">
           <View className="flex-row items-center">
             <Feather name="award" size={24} color="white" />
@@ -215,7 +215,7 @@ const RankingScreen = () => {
           </View>
           <TouchableOpacity
             onPress={toggleHeader}
-            className="w-8 h-8 bg-[#BF720C] rounded justify-center items-center shadow"
+            className="w-8 h-8 bg-tertiary rounded justify-center items-center shadow"
           >
             <Animated.View style={{ transform: [{ rotate: arrowRotationDegree }] }}>
               <Feather name="chevron-up" size={24} color="white" />

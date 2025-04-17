@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react"
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TextInput,
   Platform,
@@ -10,53 +9,47 @@ import {
   KeyboardAvoidingView,
   TouchableOpacity,
   Dimensions,
-  ActivityIndicator,
 } from "react-native"
 import { router } from "expo-router"
-import Logo from "../../assets/images/logo.svg"
+import Logo from "../../assets/images/web.svg"
 import CustomButton from "@/src/components/CustomButton"
 import { useRequireAuth } from "../hooks/useRequireAuth"
 import { usePasswordReset } from "@/src/hooks/useReset"
 import ArrowBack from "../components/ArrowBack"
 
 const ForgotPasswordScreen = () => {
-  // Step states
   const [step, setStep] = useState<"email" | "code" | "password">("email")
   const [email, setEmail] = useState("")
   const [emailFocused, setEmailFocused] = useState(false)
-  
-  // Code verification states
+
   const [code, setCode] = useState(["", "", "", "", ""])
   const [codeFocused, setCodeFocused] = useState([false, false, false, false, false])
   const codeInputRefs = useRef<Array<TextInput | null>>([null, null, null, null, null])
-  
-  // New password states
+
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [newPasswordFocused, setNewPasswordFocused] = useState(false)
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  
+
   const { isAuthenticated, isLoading: authLoading } = useRequireAuth({ requireAuth: false })
-  const { 
-    isLoading, 
-    emailSent, 
-    sendResetEmail, 
-    verifyCode, 
-    resetPassword, 
+  const {
+    isLoading,
+    emailSent,
+    sendResetEmail,
+    verifyCode,
+    resetPassword,
     codeVerified,
-    setVerificationCode 
+    setVerificationCode,
   } = usePasswordReset()
 
-  // Handle email submission
   const handleSendResetEmail = async () => {
     if (await sendResetEmail(email)) {
       setStep("code")
     }
   }
 
-  // Handle code verification
   const handleVerifyCode = async () => {
     const fullCode = code.join("")
     if (await verifyCode(fullCode)) {
@@ -64,38 +57,25 @@ const ForgotPasswordScreen = () => {
     }
   }
 
-  // Handle password reset
   const handleResetPassword = async () => {
     if (await resetPassword(newPassword, confirmPassword)) {
-      // Navigate to login screen after successful password reset
       router.push("/")
     }
   }
 
-  // Handle code input changes
   const handleCodeChange = (text: string, index: number) => {
-    if (text.length > 1) {
-      text = text[0]
-    }
-    
+    if (text.length > 1) text = text[0]
     const newCode = [...code]
     newCode[index] = text
     setCode(newCode)
-    
-    // Auto-focus next input
-    if (text !== "" && index < 4) {
-      codeInputRefs.current[index + 1]?.focus()
-    }
-    
-    // Check if all digits are filled to auto-submit
+    if (text !== "" && index < 4) codeInputRefs.current[index + 1]?.focus()
     if (newCode.every(digit => digit !== "") && index === 4) {
       setVerificationCode(newCode.join(""))
     }
   }
 
-  // Handle code input backspace
   const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && code[index] === '' && index > 0) {
+    if (e.nativeEvent.key === "Backspace" && code[index] === "" && index > 0) {
       codeInputRefs.current[index - 1]?.focus()
     }
   }
@@ -106,40 +86,24 @@ const ForgotPasswordScreen = () => {
     setCodeFocused(newCodeFocused)
   }
 
-  const getBorderColor = (isFocused: boolean) => {
-    if (isFocused) return '#56A6DC'
-    return '#E8ECF4'
-  }
+  const getBorderColor = (isFocused: boolean) => isFocused ? 'border-blue-500' : 'border-[#E8ECF4]'
 
-  // Mask email for display
   const getMaskedEmail = (email: string) => {
-    if (!email) return ""
-    const [username, domain] = email.split('@')
-    if (!username || !domain) return email
-    
-    const maskedUsername = username.substring(0, 3) + '***'
-    return `${maskedUsername}@${domain}`
+    const [username, domain] = email.split("@");
+    if (!username || !domain) return email;
+    return `${username.substring(0, 3)}***@${domain}`
   }
 
-  // Render different steps
   const renderEmailStep = () => (
-    <View style={styles.formContainer}>
-      <Text style={styles.attentionText}>Recuperação</Text>
-      <Text style={styles.titleText}>Esqueceu sua senha?</Text>
-      <Text style={styles.pleaseText}>
-        Digite seu email abaixo para receber um código de verificação
-      </Text>
-      
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>E-mail:</Text>
+    <View className="w-full mt-10 items-start">
+      <Text className="text-primary font-semibold text-xl mb-1">Recuperação</Text>
+      <Text className="text-2xl font-bold mb-4">Esqueceu sua senha?</Text>
+      <Text className="text-gray-600 font-medium text-sm mb-5">Digite seu email abaixo para receber um código de verificação</Text>
+
+      <View className="w-full mb-5">
+        <Text className="text-gray-600 font-medium mb-2">E-mail:</Text>
         <TextInput
-          style={[
-            styles.input,
-            { borderColor: getBorderColor(emailFocused) },
-            Platform.select({
-              web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {},
-            }),
-          ]}
+          className={`w-full h-16 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black border-2 ${getBorderColor(emailFocused)}`}
           placeholder="Digite seu e-mail"
           value={email}
           onChangeText={setEmail}
@@ -151,42 +115,32 @@ const ForgotPasswordScreen = () => {
           editable={!isLoading}
         />
       </View>
-      
+
       <CustomButton
         title={isLoading ? "Enviando..." : "Enviar email"}
         onPress={handleSendResetEmail}
         disabled={isLoading || !email}
       />
-      
-      <TouchableOpacity style={styles.backButton} onPress={() => router.push("/")}>
-        <Text style={styles.backButtonText}>Voltar para o login</Text>
+
+      <TouchableOpacity className="mt-5 self-center" onPress={() => router.push("/")}>
+        <Text className="text-primary font-semibold text-base">Voltar para o login</Text>
       </TouchableOpacity>
     </View>
   )
 
   const renderCodeStep = () => (
-    <>
-      <View style={styles.containerText}>
-        <View>
-          <Text style={styles.attentionText}>Atenção</Text>
-          <Text style={styles.titleText}>Verifique seu email</Text>
-        </View>
-      </View>
+    <View className="w-full items-center mt-10">
+      <View className="items-center w-4/5 pt-8">
+        <Text className="text-primary font-semibold text-xl mb-1">Atenção</Text>
+        <Text className="text-2xl font-bold mb-4 text-center">Verifique seu email</Text>
+        <Text className="text-sm font-medium text-gray-600 text-center">Por favor digite o código para verificar o seu email</Text>
 
-      <View style={styles.containerInput}>
-        <Text style={styles.pleaseText}>Por favor digite o código para verificar o seu email</Text>
-        <View style={styles.inputArea}>
+        <View className="flex-row justify-between px-4 w-full mt-5">
           {code.map((digit, index) => (
             <TextInput
               key={index}
               ref={el => codeInputRefs.current[index] = el}
-              style={[
-                styles.codeInput,
-                { borderColor: getBorderColor(codeFocused[index]) },
-                Platform.select({
-                  web: codeFocused[index] ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {},
-                }),
-              ]}
+              className={`w-[18%] h-16 text-3xl font-bold text-center bg-[#F7F8F9] border-2 rounded-xl ${getBorderColor(codeFocused[index])}`}
               value={digit}
               onChangeText={(text) => handleCodeChange(text, index)}
               onKeyPress={(e) => handleKeyPress(e, index)}
@@ -199,48 +153,36 @@ const ForgotPasswordScreen = () => {
           ))}
         </View>
       </View>
-      
-      <View style={styles.containerBottom}>
-        <View style={styles.containerEmailText}>
-          <Text style={styles.codEmail}>Enviamos um código para o email </Text>
-          <Text style={styles.email}>{getMaskedEmail(email)} </Text>
-        </View>
-        <View style={styles.buttonArea}>
-          <CustomButton
-            title={isLoading ? "Verificando..." : "Confirmar código"}
-            onPress={handleVerifyCode}
-            disabled={isLoading || code.some(digit => digit === "")}
-          />
-          <View style={styles.textBottomArea}>
-            <Text style={styles.bottomText}>Não recebeu o código?</Text>
-            <TouchableOpacity onPress={() => sendResetEmail(email)}>
-              <Text style={styles.bottomText2}>Reenviar código</Text>
-            </TouchableOpacity>
-          </View>
+
+      <View className="w-full items-center mt-8">
+        <Text className="text-sm font-medium text-center">Enviamos um código para o email <Text className="font-semibold text-primary">{getMaskedEmail(email)}</Text></Text>
+        <CustomButton
+          title={isLoading ? "Verificando..." : "Confirmar código"}
+          onPress={handleVerifyCode}
+          disabled={isLoading || code.some(digit => digit === "")}
+        />
+
+        <View className="flex-row items-center justify-center mt-5">
+          <Text className="text-sm font-medium text-gray-600">Não recebeu o código?</Text>
+          <TouchableOpacity onPress={() => sendResetEmail(email)}>
+            <Text className="text-sm font-semibold text-primary ml-2">Reenviar código</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </>
+    </View>
   )
 
   const renderPasswordStep = () => (
-    <View style={styles.formContainer}>
-      <Text style={styles.attentionText}>Última etapa</Text>
-      <Text style={styles.titleText}>Nova senha</Text>
-      <Text style={styles.pleaseText}>
-        Digite sua nova senha abaixo
-      </Text>
-      
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>Nova senha:</Text>
-        <View style={styles.passwordContainer}>
+    <View className="w-full mt-10 items-start">
+      <Text className="text-primary font-semibold text-xl mb-1">Última etapa</Text>
+      <Text className="text-2xl font-bold mb-4">Nova senha</Text>
+      <Text className="text-gray-600 font-medium text-sm mb-5">Digite sua nova senha abaixo</Text>
+
+      <View className="w-full mb-5">
+        <Text className="text-gray-600 font-medium mb-2">Nova senha:</Text>
+        <View className="relative">
           <TextInput
-            style={[
-              styles.input,
-              { borderColor: getBorderColor(newPasswordFocused) },
-              Platform.select({
-                web: newPasswordFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {},
-              }),
-            ]}
+            className={`w-full h-16 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black border-2 ${getBorderColor(newPasswordFocused)}`}
             placeholder="Digite sua nova senha"
             value={newPassword}
             onChangeText={setNewPassword}
@@ -249,26 +191,17 @@ const ForgotPasswordScreen = () => {
             onBlur={() => setNewPasswordFocused(false)}
             editable={!isLoading}
           />
-          <TouchableOpacity 
-            style={styles.eyeIconContainer} 
-            onPress={() => setShowPassword(!showPassword)}
-          >
-            <Text style={styles.eyeIcon}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
+          <TouchableOpacity className="absolute right-4 top-1/2 -translate-y-1/2" onPress={() => setShowPassword(!showPassword)}>
+            <Text className="text-xl">{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
           </TouchableOpacity>
         </View>
       </View>
-      
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>Confirme a senha:</Text>
-        <View style={styles.passwordContainer}>
+
+      <View className="w-full mb-5">
+        <Text className="text-gray-600 font-medium mb-2">Confirme a senha:</Text>
+        <View className="relative">
           <TextInput
-            style={[
-              styles.input,
-              { borderColor: getBorderColor(confirmPasswordFocused) },
-              Platform.select({
-                web: confirmPasswordFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {},
-              }),
-            ]}
+            className={`w-full h-16 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black border-2 ${getBorderColor(confirmPasswordFocused)}`}
             placeholder="Confirme sua nova senha"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -277,15 +210,12 @@ const ForgotPasswordScreen = () => {
             onBlur={() => setConfirmPasswordFocused(false)}
             editable={!isLoading}
           />
-          <TouchableOpacity 
-            style={styles.eyeIconContainer} 
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-          >
-            <Text style={styles.eyeIcon}>{showConfirmPassword ? "👁️" : "👁️‍🗨️"}</Text>
+          <TouchableOpacity className="absolute right-4 top-1/2 -translate-y-1/2" onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+            <Text className="text-xl">{showConfirmPassword ? "👁️" : "👁️‍🗨️"}</Text>
           </TouchableOpacity>
         </View>
       </View>
-      
+
       <CustomButton
         title={isLoading ? "Redefinindo..." : "Redefinir senha"}
         onPress={handleResetPassword}
@@ -295,19 +225,12 @@ const ForgotPasswordScreen = () => {
   )
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoidingView}
-      >
-        <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-primary" color="#f2f2f2" />
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollViewContent}
-        >
-          <View style={{ alignItems: "center" }}>
-            <Logo style={{ width: 315, height: 65, marginBottom: marginTopDaLogo(), top: 30, position: 'relative' }} />
+    <SafeAreaView className="flex-1 bg-white justify-center">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        <ArrowBack onPress={() => router.back()} className="absolute top-3 left-3 bg-primary" color="#f2f2f2" />
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}>
+          <View className="items-center">
+            <Logo style={{ width: 400, height: 180, marginBottom: marginTopDaLogo(), top: 30, position: "relative" }} />
           </View>
 
           {step === "email" && renderEmailStep()}
@@ -320,171 +243,10 @@ const ForgotPasswordScreen = () => {
 }
 
 function marginTopDaLogo(): any {
-  const {width, height} = Dimensions.get("window")
-  if(width <= 500 && height < 732){ //para celular bemmm pequeno
-    return '15%'
-  } else if (height >= 732 && width > 409) {
-    return "20%"
-  } else { //nos que não se encaixam
-    return 80
-  }
-}  
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-  },
-  formContainer: {
-    flex: 1,
-    marginTop: 40,
-    alignItems: "flex-start",
-    width: "100%",
-  },
-  containerText: {
-    alignItems: "center",
-    width: "80%",
-    paddingTop: 30,
-    marginTop: 20,
-  },
-  attentionText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#0072C6",
-    textAlign: "left",
-    marginBottom: 4,
-  },
-  titleText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "left",
-    marginBottom: 16,
-  },
-  containerInput: {
-    alignItems: "center",
-    width: "100%",
-    marginTop: 20,
-    flexDirection: "column",
-    justifyContent: "space-between",
-    textAlign: "center",
-  },
-  inputArea: {
-    justifyContent: "space-between",
-    paddingHorizontal: 15,
-    alignItems: "center",
-    width: "100%",
-    flexDirection: "row",
-    marginTop: 20,
-  },
-  pleaseText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#4B5563",
-    marginBottom: 20,
-  },
-  inputContainer: {
-    width: "100%",
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#4B5563",
-    marginBottom: 8,
-  },
-  input: {
-    width: "100%",
-    height: 64,
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#F7F8F9",
-    color: "#000000",
-  },
-  codeInput: {
-    width: "18%",
-    height: 64,
-    borderWidth: 2,
-    borderRadius: 10,
-    backgroundColor: "#F7F8F9",
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  containerBottom: {
-    alignItems: "center",
-    width: "100%",
-    marginTop: 30,
-    justifyContent: "space-evenly",
-    flexDirection: "column",
-  },
-  containerEmailText: {
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 30,
-  },
-  codEmail: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  email: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0072C6",
-  },
-  buttonArea: {
-    alignItems: "center",
-    width: "100%",
-  },
-  textBottomArea: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-    justifyContent: "center",
-    width: "100%",
-  },
-  bottomText: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#4B5563",
-  },
-  bottomText2: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0072C6",
-    marginLeft: 8,
-  },
-  backButton: {
-    marginTop: 20,
-    alignSelf: "center",
-  },
-  backButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0072C6",
-  },
-  passwordContainer: {
-    position: "relative",
-  },
-  eyeIconContainer: {
-    position: "absolute",
-    right: 16,
-    height: "100%",
-    justifyContent: "center",
-  },
-  eyeIcon: {
-    fontSize: 24,
-  },
-})
+  const { width, height } = Dimensions.get("window")
+  if (width <= 500 && height < 732) return "15%"
+  else if (height >= 732 && width > 409) return "20%"
+  else return 80
+}
 
 export default ForgotPasswordScreen

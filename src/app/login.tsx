@@ -16,7 +16,7 @@ import {
 import { FontAwesome } from "@expo/vector-icons"
 import { useLogin } from "../hooks/UseLogin"
 import Checkbox from "../components/Checkbox"
-import Logo from "../../assets/images/logo.svg"
+import Logo from "../../assets/images/web.svg"
 import LoadingTransition from "@/src/components/LoadingTransition"
 import { useAuth } from "../context/AuthContext"
 import React from "react"
@@ -125,7 +125,7 @@ const Login = () => {
           <View className="px-6 flex-1 justify-evenly">
             <View className={`items-center ${marginTopForLogo()}`}>
               <View className="items-center">
-                <Logo style={{ width: 315, height: 65 }} />
+                <Logo style={{ width: 400, height: 180 }} />
               </View>
             </View>
 

@@ -21,8 +21,8 @@ import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
 // At the top of the file, add these imports for the SVG backgrounds
-import Background1 from "@/assets/images/fundo.svg"
-import Background2 from "@/assets/images/fundo2.svg" // Make sure this file exists
+import Background1 from "@/assets/images/rio.svg"
+import Background2 from "@/assets/images/rio2.svg" // Make sure this file exists
 
 const { width, height } = Dimensions.get("window")
 
@@ -68,7 +68,7 @@ export const trilhas = [
     id: "1",
     nome: "React Native Básico",
     descricao: "Aprenda os fundamentos do React Native",
-    image: require("@/assets/images/fundo.svg"),
+    image: require("@/assets/images/rio.svg"),
     backgroundSvg: Background1, // SVG component for background
     etapas: [
       {

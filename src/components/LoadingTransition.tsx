@@ -73,7 +73,7 @@ const LoadingTransition = ({ isVisible, onAnimationComplete }: LoadingTransition
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    backgroundColor: "#3185BE" ,
+    backgroundColor: "#F1592E" ,
     top: 0,
     left: 0,
     right: 0,

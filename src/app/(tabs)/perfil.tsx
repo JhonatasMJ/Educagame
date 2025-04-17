@@ -170,7 +170,7 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   return (
     <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
       <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
-      <SafeAreaView style={{ backgroundColor: "#56A6DC", flex: 1 }}>
+      <SafeAreaView className="flex-1 bg-tertiary">
         {loading ? (
           <View className="text-center flex- justify-center items-center h-screen">
             <ActivityIndicator color="#fff" size={32} />
@@ -189,7 +189,7 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                 >
                   <AvatarComponent className="-z-10" width={200} height={270} />
 
-                  <View className="absolute bottom-10 right-0 bg-secondary z-50 p-2 rounded-full shadow-md">
+                  <View className="absolute bottom-10 right-0 bg-primary z-50 p-2 rounded-full shadow-md">
                     <FontAwesome name="camera" size={20} color="#111" />
                   </View>
                 </TouchableOpacity>
