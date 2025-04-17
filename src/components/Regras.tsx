@@ -74,7 +74,7 @@ const Regras = ({ visible, onClose }: RegrasProps) => {
   const tabs = [
     { id: "points", title: "Pontos", icon: <Award size={20} color="#FFD700" /> },
     { id: "streaks", title: "Sequências", icon: <Target size={20} color="#FF4500" /> },
-    { id: "bonuses", title: "Bônus", icon: <Star size={20} color="#FFC107" /> },
+ 
   ]
 
   const renderTabContent = () => {
@@ -83,8 +83,7 @@ const Regras = ({ visible, onClose }: RegrasProps) => {
         return <PointsTab />
       case "streaks":
         return <StreaksTab />
-      case "bonuses":
-        return <BonusesTab />
+
       default:
         return <PointsTab />
     }
@@ -215,23 +214,10 @@ const PointsTab = () => (
           </View>
         </View>
 
-        <View className="p-4 flex-row items-center">
-          <View className="w-8 h-8 rounded-full bg-amber-100 items-center justify-center mr-3">
-            <TrendingUp size={16} color="#f59e0b" />
-          </View>
-          <View>
-            <Text className="font-medium text-gray-800">Resposta Rápida</Text>
-            <Text className="text-amber-600 font-bold">Bônus de 2x (menos de 10s)</Text>
-          </View>
-        </View>
       </View>
     </View>
 
-    <View className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
-      <Text className="text-blue-800 text-sm leading-5">
-        Quanto mais você estuda e responde corretamente, mais Onocash você acumula para subir no ranking!
-      </Text>
-    </View>
+   
   </ScrollView>
 )
 
@@ -275,88 +261,9 @@ const StreaksTab = () => (
       </View>
     </View>
 
-    <View className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-4">
-      <Text className="text-orange-800 text-sm leading-5">
-        Não perca sua sequência! Estude pelo menos uma vez por dia para manter seu progresso.
-      </Text>
-    </View>
   </ScrollView>
 )
 
-const BonusesTab = () => (
-  <ScrollView className="p-5 max-h-[400px]" showsVerticalScrollIndicator={false}>
-    <View className="mb-6">
-      <View className="flex-row items-center mb-3">
-        <View className="w-12 h-12 rounded-full bg-blue-100 items-center justify-center mr-3">
-          <Clock size={24} color="#2196F3" />
-        </View>
-        <View>
-          <Text className="text-lg font-bold text-gray-800">Bônus de Tempo</Text>
-          <Text className="text-xs text-gray-500">Seja rápido, ganhe mais</Text>
-        </View>
-      </View>
 
-      <Text className="text-sm text-gray-600 mb-4 leading-5">
-        Quanto mais rápido você responder, mais pontos extras você ganha.
-      </Text>
-
-      <View className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <View className="p-4 border-b border-gray-100 flex-row items-center">
-          <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-3">
-            <Clock size={16} color="#3b82f6" />
-          </View>
-          <View>
-            <Text className="font-medium text-gray-800">Resposta em menos de 5s</Text>
-            <Text className="text-blue-600 font-bold">+5 pontos extras</Text>
-          </View>
-        </View>
-
-        <View className="p-4 flex-row items-center">
-          <View className="w-8 h-8 rounded-full bg-indigo-100 items-center justify-center mr-3">
-            <Clock size={16} color="#6366f1" />
-          </View>
-          <View>
-            <Text className="font-medium text-gray-800">Fase em menos de 2 min</Text>
-            <Text className="text-indigo-600 font-bold">+20 pontos extras</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-
-    <View className="mb-6">
-      <View className="flex-row items-center mb-3">
-        <View className="w-12 h-12 rounded-full bg-red-100 items-center justify-center mr-3">
-          <Flame size={24} color="#FF4500" />
-        </View>
-        <View>
-          <Text className="text-lg font-bold text-gray-800">Acertos Consecutivos</Text>
-          <Text className="text-xs text-gray-500">Aumente seu multiplicador</Text>
-        </View>
-      </View>
-
-      <View className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <View className="p-4 border-b border-gray-100 flex-row items-center">
-          <View className="w-8 h-8 rounded-full bg-amber-100 items-center justify-center mr-3">
-            <Flame size={16} color="#f59e0b" />
-          </View>
-          <View>
-            <Text className="font-medium text-gray-800">5 acertos consecutivos</Text>
-            <Text className="text-amber-600 font-bold">multiplicador 1.5x</Text>
-          </View>
-        </View>
-
-        <View className="p-4 flex-row items-center">
-          <View className="w-8 h-8 rounded-full bg-red-100 items-center justify-center mr-3">
-            <Flame size={16} color="#ef4444" />
-          </View>
-          <View>
-            <Text className="font-medium text-gray-800">10 acertos consecutivos</Text>
-            <Text className="text-red-600 font-bold">multiplicador 2x</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  </ScrollView>
-)
 
 export default Regras

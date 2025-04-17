@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { View, Text, SafeAreaView, Animated, StatusBar } from "react-native"
+import { View, Text, SafeAreaView, Animated, StatusBar, ScrollView } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { useLocalSearchParams } from "expo-router"
 import { Clock, Award, Target, Star, ChevronRight } from "lucide-react-native"
@@ -12,6 +12,7 @@ import BigAvatar2 from "../../../../assets/images/grande-avatar2.svg"
 import BigAvatar3 from "../../../../assets/images/grande-avatar3.svg"
 import BigAvatar4 from "../../../../assets/images/grande-avatar4.svg"
 import React from "react"
+import { avatarSize } from "@/src/utils/layoutHelpers"
 
 const CompletionPage = () => {
   const params = useLocalSearchParams()
@@ -100,8 +101,8 @@ const CompletionPage = () => {
       <View className="w-full bg-secondary py-4 items-center shadow-md">
         <Text className="text-white text-xl font-bold">Fase Concluída</Text>
       </View>
-
-      <View className="flex-1 items-center justify-center px-5">
+      
+      <ScrollView className="px-6" contentContainerStyle={{justifyContent: 'center', alignItems:"center"}}>
         <Animated.View
           className="items-center"
           style={{
@@ -109,20 +110,22 @@ const CompletionPage = () => {
             transform: [{ scale: scaleAnim }, { translateY: slideAnim }],
           }}
         >
-          <View className="mb-6 items-center">
+
+<View className="mb-3 mt-6 items-center">
             <View className="w-42 h-42 rounded-full  items-center justify-center bg-primary border-4 border-blue-900  shadow-lg overflow-hidden">
-              <AvatarComponent width={220} height={220} />
+              <AvatarComponent width={avatarSize()} height={avatarSize()} />
             </View>
-            <View className="absolute -bottom-2 bg-[#4361ee] px-4 py-1 rounded-full shadow-md">
-              <Text className="text-white font-bold text-sm">CONCLUÍDO</Text>
+            <View className=" bg-primary px-4 py-1 rounded-full shadow-md">
+              <Text className="text-white font-bold text-sm">CONCLUÍDO {avatarSize()}</Text>
             </View>
           </View>
+  
 
           {/* Congratulations with user name */}
           <Text className="text-3xl font-bold text-green-600 mb-2 text-center">Parabéns, {userData?.nome || "Aluno"}!</Text>
-          <Text className="text-xl text-gray-800 mb-6 text-center">Você completou esta fase!</Text>
+          <Text className="text-xl text-gray-800 mb-4 text-center">Você completou esta fase!</Text>
 
-          <View className="flex-row mb-8 justify-center">
+          <View className="flex-row mb-4 justify-center">
             {[1, 2, 3].map((star) => (
               <Star
                 key={star}
@@ -135,17 +138,17 @@ const CompletionPage = () => {
           </View>
 
 
-          <View className="flex-row justify-between w-full mb-8">
-            <View className="bg-white rounded-2xl p-4 items-center shadow-md border border-gray-100 flex-1 mx-1">
+          <View className="flex-row justify-between w-full mb-8 gap-4 ">
+            <View className="bg-white rounded-2xl  p-4 items-center shadow-md border border-gray-100 flex-1 ">
               <View className="w-12 h-12 rounded-full bg-blue-100 items-center justify-center mb-2">
                 <Award size={24} color="#4361ee" />
               </View>
               <Text className="text-2xl font-bold text-[#4361ee]">+{totalPoints}</Text>
               <Text className="text-gray-500 text-sm">Pontos</Text>
-             {/*  <Text className="text-xs text-gray-400 mt-1">Total: {userTotalPoints}</Text> */}
+       
             </View>
 
-            <View className="bg-white rounded-2xl p-4 items-center shadow-md border border-gray-100 flex-1 mx-1">
+            <View className="bg-white rounded-2xl p-4 items-center shadow-md border border-gray-100 flex-1 ">
               <View className="w-12 h-12 rounded-full bg-emerald-400/30 items-center justify-center mb-2">
                 <Clock size={24} color="#0c9164" />
               </View>
@@ -157,14 +160,13 @@ const CompletionPage = () => {
           </View>
 
       
-          <View className="bg-blue-50 p-4 rounded-xl border border-blue-200 mb-6 w-full">
-            <Text className="text-center text-blue-800">Continue praticando para melhorar suas habilidades!</Text>
-          </View>
+    
         </Animated.View>
-      </View>
+        <View style={{height: 55}} />
+      </ScrollView>
 
     
-      <View className=" py-4 bg-white border-t flex-row border-gray-200 justify-center">
+      <View className=" py-4 absolute bottom-0 w-full bg-white border-t flex-row border-gray-200 justify-center">
         <View className="flex-row justify-between items-center">
         <CustomButton
           title="CONTINUAR APRENDIZADO"
