@@ -102,7 +102,7 @@ const CompletionPage = () => {
         <Text className="text-white text-xl font-bold">Fase Concluída</Text>
       </View>
       
-      <ScrollView className="px-6" contentContainerStyle={{justifyContent: 'center', alignItems:"center"}}>
+      <ScrollView className="px-6 flex-1" contentContainerStyle={{justifyContent: 'center', alignItems:"center"}}>
         <Animated.View
           className="items-center"
           style={{
@@ -116,7 +116,7 @@ const CompletionPage = () => {
               <AvatarComponent width={avatarSize()} height={avatarSize()} />
             </View>
             <View className=" bg-primary px-4 py-1 rounded-full shadow-md">
-              <Text className="text-white font-bold text-sm">CONCLUÍDO {avatarSize()}</Text>
+              <Text className="text-white font-bold text-sm">CONCLUÍDO</Text>
             </View>
           </View>
   
@@ -160,21 +160,21 @@ const CompletionPage = () => {
           </View>
 
       
-    
+            
         </Animated.View>
-        <View style={{height: 55}} />
+        <View style={{height: 70}} />
       </ScrollView>
 
     
       <View className=" py-4 absolute bottom-0 w-full bg-white border-t flex-row border-gray-200 justify-center">
-        <View className="flex-row justify-between items-center">
+        <View className="flex-row w-[80%] justify-between items-center">
         <CustomButton
           title="CONTINUAR APRENDIZADO"
           nextStep="../../(tabs)/home"
           className="bg-primary shadow-md justify-center "
           textClassName="tracking-wide"
         />
-        <View className="absolute right-0 top-0 px-1 h-full flex justify-center items-center">
+        <View className="absolute right-0 top-0 px-1 ml-2 h-full flex justify-center items-center">
           <ChevronRight size={26} color="#fff" />
         </View>
         </View>
