@@ -11,8 +11,9 @@ interface CustomButtonProps {
   params?: Record<string, any>
   onPress?: () => void
   title: string
-  className?: string // Permite passar classes do Tailwind
-  textClassName?: string // Permite personalizar o texto
+  className?: string 
+  textClassName?: string 
+  disabled?: boolean
 }
 
 const CustomButton = ({

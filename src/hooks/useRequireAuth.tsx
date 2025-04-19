@@ -39,6 +39,7 @@ export const useRequireAuth = ({
            });
          }
          
+         // Add a small delay to ensure the auth state has time to propagate
          setTimeout(() => {
            router.replace(redirectTo as any);
          }, showToast ? 3500 : 0);
@@ -49,7 +50,7 @@ export const useRequireAuth = ({
    };
 
    checkAuthentication();
- }, [requireAuth, userData, authUser, loading]);
+ }, [requireAuth, userData, authUser, loading, redirectTo, showToast, router]);
 
  return {
    isAuthenticated: !!(userData && authUser),
