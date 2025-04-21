@@ -124,11 +124,13 @@ const Step04 = () => {
           </Text>
         </View>
         <View style={styles.buttonContainer}>
+                            <View style={{paddingHorizontal: 30, width: '100%'}}>
           <CustomButton
             title={isCreating ? "Criando conta..." : "Criar conta"}
             onPress={handleFinalRegister}
             disabled={isCreating}
           />
+          </View>
           <View style={{ height: 5 }} />
           <ProgressDots currentStep={4} />
         </View>

@@ -186,7 +186,10 @@ const Step02 = () => {
             </View>
 
             <View style={styles.buttonContainer}>
+              
+                                  <View style={{paddingHorizontal: 30, width: '100%'}}>
               <CustomButton title="Continuar" onPress={handleContinue} />
+              </View>
               <View style={{height: 5}}/>
               <ProgressDots currentStep={2} />
             </View>

@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect } from "react"
+"use client"
+
+import React,{ useState, useRef, useEffect } from "react"
 import {
   View,
   Text,
@@ -8,7 +10,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   TouchableOpacity,
-  Dimensions,
 } from "react-native"
 import { router } from "expo-router"
 import Logo from "../../assets/images/web.svg"
@@ -16,6 +17,9 @@ import CustomButton from "@/src/components/CustomButton"
 import { useRequireAuth } from "../hooks/useRequireAuth"
 import { usePasswordReset } from "@/src/hooks/useReset"
 import ArrowBack from "../components/ArrowBack"
+// Add the import for LoadingTransition at the top
+import LoadingTransition from "@/src/components/LoadingTransition"
+import colors from "../colors"
 
 const ForgotPasswordScreen = () => {
   const [step, setStep] = useState<"email" | "code" | "password">("email")
@@ -33,16 +37,22 @@ const ForgotPasswordScreen = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
+  // Add a state to track logo loading
+  const [logoLoading, setLogoLoading] = useState(true)
+
   const { isAuthenticated, isLoading: authLoading } = useRequireAuth({ requireAuth: false })
-  const {
-    isLoading,
-    emailSent,
-    sendResetEmail,
-    verifyCode,
-    resetPassword,
-    codeVerified,
-    setVerificationCode,
-  } = usePasswordReset()
+  const { isLoading, emailSent, sendResetEmail, verifyCode, resetPassword, codeVerified, setVerificationCode } =
+    usePasswordReset()
+
+  // Add useEffect to simulate logo loading
+  useEffect(() => {
+    // Simulate logo loading time
+    const timer = setTimeout(() => {
+      setLogoLoading(false)
+    }, 1500) // Adjust this time as needed
+
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleSendResetEmail = async () => {
     if (await sendResetEmail(email)) {
@@ -69,7 +79,7 @@ const ForgotPasswordScreen = () => {
     newCode[index] = text
     setCode(newCode)
     if (text !== "" && index < 4) codeInputRefs.current[index + 1]?.focus()
-    if (newCode.every(digit => digit !== "") && index === 4) {
+    if (newCode.every((digit) => digit !== "") && index === 4) {
       setVerificationCode(newCode.join(""))
     }
   }
@@ -86,11 +96,18 @@ const ForgotPasswordScreen = () => {
     setCodeFocused(newCodeFocused)
   }
 
-  const getBorderColor = (isFocused: boolean) => isFocused ? 'border-blue-500' : 'border-[#E8ECF4]'
+  const getBorderColor = (isFocused: boolean) => (isFocused ? colors.form.INPUT_BORDER_FOCUS : colors.form.INPUT_BORDER)
+
+  const getWebOutlineStyle = (field: string, isFocused: boolean) => {
+    if (Platform.OS === "web") {
+      return isFocused ? { outline: "none" } : {}
+    }
+    return {}
+  }
 
   const getMaskedEmail = (email: string) => {
-    const [username, domain] = email.split("@");
-    if (!username || !domain) return email;
+    const [username, domain] = email.split("@")
+    if (!username || !domain) return email
     return `${username.substring(0, 3)}***@${domain}`
   }
 
@@ -98,12 +115,18 @@ const ForgotPasswordScreen = () => {
     <View className="w-full mt-10 items-start">
       <Text className="text-primary font-semibold text-xl mb-1">Recuperação</Text>
       <Text className="text-2xl font-bold mb-4">Esqueceu sua senha?</Text>
-      <Text className="text-gray-600 font-medium text-sm mb-5">Digite seu email abaixo para receber um código de verificação</Text>
+      <Text className="text-gray-600 font-medium text-sm mb-5">
+        Digite seu email abaixo para receber um código de verificação
+      </Text>
 
       <View className="w-full mb-5">
         <Text className="text-gray-600 font-medium mb-2">E-mail:</Text>
         <TextInput
-          className={`w-full h-16 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black border-2 ${getBorderColor(emailFocused)}`}
+          className="w-full h-16 rounded-lg px-4 py-3 text-base bg-inputBg text-black border-2"
+          style={{
+            borderColor: getBorderColor(emailFocused),
+            ...getWebOutlineStyle("email", emailFocused),
+          }}
           placeholder="Digite seu e-mail"
           value={email}
           onChangeText={setEmail}
@@ -133,14 +156,20 @@ const ForgotPasswordScreen = () => {
       <View className="items-center w-4/5 pt-8">
         <Text className="text-primary font-semibold text-xl mb-1">Atenção</Text>
         <Text className="text-2xl font-bold mb-4 text-center">Verifique seu email</Text>
-        <Text className="text-sm font-medium text-gray-600 text-center">Por favor digite o código para verificar o seu email</Text>
+        <Text className="text-sm font-medium text-gray-600 text-center">
+          Por favor digite o código para verificar o seu email
+        </Text>
 
         <View className="flex-row justify-between px-4 w-full mt-5">
           {code.map((digit, index) => (
             <TextInput
               key={index}
-              ref={el => codeInputRefs.current[index] = el}
-              className={`w-[18%] h-16 text-3xl font-bold text-center bg-[#F7F8F9] border-2 rounded-xl ${getBorderColor(codeFocused[index])}`}
+              ref={(el) => (codeInputRefs.current[index] = el)}
+              className="w-[18%] h-16 text-3xl font-bold text-center bg-inputBg border-2 rounded-xl"
+              style={{
+                borderColor: getBorderColor(codeFocused[index]),
+                ...getWebOutlineStyle(`code-${index}`, codeFocused[index]),
+              }}
               value={digit}
               onChangeText={(text) => handleCodeChange(text, index)}
               onKeyPress={(e) => handleKeyPress(e, index)}
@@ -155,11 +184,13 @@ const ForgotPasswordScreen = () => {
       </View>
 
       <View className="w-full items-center mt-8">
-        <Text className="text-sm font-medium text-center">Enviamos um código para o email <Text className="font-semibold text-primary">{getMaskedEmail(email)}</Text></Text>
+        <Text className="text-sm font-medium text-center">
+          Enviamos um código para o email <Text className="font-semibold text-primary">{getMaskedEmail(email)}</Text>
+        </Text>
         <CustomButton
           title={isLoading ? "Verificando..." : "Confirmar código"}
           onPress={handleVerifyCode}
-          disabled={isLoading || code.some(digit => digit === "")}
+          disabled={isLoading || code.some((digit) => digit === "")}
         />
 
         <View className="flex-row items-center justify-center mt-5">
@@ -182,7 +213,11 @@ const ForgotPasswordScreen = () => {
         <Text className="text-gray-600 font-medium mb-2">Nova senha:</Text>
         <View className="relative">
           <TextInput
-            className={`w-full h-16 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black border-2 ${getBorderColor(newPasswordFocused)}`}
+            className="w-full h-16 rounded-lg px-4 py-3 text-base bg-inputBg text-black border-2"
+            style={{
+              borderColor: getBorderColor(newPasswordFocused),
+              ...getWebOutlineStyle("newPassword", newPasswordFocused),
+            }}
             placeholder="Digite sua nova senha"
             value={newPassword}
             onChangeText={setNewPassword}
@@ -191,7 +226,10 @@ const ForgotPasswordScreen = () => {
             onBlur={() => setNewPasswordFocused(false)}
             editable={!isLoading}
           />
-          <TouchableOpacity className="absolute right-4 top-1/2 -translate-y-1/2" onPress={() => setShowPassword(!showPassword)}>
+          <TouchableOpacity
+            className="absolute right-4 top-1/2 -translate-y-1/2"
+            onPress={() => setShowPassword(!showPassword)}
+          >
             <Text className="text-xl">{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
           </TouchableOpacity>
         </View>
@@ -201,7 +239,11 @@ const ForgotPasswordScreen = () => {
         <Text className="text-gray-600 font-medium mb-2">Confirme a senha:</Text>
         <View className="relative">
           <TextInput
-            className={`w-full h-16 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black border-2 ${getBorderColor(confirmPasswordFocused)}`}
+            className="w-full h-16 rounded-lg px-4 py-3 text-base bg-inputBg text-black border-2"
+            style={{
+              borderColor: getBorderColor(confirmPasswordFocused),
+              ...getWebOutlineStyle("confirmPassword", confirmPasswordFocused),
+            }}
             placeholder="Confirme sua nova senha"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -210,7 +252,10 @@ const ForgotPasswordScreen = () => {
             onBlur={() => setConfirmPasswordFocused(false)}
             editable={!isLoading}
           />
-          <TouchableOpacity className="absolute right-4 top-1/2 -translate-y-1/2" onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+          <TouchableOpacity
+            className="absolute right-4 top-1/2 -translate-y-1/2"
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
             <Text className="text-xl">{showConfirmPassword ? "👁️" : "👁️‍🗨️"}</Text>
           </TouchableOpacity>
         </View>
@@ -228,9 +273,13 @@ const ForgotPasswordScreen = () => {
     <SafeAreaView className="flex-1 bg-white justify-center">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
         <ArrowBack onPress={() => router.back()} className="absolute top-3 left-3 bg-primary" color="#f2f2f2" />
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}
+        >
           <View className="items-center">
-            <Logo style={{ width: 400, height: 180, marginBottom: marginTopDaLogo(), top: 30, position: "relative" }} />
+            <Logo style={{ maxWidth: 320, maxHeight: 180, top: 18, position: "relative" }} />
           </View>
 
           {step === "email" && renderEmailStep()}
@@ -238,15 +287,9 @@ const ForgotPasswordScreen = () => {
           {step === "password" && renderPasswordStep()}
         </ScrollView>
       </KeyboardAvoidingView>
+      <LoadingTransition isVisible={logoLoading} onAnimationComplete={() => {}} />
     </SafeAreaView>
   )
-}
-
-function marginTopDaLogo(): any {
-  const { width, height } = Dimensions.get("window")
-  if (width <= 500 && height < 732) return "15%"
-  else if (height >= 732 && width > 409) return "20%"
-  else return 80
 }
 
 export default ForgotPasswordScreen

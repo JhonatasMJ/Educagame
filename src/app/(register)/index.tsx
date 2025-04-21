@@ -85,6 +85,7 @@ const Register = () => {
       </View>
 
 
+      <View style={{paddingHorizontal: 30}}>
       <CustomButton 
         title="Continuar"
         nextStep="/(register)/step1"
@@ -95,6 +96,7 @@ const Register = () => {
         params={{ avatarId: selectedAvatarId, avatarSource: sourceAvatar }}
         onPress={handleContinue}
       />
+      </View>
 
       <View style={{ justifyContent: "center", alignItems: "center", marginBottom: "3%" }}>
         <ProgressDots currentStep={0} />

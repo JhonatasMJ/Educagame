@@ -1,27 +1,23 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    // NOTE: Update this to include the paths to all of your component files.
-    content: ["./src/**/*.{js,jsx,ts,tsx}"],
-    presets: [require("nativewind/preset")],
-    theme: {
-      extend: {
-        colors: { 
-            primary: '#F1592E',
-            secondary: '#F6A608',
-            tertiary: '#0D153A',
-            green: '#95C11F',
-            background: '#030303',
-            placeholder: '#8391A1',
-            menu: '#2D2D2D',
-            inputBg: '#F7F8F9',
-            inputBor: '#E8ECF4',
-        },
-        backgroundImage: {
-          'fundo': "url('@src/assets/images/fundo.png')",
-        }
-        
-     
+  // NOTE: Update this to include the paths to all of your component files.
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  presets: [require("nativewind/preset")],
+  theme: {
+    extend: {
+      colors: {
+        // Import colors from centralized color file
+        primary: "#F1592E", // BRAND_COLORS.PRIMARY
+        secondary: "#F6A608", // BRAND_COLORS.SECONDARY
+        tertiary: "#0D153A", // BRAND_COLORS.TERTIARY
+        green: "#95C11F", // BRAND_COLORS.GREEN
+        background: "#030303", // UI_COLORS.BACKGROUND
+        placeholder: "#8391A1", // UI_COLORS.PLACEHOLDER
+        menu: "#2D2D2D", // UI_COLORS.MENU
+        inputBg: "#F7F8F9", // FORM_COLORS.INPUT_BG
+        inputBor: "#E8ECF4", // FORM_COLORS.INPUT_BORDER
       },
     },
-    plugins: [],
-  }
+  },
+  plugins: [],
+}

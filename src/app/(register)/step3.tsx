@@ -260,11 +260,13 @@ const Step03 = () => {
             </View>
 
             <View style={styles.buttonContainer}>
+                                <View style={{paddingHorizontal: 30, width: '100%'}}>
               <CustomButton
                 title={isVerifying ? "Verificando..." : "Continuar"}
                 onPress={handleContinue}
                 disabled={isVerifying}
               />
+              </View>
               <View style={{ height: 5 }} />
               <ProgressDots currentStep={3} />
             </View>
