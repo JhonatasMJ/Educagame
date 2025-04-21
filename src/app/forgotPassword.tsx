@@ -1,6 +1,6 @@
 "use client"
 
-import React,{ useState, useRef, useEffect } from "react"
+import React,{ useState, useRef } from "react"
 import {
   View,
   Text,
@@ -17,8 +17,6 @@ import CustomButton from "@/src/components/CustomButton"
 import { useRequireAuth } from "../hooks/useRequireAuth"
 import { usePasswordReset } from "@/src/hooks/useReset"
 import ArrowBack from "../components/ArrowBack"
-// Add the import for LoadingTransition at the top
-import LoadingTransition from "@/src/components/LoadingTransition"
 import colors from "../colors"
 
 const ForgotPasswordScreen = () => {
@@ -37,22 +35,9 @@ const ForgotPasswordScreen = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Add a state to track logo loading
-  const [logoLoading, setLogoLoading] = useState(true)
-
   const { isAuthenticated, isLoading: authLoading } = useRequireAuth({ requireAuth: false })
   const { isLoading, emailSent, sendResetEmail, verifyCode, resetPassword, codeVerified, setVerificationCode } =
     usePasswordReset()
-
-  // Add useEffect to simulate logo loading
-  useEffect(() => {
-    // Simulate logo loading time
-    const timer = setTimeout(() => {
-      setLogoLoading(false)
-    }, 1500) // Adjust this time as needed
-
-    return () => clearTimeout(timer)
-  }, [])
 
   const handleSendResetEmail = async () => {
     if (await sendResetEmail(email)) {
@@ -287,7 +272,6 @@ const ForgotPasswordScreen = () => {
           {step === "password" && renderPasswordStep()}
         </ScrollView>
       </KeyboardAvoidingView>
-      <LoadingTransition isVisible={logoLoading} onAnimationComplete={() => {}} />
     </SafeAreaView>
   )
 }
