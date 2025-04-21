@@ -22,7 +22,7 @@ import ProgressDots from "@/src/components/ProgressDots"
 import Toast from "react-native-toast-message"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import ArrowBack from "@/src/components/ArrowBack"
-import { getAuth, fetchSignInMethodsForEmail, createUserWithEmailAndPassword } from "firebase/auth"
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
 import React from "react"
 
 const { height } = Dimensions.get("window")
@@ -79,11 +79,12 @@ const Step03 = () => {
     return "#E8ECF4"
   }
 
+  // Modifique a função handleContinue para garantir que o usuário seja redirecionado corretamente
   const handleContinue = async () => {
     try {
       setIsVerifying(true)
       const newErrors: { email?: boolean; password?: boolean; confirmPassword?: boolean } = {}
-  
+
       // Validação básica
       if (!email) {
         newErrors.email = true
@@ -95,7 +96,7 @@ const Step03 = () => {
         })
         return
       }
-  
+
       if (!password) {
         newErrors.password = true
         setErrors(newErrors)
@@ -106,7 +107,7 @@ const Step03 = () => {
         })
         return
       }
-  
+
       if (!confirmPassword) {
         newErrors.confirmPassword = true
         setErrors(newErrors)
@@ -117,7 +118,7 @@ const Step03 = () => {
         })
         return
       }
-  
+
       if (password !== confirmPassword) {
         newErrors.confirmPassword = true
         setErrors(newErrors)
@@ -128,12 +129,15 @@ const Step03 = () => {
         })
         return
       }
-  
+
       // Tentar criar o usuário no Firebase Auth
       const auth = getAuth()
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
-  
+
+      // Após criar o usuário, faça logout para evitar problemas de autenticação na próxima tela
+      // Isso permite que a tela step4 faça o login explicitamente
+      await auth.signOut()
 
       // Prosseguir para o próximo passo
       router.push({
@@ -154,7 +158,7 @@ const Step03 = () => {
       })
     } catch (error: any) {
       console.error("Erro ao criar conta:", error)
-  
+
       let errorMessage = "Falha ao criar conta!"
       if (error.code === "auth/email-already-in-use") {
         errorMessage = "Este email já está em uso!"
@@ -163,7 +167,7 @@ const Step03 = () => {
       } else if (error.code === "auth/weak-password") {
         errorMessage = "Senha muito fraca!"
       }
-  
+
       Toast.show({
         type: "error",
         text1: "Erro",
@@ -173,7 +177,7 @@ const Step03 = () => {
       setIsVerifying(false)
     }
   }
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
@@ -260,13 +264,11 @@ const Step03 = () => {
             </View>
 
             <View style={styles.buttonContainer}>
-                                <View style={{paddingHorizontal: 30, width: '100%'}}>
               <CustomButton
                 title={isVerifying ? "Verificando..." : "Continuar"}
                 onPress={handleContinue}
                 disabled={isVerifying}
               />
-              </View>
               <View style={{ height: 5 }} />
               <ProgressDots currentStep={3} />
             </View>
