@@ -106,18 +106,22 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
+  // Modifique a função refreshUserData para ser mais robusta
   const refreshUserData = async () => {
+    console.log("Iniciando refreshUserData")
     if (authUser) {
       setShowLoadingTransition(true)
       const db = getDatabase()
       const userRef = ref(db, `users/${authUser.uid}`)
       try {
+        console.log("Buscando dados do usuário:", authUser.uid)
         const snapshot = await get(userRef)
         if (snapshot.exists()) {
           const userDataFromDB = snapshot.val()
+          console.log("Dados do usuário encontrados:", userDataFromDB)
           setUserData({ id: authUser.uid, ...userDataFromDB })
         } else {
-          console.log("No data available")
+          console.log("Nenhum dado disponível para o usuário")
           setUserData(null)
         }
       } catch (error) {
@@ -131,6 +135,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }, 500)
       }
     } else {
+      console.log("refreshUserData: Nenhum usuário autenticado")
       setUserData(null)
       setShowLoadingTransition(false)
     }

@@ -2,17 +2,17 @@
 
 import { router, useLocalSearchParams } from "expo-router"
 import { useState, useRef, useEffect } from "react"
-import { 
-  View, 
-  Text, 
-  SafeAreaView, 
-  StyleSheet, 
-  TextInput, 
-  StatusBar, 
-  Dimensions, 
-  Platform, 
+import {
+  View,
+  Text,
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  StatusBar,
+  Dimensions,
+  Platform,
   ScrollView,
-  Keyboard
+  Keyboard,
 } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
@@ -20,9 +20,10 @@ import Cloudsvg from "../../../assets/images/cloud.svg"
 import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import Toast from "react-native-toast-message"
-import React from "react"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import ArrowBack from "@/src/components/ArrowBack"
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import React from "react"
 
 const { height } = Dimensions.get("window")
 
@@ -35,8 +36,9 @@ const Step03 = () => {
   const [field1Focused, setField1Focused] = useState(false)
   const [field2Focused, setField2Focused] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const scrollViewRef = useRef<ScrollView>(null)
-  const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false });
+  const { isAuthenticated, isLoading } = useRequireAuth({ requireAuth: false })
 
   // Get params from previous screen
   const { avatarId, avatarSource, nome, sobrenome, birthDate, phone, termsAccepted, lgpdAccepted } =
@@ -77,55 +79,110 @@ const Step03 = () => {
     return "#E8ECF4"
   }
 
-  const handleContinue = () => {
-    const newErrors: { email?: boolean; password?: boolean; confirmPassword?: boolean } = {}
+  // Modifique a função handleContinue para garantir que o usuário seja redirecionado corretamente
+  const handleContinue = async () => {
+    try {
+      setIsVerifying(true)
+      const newErrors: { email?: boolean; password?: boolean; confirmPassword?: boolean } = {}
 
-    if (!email) newErrors.email = true
-    if (!password) newErrors.password = true
-    if (!confirmPassword) newErrors.confirmPassword = true
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = true
+      // Validação básica
+      if (!email) {
+        newErrors.email = true
+        setErrors(newErrors)
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "Digite seu email!",
+        })
+        return
+      }
+
+      if (!password) {
+        newErrors.password = true
+        setErrors(newErrors)
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "Digite sua senha!",
+        })
+        return
+      }
+
+      if (!confirmPassword) {
+        newErrors.confirmPassword = true
+        setErrors(newErrors)
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "Confirme sua senha!",
+        })
+        return
+      }
+
+      if (password !== confirmPassword) {
+        newErrors.confirmPassword = true
+        setErrors(newErrors)
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "As senhas não coincidem!",
+        })
+        return
+      }
+
+      // Tentar criar o usuário no Firebase Auth
+      const auth = getAuth()
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
+
+      // Após criar o usuário, faça logout para evitar problemas de autenticação na próxima tela
+      // Isso permite que a tela step4 faça o login explicitamente
+      await auth.signOut()
+
+      // Prosseguir para o próximo passo
+      router.push({
+        pathname: "/(register)/step4",
+        params: {
+          nome,
+          sobrenome,
+          email,
+          birthDate,
+          phone,
+          termsAccepted,
+          lgpdAccepted,
+          password,
+          avatarId,
+          avatarSource,
+          uid: user.uid, // opcional, pode passar se quiser reutilizar
+        },
+      })
+    } catch (error: any) {
+      console.error("Erro ao criar conta:", error)
+
+      let errorMessage = "Falha ao criar conta!"
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "Este email já está em uso!"
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Email inválido!"
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Senha muito fraca!"
+      }
+
       Toast.show({
         type: "error",
         text1: "Erro",
-        text2: "As senhas não coincidem!",
+        text2: errorMessage,
       })
-      return
+    } finally {
+      setIsVerifying(false)
     }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      Toast.show({
-        type: "error",
-        text1: "Erro",
-        text2: "Preencha todos os campos corretamente!",
-      })
-      return
-    }
-
-    // Using consistent params format for navigation
-    router.push({
-      pathname: "/(register)/step4",
-      params: {
-        nome,
-        sobrenome,
-        email,
-        birthDate,
-        phone,
-        termsAccepted,
-        lgpdAccepted,
-        password,
-        avatarId,
-        avatarSource,
-      },
-    })
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
-      
-      <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-white" color="#56A6DC" /> 
+
+      <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-white" color="#56A6DC" />
       {/* Replace KeyboardAvoidingView with ScrollView */}
       <ScrollView
         ref={scrollViewRef}
@@ -147,10 +204,12 @@ const Step03 = () => {
               <View style={styles.inputCada}>
                 <Text style={styles.label}>E-mail</Text>
                 <TextInput
-                  style={[styles.input, { borderColor: getBorderColor("email", emailFocused) },
+                  style={[
+                    styles.input,
+                    { borderColor: getBorderColor("email", emailFocused) },
                     Platform.select({
-                      web: emailFocused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                    })
+                      web: emailFocused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
+                    }),
                   ]}
                   placeholder="Digite seu e-mail"
                   placeholderTextColor="#999"
@@ -166,10 +225,12 @@ const Step03 = () => {
               <View style={styles.inputCada}>
                 <Text style={styles.label}>Senha</Text>
                 <TextInput
-                  style={[styles.input, { borderColor: getBorderColor("password", field1Focused) },
+                  style={[
+                    styles.input,
+                    { borderColor: getBorderColor("password", field1Focused) },
                     Platform.select({
-                      web: field1Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                    })
+                      web: field1Focused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
+                    }),
                   ]}
                   placeholder="Digite sua senha"
                   placeholderTextColor="#999"
@@ -184,10 +245,12 @@ const Step03 = () => {
               <View style={styles.inputCada}>
                 <Text style={styles.label}>Confirme sua senha</Text>
                 <TextInput
-                  style={[styles.input, { borderColor: getBorderColor("confirmPassword", field2Focused) },
+                  style={[
+                    styles.input,
+                    { borderColor: getBorderColor("confirmPassword", field2Focused) },
                     Platform.select({
-                      web: field2Focused ? { outlineColor: '#56A6DC', outlineWidth: 2 } : {}
-                    })
+                      web: field2Focused ? { outlineColor: "#56A6DC", outlineWidth: 2 } : {},
+                    }),
                   ]}
                   placeholder="Confirme sua senha"
                   placeholderTextColor="#999"
@@ -201,8 +264,12 @@ const Step03 = () => {
             </View>
 
             <View style={styles.buttonContainer}>
-              <CustomButton title="Continuar" onPress={handleContinue} />
-              <View style={{height: 5}}/>
+              <CustomButton
+                title={isVerifying ? "Verificando..." : "Continuar"}
+                onPress={handleContinue}
+                disabled={isVerifying}
+              />
+              <View style={{ height: 5 }} />
               <ProgressDots currentStep={3} />
             </View>
           </View>

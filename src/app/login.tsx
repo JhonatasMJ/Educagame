@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React,{ useState, useEffect } from "react"
 import { router } from "expo-router"
 import {
   View,
@@ -19,7 +19,7 @@ import Checkbox from "../components/Checkbox"
 import Logo from "../../assets/images/web.svg"
 import LoadingTransition from "@/src/components/LoadingTransition"
 import { useAuth } from "../context/AuthContext"
-import React from "react"
+import colors from "../colors"
 
 interface Errors {
   email?: string
@@ -72,20 +72,23 @@ const Login = () => {
     return screenHeight > 800 ? "mt-10" : "mt-5"
   }
 
+  // For the getBorderColor function:
   const getBorderColor = (field: keyof Errors, isFocused: boolean) => {
     if (errors[field]) {
-      return "border-red-500"
+      return colors.form.INPUT_BORDER_ERROR
     } else if (isFocused) {
-      return "border-primary"
+      return colors.form.INPUT_BORDER_FOCUS
     } else {
-      return "border-gray-300"
+      return colors.form.INPUT_BORDER
     }
   }
+
+  // For the getWebOutlineStyle function:
   const getWebOutlineStyle = (field: string, isFocused: boolean) => {
     if (Platform.OS === "web") {
-      return isFocused ? "outline-none" : ""
+      return isFocused ? { outline: "none" } : {}
     }
-    return ""
+    return {}
   }
 
   const updateFormField = (field: string, value: string) => {
@@ -138,18 +141,19 @@ const Login = () => {
               <View className="mb-5">
                 <Text className="text-base font-medium text-[#4B5563] mb-2">E-mail:</Text>
                 <TextInput
-                  className={`w-full h-16 border-2 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black ${getBorderColor("email", emailFocused)} ${getWebOutlineStyle("email", emailFocused)}`}
+                  className={`w-full h-16 border-2 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black`}
                   placeholder="Digite seu e-mail"
+                  style={[{borderColor: getBorderColor("email", emailFocused), }, getWebOutlineStyle("email", emailFocused)]}
                   value={formData.email}
                   onChangeText={(value: string) => updateFormField("email", value)}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  cursorColor="#3185BE"
+                  cursorColor={colors.form.INPUT_BORDER_FOCUS}
                   editable={!isLoading}
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.ui.PLACEHOLDER}
                 />
                 {errors.email && <Text className="text-red-500 text-sm mt-1">{errors.email}</Text>}
               </View>
@@ -158,16 +162,17 @@ const Login = () => {
                 <Text className="text-base font-medium text-[#4B5563] mb-2">Senha:</Text>
                 <View className="relative">
                   <TextInput
-                    className={`w-full h-16 border-2 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black pr-12 ${getBorderColor("password", passwordFocused)} ${getWebOutlineStyle("password", passwordFocused)}`}
+                    className={`w-full h-16 border-2 rounded-lg px-4 py-3 text-base bg-[#F7F8F9] text-black pr-12`}
                     placeholder="Digite sua senha"
                     value={formData.password}
+                    style={[ getWebOutlineStyle("password", passwordFocused), {borderColor: getBorderColor("password", passwordFocused)}]}
                     onChangeText={(value: string) => updateFormField("password", value)}
                     secureTextEntry={!showPassword}
-                    cursorColor="#3185BE"
+                    cursorColor={colors.form.INPUT_BORDER_FOCUS}
                     editable={!isLoading}
                     onFocus={() => setPasswordFocused(true)}
                     onBlur={() => setPasswordFocused(false)}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.ui.PLACEHOLDER}
                   />
                   <TouchableOpacity
                     className="absolute right-4 h-full justify-center"
