@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { View, Text, SafeAreaView, Alert } from "react-native";
 import Character from "../../components/Character";
 import CustomButton from "@/src/components/CustomButton";
-import Logo from "../../../assets/images/logo.svg";
+import Logo from "../../../assets/images/logoWeb.svg";
 import ProgressDots from '../../components/ProgressDots';
 
 import Avatar1 from "../../../assets/images/avatar1.svg";
@@ -52,7 +52,7 @@ const Register = () => {
        <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-primary" color="#f2f2f2" />
         
       <View style={{ alignItems: "center" }}>
-        <Logo style={{ width: 315, height: 65, marginTop: "3%" }} />
+        <Logo style={{ width: 400, height: 150 }} />
       </View>
       <View style={{ alignItems: "center"}}>
         <Text className="text-xl font-semibold mb-2 text-primary top-3">Que tal</Text>
@@ -101,6 +101,7 @@ const Register = () => {
       <View style={{ justifyContent: "center", alignItems: "center", marginBottom: "3%" }}>
         <ProgressDots currentStep={0} />
       </View>
+      
     </SafeAreaView>
   );
 };

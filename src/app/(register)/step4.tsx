@@ -8,7 +8,6 @@ import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth"
 import { getDatabase, ref, serverTimestamp, set } from "firebase/database"
 import Toast from "react-native-toast-message"
-import Cloudsvg from "../../../assets/images/cloud.svg"
 import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
@@ -151,9 +150,6 @@ const Step04 = () => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-white" color="#56A6DC" />
-      <View style={styles.backgroundContainer}>
-        <Cloudsvg width="90%" height="40%" />
-      </View>
 
       {avatarSource && (
         <BigAvatar avatarSource={avatarSource} style={{ position: "absolute", zIndex: 2, top: getAvatarTop() }} />

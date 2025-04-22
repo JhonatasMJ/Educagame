@@ -15,7 +15,7 @@ const ProgressDots: React.FC<ProgressDotsProps> = ({ currentStep, totalSteps = 5
           style={[
             styles.dot,
             {
-              backgroundColor: index === currentStep ? '#56A6DC' : '#D1D5DB'
+              backgroundColor: index === currentStep ? '#F1592E' : '#D1D5DB'
             }
           ]}
         />

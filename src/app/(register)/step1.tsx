@@ -16,7 +16,7 @@ import {
 import { useLocalSearchParams, router } from "expo-router"
 import CustomButton from "@/src/components/CustomButton"
 import BigAvatar from "@/src/components/BigAvatar"
-import Cloudsvg from "../../../assets/images/cloud.svg"
+import Sunsvg from "../../../assets/images/sun.svg"
 import ProgressDots from "@/src/components/ProgressDots"
 import { bottomHeight, bottomHeight1, getAvatarTop } from "@/src/utils/layoutHelpers"
 import React from "react"
@@ -119,11 +119,12 @@ const Step01 = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.backgroundContainer}>
+            <Sunsvg style={{position:"absolute", top: "-40%", right: "-45"}} width="45%" height="90%"></Sunsvg>
+        </View>
         <View style={styles.contentContainer}>
           {avatarSource && <BigAvatar avatarSource={avatarSource} style={{ marginBottom: -20 }} />}
-          <View style={styles.backgroundContainer}>
-            <Cloudsvg width="90%" height="40%" />
-          </View>
+
 
           <View style={styles.formContainer}>
             <Text style={styles.title}>Vamos criar sua conta!</Text>
@@ -189,7 +190,7 @@ const Step01 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#56A6DC",
+    backgroundColor: "#F4D2A3",
   },
   backgroundContainer: {
     ...StyleSheet.absoluteFillObject,

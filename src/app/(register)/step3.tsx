@@ -16,7 +16,7 @@ import {
 } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { getAvatarTop, bottomHeight } from "@/src/utils/layoutHelpers"
-import Cloudsvg from "../../../assets/images/cloud.svg"
+import Sunsvg from "../../../assets/images/sun.svg"
 import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import Toast from "react-native-toast-message"
@@ -191,12 +191,11 @@ const Step03 = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.backgroundContainer}>
+            <Sunsvg style={{position:"absolute", top: "-40%", right: "-45"}} width="45%" height="90%"></Sunsvg>
+        </View>
         <View style={styles.contentContainer}>
           {avatarSource && <BigAvatar avatarSource={avatarSource} style={{ marginBottom: -20 }} />}
-          <View style={styles.backgroundContainer}>
-            <Cloudsvg width="90%" height="40%" />
-          </View>
-
           <View style={styles.formContainer}>
             <Text style={styles.title}>Vamos criar uma senha!</Text>
 
@@ -285,7 +284,7 @@ const Step03 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#56A6DC",
+    backgroundColor: "#F4D2A3",
   },
   backgroundContainer: {
     ...StyleSheet.absoluteFillObject,
