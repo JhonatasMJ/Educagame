@@ -1,34 +1,35 @@
 "use client"
 
 import React from "react"
-import { View, ImageBackground, StyleSheet, type ImageSourcePropType } from "react-native"
+import { useState } from "react"
+import { View, ImageBackground, StyleSheet, type ImageSourcePropType, Text } from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
 import type { IconLibrary } from "../services/IconRenderer"
 
 // Tipos atualizados para refletir a nova estrutura
 interface StageInfo {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  pontos_chave?: string[];
-  image?: string;
-  video?: string;
-  tempo_estimado?: string;
-  questions: any[];
+  id: string
+  title: string
+  description?: string
+  completed: boolean
+  pontos_chave?: string[]
+  image?: string
+  video?: string
+  tempo_estimado?: string
+  questions: any[]
 }
 
 // Interface para a Etapa (que contém stages)
 interface EtapaInfo {
-  id: string;
-  titulo: string;
-  descricao?: string;
-  concluida: boolean;
-  icon?: string;
-  iconLibrary?: string;
-  stages: StageInfo[];
-  progress: number;
+  id: string
+  titulo: string
+  descricao?: string
+  concluida: boolean
+  icon?: string
+  iconLibrary?: string
+  stages: StageInfo[]
+  progress: number
 }
 
 interface LearningPathTrackProps {
@@ -104,12 +105,20 @@ const BackgroundContainer = ({
   topPadding: number
   children: React.ReactNode
 }) => {
+  // Estado para controlar erros de carregamento de imagem
+  const [imageError, setImageError] = useState(false)
+
   // Verifica se a imagem de fundo é um SVG
   const isSvgImage = typeof backgroundImage === "string" && (backgroundImage as string).endsWith(".svg")
 
-  if (!backgroundImage) {
+  // Se não houver imagem ou ocorrer erro, use um fundo padrão
+  if (!backgroundImage || imageError) {
     return (
-      <View className="items-center" style={[styles.container, { paddingTop: topPadding }]}>
+      <View className="items-center bg-gray-100" style={[styles.container, { paddingTop: topPadding }]}>
+        {/* Ícone de fundo padrão quando não há imagem ou ocorre erro */}
+        <View style={styles.fallbackBackground}>
+          <Text style={{ fontSize: 40, color: "#ccc" }}>🏞️</Text>
+        </View>
         {children}
       </View>
     )
@@ -118,7 +127,7 @@ const BackgroundContainer = ({
   if (isSvgImage) {
     return (
       <View className="items-center" style={[styles.container, { paddingTop: topPadding }]}>
-        <SvgUri uri={backgroundImage as string} style={styles.svgBackground} />
+        <SvgUri uri={backgroundImage as string} style={styles.svgBackground} onError={() => setImageError(true)} />
         {children}
       </View>
     )
@@ -130,6 +139,7 @@ const BackgroundContainer = ({
       style={[styles.container, { paddingTop: topPadding }]}
       imageStyle={styles.imageBackground}
       className="items-center"
+      onError={() => setImageError(true)}
     >
       {children}
     </ImageBackground>
@@ -244,7 +254,8 @@ const EtapasList = ({
             {index < etapas.length - 1 && <View style={{ height: ETAPA_SPACING }} />}
           </View>
         )
-      })}    </>
+      })}{" "}
+    </>
   )
 }
 
@@ -269,6 +280,14 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     bottom: 0, // Começa de baixo
+  },
+  fallbackBackground: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    opacity: 0.3,
   },
 })
 

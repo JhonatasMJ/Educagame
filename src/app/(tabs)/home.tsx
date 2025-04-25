@@ -11,6 +11,7 @@ import {
   Platform,
   Animated,
   Easing,
+  ActivityIndicator,
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
@@ -19,10 +20,7 @@ import { useGameProgress } from "@/src/context/GameProgressContext"
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
-
-// At the top of the file, add these imports for the SVG backgrounds
-import Background1 from "@/assets/images/rio.svg"
-import Background2 from "@/assets/images/rio2.svg" // Make sure this file exists
+import { useTrails } from "@/src/hooks/useTrails"
 
 const { width, height } = Dimensions.get("window")
 
@@ -63,519 +61,7 @@ export interface Stage {
 
 // Update the trilhas data structure to include backgroundSvg property
 // Find the trilhas declaration and modify the first two objects:
-export const trilhas = [
-  {
-    id: "1",
-    nome: "React Native Básico",
-    descricao: "Aprenda os fundamentos do React Native",
-    image: require("@/assets/images/rio.svg"),
-    backgroundSvg: Background1, // SVG component for background
-    etapas: [
-      {
-        id: "2",
-        titulo: "Componentes Básicos", // Título exibido na home
-        descricao: "Aprenda sobre os componentes fundamentais",
-        concluida: false, // Agora depende da conclusão de todos os stages
-        icon: "book-open-text",
-        iconLibrary: "lucide",
-        // Novo array de stages
-        stages: [
-          {
-            id: "stage1",
-            title: "Introdução aos Componentes", // Título exibido no StartPhase
-            description: "Conceitos básicos de componentes React Native",
-            completed: true, // Este stage está concluído
-            pontos_chave: [
-              "Entender o que são componentes no React Native",
-              "Conhecer os componentes básicos da plataforma",
-              "Aprender a criar componentes personalizados",
-            ],
-            image: "https://reactnative.dev/img/tiny_logo.png",
-            video: "https://www.youtube.com/watch?v=0-S5a0eXPoc",
-            tempo_estimado: "15-20 minutos",
-            questions: [
-              {
-                id: "q1",
-                type: QuestionType.TRUE_OR_FALSE,
-                description: "React Native permite escrever código uma vez e executar em múltiplas plataformas.",
-                isTrue: true,
-                explanation:
-                  "Correto! React Native permite que você escreva código JavaScript que funciona tanto em iOS quanto em Android.",
-              },
-              {
-                id: "q2",
-                type: QuestionType.TRUE_OR_FALSE,
-                description: "React Native usa WebView para renderizar a interface do usuário.",
-                isTrue: false,
-                explanation:
-                  "Incorreto! React Native não usa WebView, ele renderiza componentes nativos reais da plataforma.",
-              },
-            ],
-          },
-          {
-            id: "stage2",
-            title: "Componentes Avançados",
-            description: "Aprofundamento em componentes complexos",
-            completed: false, // Este stage está concluído
-            pontos_chave: [
-              "Trabalhar com FlatList e SectionList",
-              "Implementar componentes com animações",
-              "Otimizar o desempenho de listas longas",
-            ],
-            image: "https://t2.tudocdn.net/720005?w=1200&h=1200",
-            video: "https://www.youtube.com/watch?v=0-S5a0eXPoc",
-            tempo_estimado: "25-30 minutos",
-            questions: [
-              {
-                id: "q1",
-                type: QuestionType.TRUE_OR_FALSE,
-                description:
-                  "React Native permite escrever código uma vez e executar em múltiplas plataformas.",
-                isTrue: true,
-                explanation:
-                  "Correto! React Native permite que você escreva código JavaScript que funciona tanto em iOS quanto em Android.",
-              },
-              {
-                id: "q2",
-                type: QuestionType.MATCHING,
-                description:
-                  "Relacione os conceitos de React Native com suas descrições corretas:",
-                leftColumn: [
-                  { id: "l1", text: "Component" },
-                  { id: "l2", text: "Props" },
-                  { id: "l3", text: "State" },
-                  { id: "l4", text: "Hook" },
-                ],
-                rightColumn: [
-                  {
-                    id: "r1",
-                    text: "Parâmetros passados de um componente pai para um filho",
-                  },
-                  {
-                    id: "r2",
-                    text: "Função que permite usar recursos do React em componentes funcionais",
-                  },
-                  {
-                    id: "r3",
-                    text: "Bloco de construção básico de uma interface React",
-                  },
-                  {
-                    id: "r4",
-                    text: "Dados que um componente gerencia e que podem mudar ao longo do tempo",
-                  },
-                ],
-                correctMatches: [
-                  { left: "l1", right: "r3" },
-                  { left: "l2", right: "r1" },
-                  { left: "l3", right: "r4" },
-                  { left: "l4", right: "r2" },
-                ],
-                statementText: "Relacione os conceitos com suas descrições!",
-                explanation:
-                  "Component é o bloco de construção básico, Props são parâmetros passados entre componentes, State gerencia dados mutáveis, e Hooks permitem usar recursos do React em componentes funcionais.",
-              },
-              
-              {
-                id: "q3",
-                type: QuestionType.ORDERING,
-                items: [
-                  { id: "a", text: "1" },
-                  { id: "b", text: "2" },
-                  { id: "c", text: "3" },
-                  { id: "d", text: "4" },
-                ],
-                correctOrder: ["a", "b", "c", "d"],
-                statementText: "Coloque a ordem correta!",
-                explanation:
-                  "A ordem cronológica correta é: Descobrimento (1500), Independência (1822), Abolição (1888) e República (1889).",
-              },
-              
-              {
-                id: "q4",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description:
-                  "Quais são as formas de estilizar componentes no React Native?",
-                options: [
-                  { id: "a", text: "StyleSheet" },
-                  { id: "b", text: "Inline styles" },
-                  { id: "c", text: "CSS" },
-                  { id: "d", text: "Styled Components" },
-                ],
-                correctOptions: ["a", "b", "d"],
-                multipleCorrect: true,
-                statementText: "Selecione todas as opções corretas:",
-                explanation:
-                  "React Native suporta StyleSheet, estilos inline e bibliotecas como Styled Components. CSS tradicional não é suportado diretamente.",
-              },
-            ],
-          },
-          {
-            id: "stage3",
-            title: "Estilização de Componentes",
-            description: "Como estilizar componentes no React Native",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Entender o sistema de estilização do React Native",
-              "Aplicar estilos usando StyleSheet",
-              "Trabalhar com estilos condicionais",
-            ],
-            video: "https://www.youtube.com/watch?v=KcC8KZ_Ga2M",
-            tempo_estimado: "20-25 minutos",
-            questions: [
-              {
-                id: "q4",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Quais são as formas de estilizar componentes no React Native?",
-                options: [
-                  { id: "a", text: "StyleSheet" },
-                  { id: "b", text: "Inline styles" },
-                  { id: "c", text: "CSS" },
-                  { id: "d", text: "Styled Components" },
-                ],
-                correctOptions: ["a", "b", "d"],
-                multipleCorrect: true,
-                statementText: "Selecione todas as opções corretas:",
-                explanation:
-                  "React Native suporta StyleSheet, estilos inline e bibliotecas como Styled Components. CSS tradicional não é suportado diretamente.",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "3",
-        titulo: "Navegação",
-        concluida: false,
-        icon: "target",
-        iconLibrary: "lucide",
-        descricao: "Aprenda sobre navegação entre telas",
-        // Novo array de stages
-        stages: [
-          {
-            id: "stage1",
-            title: "Conceitos de Navegação",
-            description: "Entendendo os conceitos básicos de navegação",
-            completed: false, // Este stage está concluído
-            pontos_chave: [
-              "Compreender os tipos de navegação em apps móveis",
-              "Conhecer as principais bibliotecas de navegação",
-              "Entender a estrutura de navegação em pilha",
-            ],
-            image: "https://reactnavigation.org/img/spiro.svg",
-            tempo_estimado: "15-20 minutos",
-            questions: [
-              {
-                id: "q1",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Quais das seguintes são bibliotecas de navegação para React Native?",
-                options: [
-                  { id: "a", text: "React Navigation" },
-                  { id: "b", text: "Expo Router" },
-                  { id: "c", text: "React Native Navigation" },
-                  { id: "d", text: "React Router Native" },
-                ],
-                correctOptions: ["a", "b", "c", "d"],
-                multipleCorrect: true,
-                statementText: "Selecione todas as opções corretas:",
-                explanation:
-                  "Todas estas são bibliotecas de navegação populares para React Native, cada uma com suas próprias vantagens e abordagens.",
-              },
-            ],
-          },
-          {
-            id: "stage2",
-            title: "Navegação em Pilha",
-            description: "Implementando navegação em pilha",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Configurar o Stack Navigator",
-              "Passar parâmetros entre telas",
-              "Personalizar o header da navegação",
-            ],
-            video: "https://www.youtube.com/watch?v=nQVCkqvU1uE",
-            tempo_estimado: "20-25 minutos",
-            questions: [
-              {
-                id: "q2",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Qual navegador no React Navigation permite navegação em pilha entre telas?",
-                options: [
-                  { id: "a", text: "Stack Navigator" },
-                  { id: "b", text: "Tab Navigator" },
-                  { id: "c", text: "Drawer Navigator" },
-                  { id: "d", text: "Bottom Navigator" },
-                ],
-                correctOptions: ["a"],
-                multipleCorrect: false,
-                explanation:
-                  "O Stack Navigator empilha telas uma sobre a outra, permitindo navegação para frente e para trás.",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "4",
-        titulo: "Estado e Props",
-        concluida: false,
-        icon: "book",
-        iconLibrary: "lucide",
-        descricao: "Gerenciamento de estado e propriedades",
-        // Novo array de stages
-        stages: [
-          {
-            id: "stage1",
-            title: "Introdução a Estado",
-            description: "Conceitos básicos de estado no React",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Entender o conceito de estado em React",
-              "Utilizar o hook useState",
-              "Atualizar o estado de forma correta",
-            ],
-            image: "https://legacy.reactjs.org/logo-og.png",
-            tempo_estimado: "15-20 minutos",
-            questions: [
-              {
-                id: "q1",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Quais dos seguintes são hooks do React para gerenciamento de estado?",
-                options: [
-                  { id: "a", text: "useState" },
-                  { id: "b", text: "useEffect" },
-                  { id: "c", text: "useReducer" },
-                  { id: "d", text: "useContext" },
-                ],
-                correctOptions: ["a", "c", "d"],
-                multipleCorrect: true,
-                statementText: "Selecione todas as opções que são hooks de estado:",
-                explanation:
-                  "useState, useReducer e useContext são hooks relacionados ao gerenciamento de estado. useEffect é um hook para efeitos colaterais, não diretamente para estado.",
-              },
-            ],
-          },
-          {
-            id: "stage2",
-            title: "Props e Comunicação",
-            description: "Comunicação entre componentes com props",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Entender o conceito de props",
-              "Passar dados entre componentes pai e filho",
-              "Implementar comunicação entre componentes",
-            ],
-            video: "https://www.youtube.com/watch?v=FtUNQpu2b7Q",
-            tempo_estimado: "15-20 minutos",
-            questions: [
-              {
-                id: "q2",
-                type: QuestionType.TRUE_OR_FALSE,
-                description: "Props são imutáveis em componentes React.",
-                isTrue: true,
-                explanation: "Correto! Props são somente leitura e não devem ser modificadas dentro do componente.",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "5",
-        titulo: "APIs Nativas",
-        concluida: false,
-        icon: "crown",
-        iconLibrary: "lucide",
-        descricao: "Acesso a recursos nativos do dispositivo",
-        // Novo array de stages
-        stages: [
-          {
-            id: "stage1",
-            title: "Armazenamento de Dados",
-            description: "Opções para armazenar dados localmente",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Conhecer as opções de armazenamento local",
-              "Implementar AsyncStorage para dados simples",
-              "Trabalhar com bancos de dados locais",
-            ],
-            image: "https://docs.expo.dev/static/images/og.png",
-            tempo_estimado: "20-25 minutos",
-            questions: [
-              {
-                id: "q1",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Quais das seguintes APIs são usadas para armazenamento de dados em React Native?",
-                options: [
-                  { id: "a", text: "AsyncStorage" },
-                  { id: "b", text: "SQLite" },
-                  { id: "c", text: "Realm" },
-                  { id: "d", text: "Firebase Firestore" },
-                ],
-                correctOptions: ["a", "b", "c", "d"],
-                multipleCorrect: true,
-                image: require("@/assets/images/logo.png"),
-                statementText: "Selecione todas as opções corretas:",
-                explanation:
-                  "Todas estas são opções válidas para armazenamento de dados em aplicativos React Native, cada uma com diferentes casos de uso e complexidade.",
-              },
-            ],
-          },
-          {
-            id: "stage2",
-            title: "Geolocalização",
-            description: "Acessando a localização do dispositivo",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Solicitar permissões de localização",
-              "Obter a posição atual do usuário",
-              "Monitorar mudanças de localização",
-            ],
-            video: "https://www.youtube.com/watch?v=qlELLakgO9o",
-            tempo_estimado: "20-25 minutos",
-            questions: [
-              {
-                id: "q2",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Qual API é usada para acessar a localização do dispositivo em React Native?",
-                options: [
-                  { id: "a", text: "react-native-geolocation" },
-                  { id: "b", text: "expo-location" },
-                  { id: "c", text: "react-native-maps" },
-                  { id: "d", text: "react-native-gps" },
-                ],
-                correctOptions: ["a", "b"],
-                multipleCorrect: true,
-                explanation:
-                  "react-native-geolocation e expo-location são APIs para acessar a localização do dispositivo. react-native-maps é para exibir mapas e react-native-gps não é uma biblioteca padrão.",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "2",
-    nome: "Básico 2",
-    image: "",
-    backgroundSvg: Background2, // Different SVG component for background
-    etapas: [
-      {
-        id: "1",
-        titulo: "Roupas",
-        concluida: false,
-        icon: "https://cdn-icons-png.flaticon.com/512/69/69544.png",
-        descricao: "Vocabulário de vestuário",
-        // Novo array de stages
-        stages: [
-          {
-            id: "stage1",
-            title: "Roupas Básicas",
-            description: "Vocabulário de roupas básicas",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Aprender nomes de roupas comuns",
-              "Praticar a pronúncia correta",
-              "Usar as palavras em contexto",
-            ],
-            image:
-              "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Y2xvdGhpbmd8ZW58MHx8MHx8fDA%3D&w=1000&q=80",
-            tempo_estimado: "10-15 minutos",
-            questions: [
-              {
-                id: "q1",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Quais das seguintes são peças de roupa para a parte superior do corpo?",
-                options: [
-                  { id: "a", text: "Camisa" },
-                  { id: "b", text: "Calça" },
-                  { id: "c", text: "Blusa" },
-                  { id: "d", text: "Sapato" },
-                ],
-                correctOptions: ["a", "c"],
-                multipleCorrect: true,
-                statementText: "Selecione todas as opções corretas:",
-                explanation:
-                  "Camisa e blusa são peças de vestuário usadas na parte superior do corpo. Calça é usada na parte inferior e sapato nos pés.",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "2",
-        titulo: "Cores",
-        concluida: false,
-        icon: "palette",
-        iconLibrary: "material",
-        descricao: "Aprenda as cores",
-        // Novo array de stages
-        stages: [
-          {
-            id: "stage1",
-            title: "Cores Primárias",
-            description: "Aprendendo sobre cores primárias",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Identificar as cores primárias",
-              "Entender a teoria das cores",
-              "Aplicar cores em contextos práticos",
-            ],
-            image:
-              "https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y29sb3JzfGVufDB8fDB8fHww&w=1000&q=80",
-            tempo_estimado: "10-15 minutos",
-            questions: [
-              {
-                id: "q1",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Quais das seguintes são cores primárias no sistema de cores subtrativas?",
-                options: [
-                  { id: "a", text: "Vermelho" },
-                  { id: "b", text: "Verde" },
-                  { id: "c", text: "Azul" },
-                  { id: "d", text: "Amarelo" },
-                ],
-                correctOptions: ["a", "c", "d"],
-                multipleCorrect: true,
-                statementText: "Selecione todas as cores primárias:",
-                explanation:
-                  "No sistema de cores subtrativas (como tintas), as cores primárias são vermelho, azul e amarelo. No sistema aditivo (como luz), são vermelho, verde e azul.",
-              },
-            ],
-          },
-          {
-            id: "stage2",
-            title: "Mistura de Cores",
-            description: "Aprendendo a misturar cores",
-            completed: false, // Este stage não está concluído
-            pontos_chave: [
-              "Entender como misturar cores primárias",
-              "Criar cores secundárias e terciárias",
-              "Aplicar misturas de cores em exemplos práticos",
-            ],
-            video: "https://www.youtube.com/watch?v=_2LLXnUdUIc",
-            tempo_estimado: "15-20 minutos",
-            questions: [
-              {
-                id: "q2",
-                type: QuestionType.MULTIPLE_CHOICE,
-                description: "Qual é a cor resultante da mistura de azul e amarelo?",
-                options: [
-                  { id: "a", text: "Verde" },
-                  { id: "b", text: "Roxo" },
-                  { id: "c", text: "Laranja" },
-                  { id: "d", text: "Marrom" },
-                ],
-                correctOptions: ["a"],
-                multipleCorrect: false,
-                explanation: "A mistura de azul e amarelo resulta na cor verde.",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-]
+// Remove the export const trilhas = [...] declaration completely
 
 // Main Home component
 const Home = () => {
@@ -604,7 +90,10 @@ const Home = () => {
   } | null>(null)
 
   // Add state to track the current background SVG after the selectedQuestion state
-  const [currentBackgroundSvg, setCurrentBackgroundSvg] = useState(() => trilhas[0].backgroundSvg)
+  const [currentBackgroundSvg, setCurrentBackgroundSvg] = useState<any>(null)
+
+  // In the Home component, add the following after the other useState declarations:
+  const { trails: trilhas, isLoading: trailsLoading, error: trailsError, refetch: refetchTrails } = useTrails()
 
   // Estatísticas do usuário para o cabeçalho
   const [userStats, setUserStats] = useState({
@@ -615,7 +104,11 @@ const Home = () => {
   })
 
   // Dados da trilha atual
-  const currentTrilha = trilhas[trilhaAtualIndex]
+  // Update the currentTrilha assignment to handle the case when trilhas is empty
+  // Replace:
+  // const currentTrilha = trilhas[trilhaAtualIndex]
+  // With:
+  const currentTrilha = trilhas && trilhas.length > 0 ? trilhas[trilhaAtualIndex] : null
 
   // Função para calcular o progresso de uma etapa com base nos stages concluídos
   const calculateEtapaProgress = (etapa: any): number => {
@@ -666,26 +159,35 @@ const Home = () => {
     progress: number
   }
 
-  // 2. Agora, vamos corrigir o mapeamento de etapas
+  // 2. Now, let's correct the mapping of etapas
 
-  const stages = currentTrilha.etapas.map((etapa, index) => {
-    // Calcular o progresso com base nos stages concluídos
-    const progress = calculateEtapaProgress(etapa)
+  // Update the stages mapping to handle the case when currentTrilha is null
+  // Replace:
+  // const stages = currentTrilha.etapas.map((etapa, index) => {
+  // With:
+  const stages =
+    currentTrilha && currentTrilha.etapas
+      ? currentTrilha.etapas.map(
+          (etapa: { id: any; titulo: any; descricao: any; icon: any; iconLibrary: any; stages: any }, index: any) => {
+            // Calcular o progresso com base nos stages concluídos
+            const progress = calculateEtapaProgress(etapa)
 
-    // Verificar se a etapa está totalmente concluída
-    const concluida = isEtapaCompleted(etapa)
+            // Verificar se a etapa está totalmente concluída
+            const concluida = isEtapaCompleted(etapa)
 
-    return {
-      id: etapa.id,
-      titulo: etapa.titulo,
-      descricao: etapa.descricao || "Descrição da etapa não disponível",
-      concluida: concluida,
-      icon: etapa.icon || "crown",
-      iconLibrary: etapa.iconLibrary || "lucide",
-      stages: etapa.stages || [],
-      progress: progress,
-    } as EtapaInfo
-  })
+            return {
+              id: etapa.id,
+              titulo: etapa.titulo,
+              descricao: etapa.descricao || "Descrição da etapa não disponível",
+              concluida: concluida,
+              icon: etapa.icon || "crown",
+              iconLibrary: etapa.iconLibrary || "lucide",
+              stages: etapa.stages || [],
+              progress: progress,
+            } as EtapaInfo
+          },
+        )
+      : []
 
   // 3. Corrigir o acesso às propriedades no handleStagePress
 
@@ -693,10 +195,15 @@ const Home = () => {
     setEtapaAtualIndex(index)
 
     // Get the current etapa
+    // Update the handleStagePress function to handle the case when currentTrilha is null
+    // Replace:
+    // const currentEtapa = currentTrilha.etapas[index]
+    // With:
+    if (!currentTrilha || !currentTrilha.etapas) return
     const currentEtapa = currentTrilha.etapas[index]
 
     // Encontrar o primeiro stage não concluído ou o primeiro stage se todos estiverem concluídos
-    const currentStageIndex = currentEtapa.stages.findIndex((stage) => !stage.completed)
+    const currentStageIndex = currentEtapa.stages.findIndex((stage: { completed: any }) => !stage.completed)
     const stageIndex = currentStageIndex >= 0 ? currentStageIndex : 0
     const currentStage = currentEtapa.stages[stageIndex]
 
@@ -818,8 +325,8 @@ const Home = () => {
 
   // Add this effect to update the background SVG when the trail changes
   useEffect(() => {
-    setCurrentBackgroundSvg(() => trilhas[trilhaAtualIndex].backgroundSvg)
-  }, [trilhaAtualIndex])
+    setCurrentBackgroundSvg(() => (trilhas && trilhas.length > 0 ? trilhas[trilhaAtualIndex].backgroundSvg : null))
+  }, [trilhaAtualIndex, trilhas])
 
   // Update the handleScroll function to include background parallax effect
   const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
@@ -833,9 +340,48 @@ const Home = () => {
   // Create a dynamic SVG background component variable before the return statement
   const BackgroundSvg = currentBackgroundSvg
 
+  // Add a useEffect to refetch trails when the component mounts or when the user changes
+  useEffect(() => {
+    if (authUser) {
+      refetchTrails()
+    }
+  }, [authUser])
+
   return (
     <View className="flex-1">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
+
+      {trailsLoading && (
+        <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
+          <View className="bg-white p-6 rounded-xl shadow-lg">
+            <Text className="text-lg font-medium text-center mb-4">Carregando trilhas...</Text>
+            <ActivityIndicator size="large" color="#F6A608" />
+          </View>
+        </View>
+      )}
+
+      {trailsError && (
+        <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
+          <View className="bg-white p-6 rounded-xl shadow-lg">
+            <Text className="text-lg font-medium text-center mb-4 text-red-500">Erro ao carregar trilhas</Text>
+            <Text className="text-gray-600 mb-4">{trailsError}</Text>
+            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refetchTrails}>
+              <Text className="text-white font-medium">Tentar novamente</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {!trailsLoading && trilhas && trilhas.length === 0 && (
+        <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
+          <View className="bg-white p-6 rounded-xl shadow-lg">
+            <Text className="text-lg font-medium text-center mb-4">Nenhuma trilha encontrada</Text>
+            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refetchTrails}>
+              <Text className="text-white font-medium">Atualizar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Background SVG with parallax effect */}
       <View
@@ -858,12 +404,29 @@ const Home = () => {
             transform: [{ translateY: backgroundScrollY }],
           }}
         >
-          {BackgroundSvg && (
+          {BackgroundSvg ? (
             <BackgroundSvg
               width="100%"
               height={height * 1.5} // Make SVG taller than screen for scrolling effect
               preserveAspectRatio="xMidYMid slice"
+              onError={() => {
+                console.log("Error loading background SVG")
+                setCurrentBackgroundSvg(null)
+              }}
             />
+          ) : (
+            // Fallback background when SVG fails to load
+            <View
+              style={{
+                width: "100%",
+                height: height * 1.5,
+                justifyContent: "center",
+                alignItems: "center",
+                opacity: 0.1,
+              }}
+            >
+              <Text style={{ fontSize: 100, color: "#333" }}>🏞️</Text>
+            </View>
           )}
         </Animated.View>
       </View>
@@ -880,25 +443,29 @@ const Home = () => {
         </TouchableOpacity>
 
         <View className="items-center">
-          <Text className="text-white font-bold text-lg mb-1">{currentTrilha.nome}</Text>
+          <Text className="text-white font-bold text-lg mb-1">
+            {currentTrilha ? currentTrilha.nome : "Carregando..."}
+          </Text>
           <View className="flex-row justify-center items-center mt-1">
-            {trilhas.map((_, index) => (
-              <TouchableOpacity
-                key={`indicator-${index}`}
-                onPress={() => {
-                  if (index < trilhaAtualIndex) {
-                    handlePreviousTrilha()
-                  } else if (index > trilhaAtualIndex) {
-                    handleNextTrilha()
-                  }
-                }}
-                className="mx-1"
-              >
-                <View
-                  className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
-                />
-              </TouchableOpacity>
-            ))}
+            {trilhas && trilhas.length > 0
+              ? trilhas.map((_, index) => (
+                  <TouchableOpacity
+                    key={`indicator-${index}`}
+                    onPress={() => {
+                      if (index < trilhaAtualIndex) {
+                        handlePreviousTrilha()
+                      } else if (index > trilhaAtualIndex) {
+                        handleNextTrilha()
+                      }
+                    }}
+                    className="mx-1"
+                  >
+                    <View
+                      className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
+                    />
+                  </TouchableOpacity>
+                ))
+              : null}
           </View>
         </View>
 
@@ -939,8 +506,8 @@ const Home = () => {
             currentEtapaIndex={etapaAtualIndex}
             onEtapaPress={handleStagePress}
             containerHeight={containerHeight}
-            backgroundImage={currentTrilha.image}
-            trailId={currentTrilha.id}
+            backgroundImage={currentTrilha?.image}
+            trailId={currentTrilha?.id}
           />
           <View style={{ height: 100 }} />
         </ScrollView>

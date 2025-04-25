@@ -12,6 +12,7 @@ import BigAvatar from "@/src/components/BigAvatar"
 import ProgressDots from "@/src/components/ProgressDots"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import ArrowBack from "@/src/components/ArrowBack"
+import { loginApi } from "@/src/services/apiService" // Importe o serviço de API
 import React from "react"
 
 const { height } = Dimensions.get("window")
@@ -37,7 +38,7 @@ const Step04 = () => {
   // Move this hook call to the component level
   const { isAuthenticated, isLoading, refreshUserData } = useRequireAuth({ requireAuth: false })
 
-  // Modifique a função handleFinalRegister para uma abordagem mais robusta
+  // Modifique a função handleFinalRegister para obter o token JWT após o registro
   const handleFinalRegister = async () => {
     try {
       setIsCreating(true)
@@ -62,6 +63,19 @@ const Step04 = () => {
         console.log("Tentando fazer login com:", email)
         await signInWithEmailAndPassword(auth, email, password)
         console.log("Login realizado com sucesso")
+
+        // Após autenticação com Firebase, obter token JWT da API
+        try {
+          const apiResponse = await loginApi(email, password)
+          if (!apiResponse) {
+            console.warn("Não foi possível obter token JWT da API")
+          } else {
+            console.log("Token JWT obtido com sucesso")
+          }
+        } catch (apiError) {
+          console.error("Erro ao obter token JWT:", apiError)
+          // Não interromper o fluxo se falhar a obtenção do token JWT
+        }
       } catch (loginError) {
         console.error("Erro ao fazer login:", loginError)
         Toast.show({
@@ -168,12 +182,12 @@ const Step04 = () => {
           </Text>
         </View>
         <View style={styles.buttonContainer}>
-                      <View style={{ width: "100%", alignItems: "center", paddingHorizontal: 30 }}>
-          <CustomButton
-            title={isCreating ? "Criando conta..." : "Criar conta"}
-            onPress={handleFinalRegister}
-            disabled={isCreating}
-          />
+          <View style={{ width: "100%", alignItems: "center", paddingHorizontal: 30 }}>
+            <CustomButton
+              title={isCreating ? "Criando conta..." : "Criar conta"}
+              onPress={handleFinalRegister}
+              disabled={isCreating}
+            />
           </View>
           <View style={{ height: 5 }} />
           <ProgressDots currentStep={4} />

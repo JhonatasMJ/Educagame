@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import React,{ useEffect } from "react"
 
 import { useState } from "react"
 import { useRouter } from "expo-router"
@@ -9,6 +9,7 @@ import { auth } from "../services/firebaseConfig"
 import Toast from "react-native-toast-message"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useAuth } from "../context/AuthContext"
+import { loginApi } from "../services/apiService" // Importe o serviço de API
 
 export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -66,8 +67,21 @@ export const useLogin = () => {
         await AsyncStorage.removeItem("rememberedPassword")
       }
 
-      // Sign in - this will trigger the onAuthStateChanged listener
+      // Sign in with Firebase
       await signInWithEmailAndPassword(auth, email, password)
+
+      // Após autenticação com Firebase, obter token JWT da API
+      try {
+        const apiResponse = await loginApi(email, password)
+        if (!apiResponse) {
+          console.warn("Não foi possível obter token JWT da API")
+        } else {
+          console.log("Token JWT obtido com sucesso")
+        }
+      } catch (apiError) {
+        console.error("Erro ao obter token JWT:", apiError)
+        // Não interromper o fluxo se falhar a obtenção do token JWT
+      }
 
       // Don't navigate here - let the auth state listener handle it
       console.log("Login successful, auth state listener will handle navigation")

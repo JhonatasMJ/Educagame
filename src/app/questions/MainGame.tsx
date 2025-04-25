@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   StatusBar,
   TouchableOpacity,
   Modal,
-  BackHandler,
+  BackHandler, // Import BackHandler for Android back button
 } from "react-native"
 import { Clock, Award, AlertTriangle } from "lucide-react-native"
 import { router, useLocalSearchParams } from "expo-router"
@@ -19,20 +19,20 @@ import FeedbackModal from "@/src/components/FeedbackModal"
 import LoadingTransition from "@/src/components/LoadingTransition"
 import GameTimer from "@/src/utils/GameTimer"
 import { useGameProgress } from "@/src/context/GameProgressContext"
-import { trilhas, QuestionType } from "../(tabs)/home"
+import { QuestionType } from "../(tabs)/home"
 import ArrowBack from "@/src/components/ArrowBack"
 import { MOBILE_WIDTH } from "@/PlataformWrapper"
 import HelpButton from "@/src/components/HelpButton"
 import GameTutorial from "@/src/components/GameTutorial"
 import { useInactivityDetector } from "@/src/hooks/useInactivityDetector"
 import { useTutorialMode } from "@/src/context/TutorialContext"
+import { useTrails } from "@/src/hooks/useTrails"
 
 // Import game components
 import TrueOrFalse from "./trueORfalse/trueORfalse"
 import MultipleChoice from "./multipleChoice/multipleChoice"
 import Ordering from "./ordering/ordering"
 import Matching from "./matching/matching"
-import React from "react"
 
 // Define a generic question interface
 interface BaseQuestion {
@@ -234,11 +234,10 @@ const MainGame = () => {
   // Timer interval reference
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Current question
-  const currentQuestion = questions[currentQuestionIndex]
+  const { trails: trilhas, isLoading: trailsLoading, error: trailsError } = useTrails()
 
-  // Referência para rastrear se o tutorial já foi mostrado para o tipo atual
-  const tutorialShownRef = useRef<Record<string, boolean>>({})
+  //TODO CURRENT QUESTION
+  const currentQuestion = questions[currentQuestionIndex]
 
   const { panResponder, resetTimer } = useInactivityDetector({
     timeout: 6000,
@@ -275,18 +274,15 @@ const MainGame = () => {
     startHelpButtonPulse(false) // Stop pulsing when tutorial is shown
   }
 
-  // Função para lidar com o fechamento do tutorial
   const handleCloseTutorial = () => {
-    if (currentQuestion) {
-      // Marcar o tutorial como visto para este tipo de questão
-      const typeKey = String(currentQuestion.type).replace(/[^a-zA-Z0-9_]/g, "_")
-      tutorialShownRef.current[typeKey] = true
+    setShowTutorial(false)
 
-      console.log("Closing tutorial for type:", currentQuestion.type, "Key:", typeKey)
+    // Use a função do contexto para marcar o tutorial como fechado
+    if (currentQuestion) {
+      console.log("Closing tutorial for type:", currentQuestion.type)
       dismissTutorial(currentQuestion.type)
     }
 
-    setShowTutorial(false)
     resetTimer()
   }
 
@@ -328,9 +324,43 @@ const MainGame = () => {
     return () => clearTimeout(timer)
   }, [])
 
+  // Show loading screen if trails data is not yet loaded
+  if (trailsLoading || !trilhas || trilhas.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text className="text-gray-700 text-lg font-medium mt-4">Carregando trilhas...</Text>
+        <Text className="text-gray-500 text-sm mt-2">Phase ID: {phaseId}</Text>
+        <Text className="text-gray-500 text-sm">Stage ID: {stageId}</Text>
+        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
+          <Text className="text-white">Voltar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    )
+  }
+
+  // Show error screen if there was an error loading trails data
+  if (trailsError) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <Text className="text-red-500 text-lg font-medium">Erro ao carregar trilhas</Text>
+        <Text className="text-gray-500 text-sm mt-2">{trailsError}</Text>
+        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
+          <Text className="text-white">Voltar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    )
+  }
+
   // Find the questions for this stage
   useEffect(() => {
     console.log("Finding questions for phase:", phaseId, "and stage:", stageId)
+
+    // Make sure trilhas is loaded
+    if (!trilhas || trilhas.length === 0) {
+      console.log("Trilhas not loaded yet")
+      return
+    }
 
     // Find the phase with the matching ID
     let foundStage = false
@@ -418,43 +448,30 @@ const MainGame = () => {
         useNativeDriver: true,
       }),
     ]).start()
-  }, [phaseId, trailId, stageId])
 
-  // Efeito para mostrar o tutorial quando a questão mudar
+    // Show tutorial on first load
+    setTimeout(() => {
+      setShowTutorial(true)
+    }, 500)
+  }, [phaseId, trailId, stageId, trilhas, currentQuestion?.type, isTutorialDismissed, isInitialized])
+
+  const shouldShowTutorial = useRef(false)
+
   useEffect(() => {
-    if (!isInitialized || !currentQuestion) return
+    shouldShowTutorial.current =
+      isInitialized && currentQuestion !== undefined && !isTutorialDismissed(currentQuestion.type)
+  }, [currentQuestion?.type, isTutorialDismissed, isInitialized])
 
-    const questionType = currentQuestion.type
-    const typeKey = String(questionType).replace(/[^a-zA-Z0-9_]/g, "_")
-
-    console.log(
-      "Checking tutorial for current question type:",
-      questionType,
-      "Key:",
-      typeKey,
-      "Already shown in this session:",
-      tutorialShownRef.current[typeKey],
-      "Dismissed globally:",
-      isTutorialDismissed(questionType),
-    )
-
-    // Só mostrar o tutorial se:
-    // 1. Não foi mostrado nesta sessão para este tipo
-    // 2. Não foi descartado globalmente
-    // 3. Não há outros modais abertos
-    if (
-      !tutorialShownRef.current[typeKey] &&
-      !isTutorialDismissed(questionType) &&
-      !showFeedback &&
-      !showLoading &&
-      !showExitConfirmation
-    ) {
-      console.log("Showing tutorial for type:", questionType)
+  useEffect(() => {
+    if (shouldShowTutorial.current) {
+      console.log("Should show tutorial for type:", currentQuestion?.type)
       setTimeout(() => {
         setShowTutorial(true)
       }, 500)
+    } else {
+      console.log("Should NOT show tutorial")
     }
-  }, [currentQuestionIndex, isInitialized, questions])
+  }, [shouldShowTutorial.current])
 
   // Background timer implementation
   useEffect(() => {

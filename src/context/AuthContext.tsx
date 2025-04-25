@@ -1,11 +1,28 @@
 "use client"
 
-import  React from "react"
+import React from "react"
 import { createContext, useState, useEffect, useContext, type ReactNode } from "react"
 import { getDatabase, ref, get, update } from "firebase/database"
 import { signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth"
 import { auth } from "../services/firebaseConfig"
 import { useRouter } from "expo-router"
+import { getAuthToken, removeAuthToken } from "../services/apiService"
+
+// Adicione o token JWT à interface AuthContextData
+interface AuthContextData {
+  authUser: any | null
+  userData: User | null
+  loading: boolean
+  error: string | null
+  jwtToken: string | null // Novo campo para o token JWT
+  refreshUserData: () => Promise<void>
+  getAllUsers: () => Promise<User[]>
+  logout: () => Promise<void>
+  updateUserPoints: (points: number) => Promise<void>
+  resetPassword: (email: string) => Promise<boolean>
+  showLoadingTransition: boolean
+  setShowLoadingTransition: (show: boolean) => void
+}
 
 interface User {
   avatarSource: string
@@ -19,26 +36,13 @@ interface User {
   createdAt: string
 }
 
-interface AuthContextData {
-  authUser: any | null
-  userData: User | null
-  loading: boolean
-  error: string | null
-  refreshUserData: () => Promise<void>
-  getAllUsers: () => Promise<User[]>
-  logout: () => Promise<void>
-  updateUserPoints: (points: number) => Promise<void>
-  resetPassword: (email: string) => Promise<boolean>
-  showLoadingTransition: boolean
-  setShowLoadingTransition: (show: boolean) => void
-}
-
 interface AuthProviderProps {
   children: ReactNode
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
+// No AuthProvider, adicione o estado para o token JWT
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authUser, setAuthUser] = useState<any | null>(null)
   const [userData, setUserData] = useState<User | null>(null)
@@ -46,7 +50,22 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null)
   const [showLoadingTransition, setShowLoadingTransition] = useState(false)
   const [isAuthInitialized, setIsAuthInitialized] = useState(false)
+  const [jwtToken, setJwtToken] = useState<string | null>(null) // Novo estado para o token JWT
   const router = useRouter()
+
+  // Adicione um efeito para carregar o token JWT do AsyncStorage
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const token = await getAuthToken()
+        setJwtToken(token)
+      } catch (error) {
+        console.error("Erro ao carregar token JWT:", error)
+      }
+    }
+
+    loadToken()
+  }, [])
 
   // This effect handles the initial auth state and listens for changes
   useEffect(() => {
@@ -166,14 +185,17 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  // Modifique a função logout para também remover o token JWT
   const logout = async () => {
     try {
       setLoading(true)
       setShowLoadingTransition(true)
       await signOut(auth)
+      await removeAuthToken() // Remover o token JWT
       setAuthUser(null)
       setUserData(null)
       setError(null)
+      setJwtToken(null) // Limpar o token JWT do estado
 
       // Navigate to login after logout
       router.replace("/login")
@@ -219,11 +241,13 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  // Atualize o contextValue para incluir o token JWT
   const contextValue: AuthContextData = {
     authUser,
     userData,
     loading,
     error,
+    jwtToken, // Adicione o token JWT ao contexto
     refreshUserData,
     getAllUsers,
     logout,

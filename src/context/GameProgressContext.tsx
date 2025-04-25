@@ -1,8 +1,13 @@
 "use client"
 
-import  React from "react"
+import React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import {
+  startPhase as apiStartPhase,
+  answerQuestion as apiAnswerQuestion,
+  completePhase as apiCompletePhase,
+} from "../services/apiService"
 // Importe o contexto de autenticação
 import { useAuth } from "./AuthContext"
 
@@ -61,7 +66,7 @@ const initialProgress: GameProgress = {
 export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [progress, setProgress] = useState<GameProgress>(initialProgress)
   const [isLoading, setIsLoading] = useState(true)
-  const { updateUserPoints } = useAuth() // Use o contexto de autenticação
+  const { authUser, updateUserPoints } = useAuth() // Use o contexto de autenticação
 
   // Load progress from AsyncStorage on mount
   useEffect(() => {
@@ -96,7 +101,7 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, [progress, isLoading])
 
-  // Start a phase
+  // Modifique a função startPhase para usar a API
   const startPhase = (trailId: string, phaseId: string) => {
     setProgress((prev) => {
       // Find or create trail
@@ -122,6 +127,13 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Mark phase as started
       phase.started = true
 
+      // Chamar a API para atualizar o progresso no servidor
+      if (authUser) {
+        apiStartPhase(authUser.uid, trailId, phaseId)
+          .then(() => console.log("Fase iniciada na API com sucesso"))
+          .catch((error) => console.error("Erro ao iniciar fase na API:", error))
+      }
+
       return {
         ...prev,
         currentPhaseId: phaseId,
@@ -130,7 +142,7 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }
 
-  // Modifique a função answerQuestion para atualizar pontos no Firebase
+  // Modifique a função answerQuestion para usar a API
   const answerQuestion = (correct: boolean, questionId: string) => {
     setProgress((prev) => {
       const newProgress = { ...prev }
@@ -170,6 +182,19 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
               updateUserPoints(pointsPerCorrectAnswer)
             }
 
+            // Chamar a API para atualizar o progresso no servidor
+            if (authUser && prev.currentPhaseId) {
+              for (const trail of prev.trails) {
+                const phase = trail.phases.find((p) => p.id === prev.currentPhaseId)
+                if (phase) {
+                  apiAnswerQuestion(authUser.uid, trail.id, prev.currentPhaseId, questionId, correct)
+                    .then(() => console.log("Resposta registrada na API com sucesso"))
+                    .catch((error) => console.error("Erro ao registrar resposta na API:", error))
+                  break
+                }
+              }
+            }
+
             break
           }
         }
@@ -179,7 +204,7 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }
 
-  // Modifique a função completePhase para atualizar pontos no Firebase
+  // Modifique a função completePhase para usar a API
   const completePhase = async (phaseId: string, timeSpent: number) => {
     setProgress((prev) => {
       const newProgress = { ...prev }
@@ -197,6 +222,19 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
           // Atualizar pontos no Firebase
           updateUserPoints(completionBonus)
+
+          // Chamar a API para atualizar o progresso no servidor
+          if (authUser) {
+            for (const trail of newProgress.trails) {
+              const phase = trail.phases.find((p) => p.id === phaseId)
+              if (phase) {
+                apiCompletePhase(authUser.uid, trail.id, phaseId, timeSpent)
+                  .then(() => console.log("Fase completada na API com sucesso"))
+                  .catch((error) => console.error("Erro ao completar fase na API:", error))
+                break
+              }
+            }
+          }
           break
         }
       }
