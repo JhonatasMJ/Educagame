@@ -85,6 +85,7 @@ export const useLogin = () => {
 
       // Don't navigate here - let the auth state listener handle it
       console.log("Login successful, auth state listener will handle navigation")
+      //await refreshUserData();
     } catch (error: any) {
       console.error("Login error:", error.code, error.message)
       setShowLoadingTransition(false)
@@ -109,6 +110,13 @@ export const useLogin = () => {
           text2: "Email ou senha inválidos.",
         })
       }
+
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Erro",
+        text2: "Erro ao fazer login, verifique suas credenciais!",
+      })
     } finally {
       setIsLoading(false)
     }

@@ -32,7 +32,6 @@ import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import { useEditMode } from "@/src/context/EditableContext"
 import UnsavedChangesModal from "@/src/components/UnsavedChangesModal"
 import React from "react"
-const { height, width } = Dimensions.get("window")
 const Drawer = createDrawerNavigator()
 
 const avatarComponents = {
@@ -65,7 +64,8 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   } = useEditMode()
 
   // For protected routes
-  const { isAuthenticated, isLoading } = useRequireAuth()
+
+  useRequireAuth({ requireAuth: true, showToast: true })
 
   // Update the edit mode context when local edit state changes
   useEffect(() => {
@@ -226,9 +226,8 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                 </View>
               </View>
               <TouchableOpacity
-                className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${
-                  editar ? "bg-primary" : "bg-secondary"
-                }`}
+                className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${editar ? "bg-primary" : "bg-secondary"
+                  }`}
                 onPress={() => {
                   handleEdit()
                   setEditar(!editar)
@@ -290,9 +289,8 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                     {Object.entries(avatarComponents).map(([key, AvatarComp]) => (
                       <TouchableOpacity
                         key={key}
-                        className={`p-3 rounded-xl border-2 relative ${
-                          avatarSource === key ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent bg-zinc-700"
-                        }`}
+                        className={`p-3 rounded-xl border-2 relative ${avatarSource === key ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent bg-zinc-700"
+                          }`}
                         onPress={() => handleAvatarChange(key)}
                       >
                         <AvatarComp width={85} height={85} style={{ borderRadius: 45 }} />

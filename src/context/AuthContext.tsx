@@ -7,6 +7,8 @@ import { signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/au
 import { auth } from "../services/firebaseConfig"
 import { useRouter } from "expo-router"
 import { getAuthToken, removeAuthToken } from "../services/apiService"
+import { useLogin } from "../hooks/UseLogin"
+import { useRequireAuth } from "../hooks/useRequireAuth"
 
 // Adicione o token JWT à interface AuthContextData
 interface AuthContextData {
@@ -52,6 +54,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false)
   const [jwtToken, setJwtToken] = useState<string | null>(null) // Novo estado para o token JWT
   const router = useRouter()
+    const { clearSavedCredentials } = useLogin()
 
   // Adicione um efeito para carregar o token JWT do AsyncStorage
   useEffect(() => {
@@ -157,6 +160,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log("refreshUserData: Nenhum usuário autenticado")
       setUserData(null)
       setShowLoadingTransition(false)
+      // Primeiro faz logout no Firebase
+      await logout()
+      // Depois limpa as credenciais salvas
+      await clearSavedCredentials()
+
     }
   }
 

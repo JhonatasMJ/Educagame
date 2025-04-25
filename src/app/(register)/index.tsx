@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { View, Text, SafeAreaView, Alert } from "react-native";
+import { View, Text, SafeAreaView, Alert, ScrollView } from "react-native";
 import Character from "../../components/Character";
 import CustomButton from "@/src/components/CustomButton";
 import Logo from "../../../assets/images/logoWeb.svg";
@@ -49,6 +49,7 @@ const Register = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white justify-around">
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
        <ArrowBack onPress={() => router.back()} className="top-3 left-3 absolute bg-primary" color="#f2f2f2" />
         
       <View style={{ alignItems: "center" }}>
@@ -101,7 +102,7 @@ const Register = () => {
       <View style={{ justifyContent: "center", alignItems: "center", marginBottom: "3%" }}>
         <ProgressDots currentStep={0} />
       </View>
-      
+      </ScrollView>
     </SafeAreaView>
   );
 };

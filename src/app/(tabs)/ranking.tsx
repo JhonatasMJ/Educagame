@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { View, Text, TouchableOpacity, FlatList, SafeAreaView, Animated, StatusBar } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import { useAuth } from "@/src/context/AuthContext"
+import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 
 // Importando os componentes de avatar
 import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
@@ -37,6 +38,8 @@ const RankingScreen = () => {
   const [users, setUsers] = useState<User[]>([])
   const [displayUsers, setDisplayUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+
+  useRequireAuth({ requireAuth: true, showToast: true })
 
   const { userData, authUser, getAllUsers } = useAuth()
 
@@ -139,20 +142,19 @@ const RankingScreen = () => {
 
     return (
       <View
-        className={`flex-row items-center ${
-          isCurrentUser ? "bg-secondary  mx-1" : "bg-white"
-        } rounded-lg mb-3.5 p-3.5 shadow-md`}
+        className={`flex-row items-center ${isCurrentUser ? "bg-secondary  mx-1" : "bg-white"
+          } rounded-lg mb-3.5 p-3.5 shadow-md`}
         style={
           isCurrentUser
             ? {
-                transform: [{ scale: 1.05 }],
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 6,
-                elevation: 8,
-                zIndex: 10,
-              }
+              transform: [{ scale: 1.05 }],
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 6,
+              elevation: 8,
+              zIndex: 10,
+            }
             : {}
         }
       >
