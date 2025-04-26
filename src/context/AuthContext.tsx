@@ -1,23 +1,23 @@
 "use client"
 
 import React from "react"
-import { createContext, useState, useEffect, useContext, type ReactNode } from "react"
+import { createContext, useState, useEffect, useContext, type ReactNode, useCallback } from "react"
 import { getDatabase, ref, get, update } from "firebase/database"
 import { signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth"
 import { auth } from "../services/firebaseConfig"
 import { useRouter } from "expo-router"
-import { getAuthToken, removeAuthToken } from "../services/apiService"
-import { useLogin } from "../hooks/UseLogin"
-import { useRequireAuth } from "../hooks/useRequireAuth"
+import { getAuthToken, removeAuthToken, saveAuthToken} from "../services/apiService"
 
-// Adicione o token JWT à interface AuthContextData
+// Adicione o token JWT e isTokenLoaded à interface AuthContextData
 interface AuthContextData {
   authUser: any | null
   userData: User | null
   loading: boolean
   error: string | null
-  jwtToken: string | null // Novo campo para o token JWT
+  jwtToken: string | null
+  isTokenLoaded: boolean // Novo campo para indicar se o token foi carregado
   refreshUserData: () => Promise<void>
+  refreshToken: () => Promise<boolean> // Nova função para atualizar o token
   getAllUsers: () => Promise<User[]>
   logout: () => Promise<void>
   updateUserPoints: (points: number) => Promise<void>
@@ -44,7 +44,6 @@ interface AuthProviderProps {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
-// No AuthProvider, adicione o estado para o token JWT
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authUser, setAuthUser] = useState<any | null>(null)
   const [userData, setUserData] = useState<User | null>(null)
@@ -52,25 +51,61 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null)
   const [showLoadingTransition, setShowLoadingTransition] = useState(false)
   const [isAuthInitialized, setIsAuthInitialized] = useState(false)
-  const [jwtToken, setJwtToken] = useState<string | null>(null) // Novo estado para o token JWT
+  const [jwtToken, setJwtToken] = useState<string | null>(null)
+  const [isTokenLoaded, setIsTokenLoaded] = useState(false) // Novo estado para controlar se o token foi carregado
   const router = useRouter()
-    const { clearSavedCredentials } = useLogin()
 
-  // Adicione um efeito para carregar o token JWT do AsyncStorage
-  useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const token = await getAuthToken()
-        setJwtToken(token)
-      } catch (error) {
-        console.error("Erro ao carregar token JWT:", error)
-      }
+  // Função para carregar o token JWT do AsyncStorage
+  const loadToken = useCallback(async () => {
+    try {
+      console.log("Carregando token JWT do AsyncStorage...")
+      const token = await getAuthToken()
+      console.log("Token JWT carregado:", token ? "Token encontrado" : "Token não encontrado")
+      setJwtToken(token)
+      return token
+    } catch (error) {
+      console.error("Erro ao carregar token JWT:", error)
+      setJwtToken(null)
+      return null
+    } finally {
+      setIsTokenLoaded(true) // Marcar que o token foi carregado (mesmo que seja null)
     }
-
-    loadToken()
   }, [])
 
-  // This effect handles the initial auth state and listens for changes
+  // Função para atualizar o token JWT
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    try {
+      console.log("Atualizando token JWT...")
+      // Aqui você implementaria a lógica para obter um novo token da sua API
+      // Por exemplo, usando um refresh token ou reautenticando o usuário
+      
+      // Exemplo simplificado (substitua pela sua lógica real):
+      // const response = await fetch('/api/auth/refresh', {
+      //   method: 'POST',
+      //   headers: { 'Authorization': `Bearer ${jwtToken}` }
+      // });
+      // const data = await response.json();
+      // if (data.token) {
+      //   await saveAuthToken(data.token, data.expiresIn);
+      //   setJwtToken(data.token);
+      //   return true;
+      // }
+      
+      // Como não temos a implementação real, vamos apenas recarregar o token atual
+      const token = await loadToken();
+      return !!token;
+    } catch (error) {
+      console.error("Erro ao atualizar token JWT:", error)
+      return false
+    }
+  }, [loadToken])
+
+  // Efeito para carregar o token JWT quando o componente é montado
+  useEffect(() => {
+    loadToken()
+  }, [loadToken])
+
+  // Efeito para lidar com o estado de autenticação e ouvir mudanças
   useEffect(() => {
     let isMounted = true
     console.log("Setting up auth state listener")
@@ -83,6 +118,13 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (user) {
           setAuthUser(user)
+          
+          // Verificar se o token JWT está disponível
+          if (!jwtToken && isTokenLoaded) {
+            console.log("Usuário autenticado, mas sem token JWT. Tentando atualizar...")
+            await refreshToken()
+          }
+          
           const db = getDatabase()
           const userRef = ref(db, `users/${user.uid}`)
 
@@ -106,6 +148,12 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (isMounted) {
             setAuthUser(null)
             setUserData(null)
+            
+            // Se não há usuário autenticado, remover o token JWT
+            if (jwtToken) {
+              await removeAuthToken()
+              setJwtToken(null)
+            }
           }
         }
       } catch (error) {
@@ -126,9 +174,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isMounted = false
       unsubscribe()
     }
-  }, [])
+  }, [jwtToken, isTokenLoaded, refreshToken])
 
-  // Modifique a função refreshUserData para ser mais robusta
+  // Função para atualizar os dados do usuário
   const refreshUserData = async () => {
     console.log("Iniciando refreshUserData")
     if (authUser) {
@@ -160,14 +208,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log("refreshUserData: Nenhum usuário autenticado")
       setUserData(null)
       setShowLoadingTransition(false)
-      // Primeiro faz logout no Firebase
-      await logout()
-      // Depois limpa as credenciais salvas
-      await clearSavedCredentials()
-
     }
   }
 
+  // Função para obter todos os usuários
   const getAllUsers = async (): Promise<User[]> => {
     const db = getDatabase()
     const usersRef = ref(db, "users")
@@ -193,7 +237,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Modifique a função logout para também remover o token JWT
+  // Função para fazer logout
   const logout = async () => {
     try {
       setLoading(true)
@@ -216,6 +260,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  // Função para atualizar os pontos do usuário
   const updateUserPoints = async (points: number) => {
     if (authUser && userData) {
       const db = getDatabase()
@@ -234,6 +279,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  // Função para redefinir a senha
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
       setLoading(true)
@@ -249,14 +295,16 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Atualize o contextValue para incluir o token JWT
+  // Valor do contexto
   const contextValue: AuthContextData = {
     authUser,
     userData,
     loading,
     error,
-    jwtToken, // Adicione o token JWT ao contexto
+    jwtToken,
+    isTokenLoaded, // Novo campo para indicar se o token foi carregado
     refreshUserData,
+    refreshToken, // Nova função para atualizar o token
     getAllUsers,
     logout,
     updateUserPoints,

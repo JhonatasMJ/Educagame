@@ -1,6 +1,6 @@
 "use client"
 
-import React,{ useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -68,12 +68,13 @@ const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
-  const { userData, authUser, refreshUserData } = useAuth()
+  const { userData, authUser, refreshUserData, isTokenLoaded } = useAuth()
   const { getPhaseCompletionPercentage } = useGameProgress()
   const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
+  const [hasLoadedTrails, setHasLoadedTrails] = useState(false);
 
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
@@ -93,7 +94,12 @@ const Home = () => {
   const [currentBackgroundSvg, setCurrentBackgroundSvg] = useState<any>(null)
 
   // In the Home component, add the following after the other useState declarations:
-  const { trails: trilhas, isLoading: trailsLoading, error: trailsError, refetch: refetchTrails } = useTrails()
+  const { trails: trilhas, isLoading: trailsLoading, error: trailsError, fetchTrails } = useTrails()
+
+  async function refreshTrails() {
+    console.log('clicou no refresh');
+    await fetchTrails();
+  }
 
   // Estatísticas do usuário para o cabeçalho
   const [userStats, setUserStats] = useState({
@@ -168,25 +174,25 @@ const Home = () => {
   const stages =
     currentTrilha && currentTrilha.etapas
       ? currentTrilha.etapas.map(
-          (etapa: { id: any; titulo: any; descricao: any; icon: any; iconLibrary: any; stages: any }, index: any) => {
-            // Calcular o progresso com base nos stages concluídos
-            const progress = calculateEtapaProgress(etapa)
+        (etapa: { id: any; titulo: any; descricao: any; icon: any; iconLibrary: any; stages: any }, index: any) => {
+          // Calcular o progresso com base nos stages concluídos
+          const progress = calculateEtapaProgress(etapa)
 
-            // Verificar se a etapa está totalmente concluída
-            const concluida = isEtapaCompleted(etapa)
+          // Verificar se a etapa está totalmente concluída
+          const concluida = isEtapaCompleted(etapa)
 
-            return {
-              id: etapa.id,
-              titulo: etapa.titulo,
-              descricao: etapa.descricao || "Descrição da etapa não disponível",
-              concluida: concluida,
-              icon: etapa.icon || "crown",
-              iconLibrary: etapa.iconLibrary || "lucide",
-              stages: etapa.stages || [],
-              progress: progress,
-            } as EtapaInfo
-          },
-        )
+          return {
+            id: etapa.id,
+            titulo: etapa.titulo,
+            descricao: etapa.descricao || "Descrição da etapa não disponível",
+            concluida: concluida,
+            icon: etapa.icon || "crown",
+            iconLibrary: etapa.iconLibrary || "lucide",
+            stages: etapa.stages || [],
+            progress: progress,
+          } as EtapaInfo
+        },
+      )
       : []
 
   // 3. Corrigir o acesso às propriedades no handleStagePress
@@ -340,12 +346,21 @@ const Home = () => {
   // Create a dynamic SVG background component variable before the return statement
   const BackgroundSvg = currentBackgroundSvg
 
-  // Add a useEffect to refetch trails when the component mounts or when the user changes
-  useEffect(() => {
-    if (authUser) {
-      refetchTrails()
-    }
-  }, [authUser])
+// Adicione isso após suas declarações de estado
+const fetchTrailsRef = useRef(fetchTrails);
+
+useEffect(() => {
+  // Atualiza a referência quando fetchTrails mudar
+  fetchTrailsRef.current = fetchTrails;
+}, [fetchTrails]);
+
+// Substitua seu useEffect atual por este
+useEffect(() => {
+  // Agora verificamos se o token foi carregado e se o usuário está autenticado
+  if (authUser && isTokenLoaded) {
+    fetchTrailsRef.current();
+  }
+}, [authUser, isTokenLoaded]);
 
   return (
     <View className="flex-1">
@@ -365,7 +380,7 @@ const Home = () => {
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4 text-red-500">Erro ao carregar trilhas</Text>
             <Text className="text-gray-600 mb-4">{trailsError}</Text>
-            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refetchTrails}>
+            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refreshTrails}>
               <Text className="text-white font-medium">Tentar novamente</Text>
             </TouchableOpacity>
           </View>
@@ -376,7 +391,7 @@ const Home = () => {
         <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4">Nenhuma trilha encontrada</Text>
-            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refetchTrails}>
+            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refreshTrails}>
               <Text className="text-white font-medium">Atualizar</Text>
             </TouchableOpacity>
           </View>
@@ -449,22 +464,22 @@ const Home = () => {
           <View className="flex-row justify-center items-center mt-1">
             {trilhas && trilhas.length > 0
               ? trilhas.map((_, index) => (
-                  <TouchableOpacity
-                    key={`indicator-${index}`}
-                    onPress={() => {
-                      if (index < trilhaAtualIndex) {
-                        handlePreviousTrilha()
-                      } else if (index > trilhaAtualIndex) {
-                        handleNextTrilha()
-                      }
-                    }}
-                    className="mx-1"
-                  >
-                    <View
-                      className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
-                    />
-                  </TouchableOpacity>
-                ))
+                <TouchableOpacity
+                  key={`indicator-${index}`}
+                  onPress={() => {
+                    if (index < trilhaAtualIndex) {
+                      handlePreviousTrilha()
+                    } else if (index > trilhaAtualIndex) {
+                      handleNextTrilha()
+                    }
+                  }}
+                  className="mx-1"
+                >
+                  <View
+                    className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
+                  />
+                </TouchableOpacity>
+              ))
               : null}
           </View>
         </View>
