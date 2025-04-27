@@ -34,9 +34,9 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
   const userDetailsData: User = {
     points: userData?.points || 0,
     hours: 120,
-    consecutiveDays: 25,
-    consecutiveCorrect: 10,
-    totalConsecutiveDays: 120,
+    consecutiveDays: userData?.consecutiveDays || 0,
+    consecutiveCorrect: userData?.consecutiveCorrect || 0,
+    totalConsecutiveDays: userData?.totalConsecutiveDays || 0,
     id: "",
     name: "",
     avatarSource: "",

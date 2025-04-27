@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React,{ useState, useEffect } from "react"
 import { View, Text, TouchableOpacity, Image } from "react-native"
 import { Check, X } from "lucide-react-native"
 import type { QuestionType } from "../../(tabs)/home" // Ajuste o caminho conforme necessário
-import React from "react"
 
 interface TrueOrFalseQuestion {
   id: string
@@ -22,6 +21,7 @@ interface TrueOrFalseProps {
   questionNumber: number
 }
 
+// Modifique o componente TrueOrFalse para lidar melhor com os dados
 const TrueOrFalse = ({ question, onAnswer, questionNumber }: TrueOrFalseProps) => {
   const [selectedAnswer, setSelectedAnswer] = useState<boolean | null>(null)
 
@@ -95,9 +95,9 @@ const TrueOrFalse = ({ question, onAnswer, questionNumber }: TrueOrFalseProps) =
     <View className="flex-1 p-4">
       <View className="mb-5">
         {question.description && (
-        <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
-        </View>
+          <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <Text className="text-lg text-gray-800 leading-relaxed">{question.description}</Text>
+          </View>
         )}
       </View>
 
@@ -161,4 +161,3 @@ const TrueOrFalse = ({ question, onAnswer, questionNumber }: TrueOrFalseProps) =
 }
 
 export default TrueOrFalse
-

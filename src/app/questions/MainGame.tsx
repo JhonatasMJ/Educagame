@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   StatusBar,
   TouchableOpacity,
   Modal,
-  BackHandler, // Import BackHandler for Android back button
+  BackHandler,
 } from "react-native"
 import { Clock, Award, AlertTriangle } from "lucide-react-native"
 import { router, useLocalSearchParams } from "expo-router"
@@ -27,12 +27,11 @@ import GameTutorial from "@/src/components/GameTutorial"
 import { useInactivityDetector } from "@/src/hooks/useInactivityDetector"
 import { useTutorialMode } from "@/src/context/TutorialContext"
 import { useTrails } from "@/src/hooks/useTrails"
-
-// Import game components
 import TrueOrFalse from "./trueORfalse/trueORfalse"
 import MultipleChoice from "./multipleChoice/multipleChoice"
 import Ordering from "./ordering/ordering"
 import Matching from "./matching/matching"
+import React from "react"
 
 // Define a generic question interface
 interface BaseQuestion {
@@ -75,7 +74,6 @@ interface OrderingQuestion extends BaseQuestion {
   statementText?: string
 }
 
-// Atualize a definição de MatchingQuestion para usar a mesma estrutura do componente Matching
 interface ColumnItem {
   id: string
   text?: string
@@ -188,13 +186,20 @@ const ExitConfirmationModal = ({
 }
 
 const MainGame = () => {
+  console.log("Rendering MainGame component")
+
+  // IMPORTANTE: Todos os hooks devem ser chamados no topo do componente, antes de qualquer lógica condicional
   const params = useLocalSearchParams()
   const phaseId = params.phaseId as string
-  const trailId = (params.trailId as string) || "1" // Default to first trail if not provided
-  const stageId = params.stageId as string // Novo parâmetro para identificar o stage
+  const trailId = (params.trailId as string) || "1"
+  const stageId = params.stageId as string
 
+  // Hooks de contexto
   const { startPhase, answerQuestion, completePhase } = useGameProgress()
-  // Game state
+  const { isTutorialDismissed, dismissTutorial } = useTutorialMode()
+  const { trails: trilhas, isLoading: trailsLoading, error: trailsError } = useTrails()
+
+  // Estados
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
@@ -206,39 +211,39 @@ const MainGame = () => {
   const [showLoading, setShowLoading] = useState(false)
   const [allQuestionsCorrect, setAllQuestionsCorrect] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
-
   const [feedbackExplanation, setFeedbackExplanation] = useState<string | undefined>(undefined)
-  const { isTutorialDismissed, dismissTutorial } = useTutorialMode()
-
-  // New states for tutorial
   const [showTutorial, setShowTutorial] = useState(false)
-  const helpButtonPulse = useRef(new Animated.Value(0)).current
-
-  // Adicione este novo estado para rastrear as questões acertadas durante a revisão
   const [correctlyRetriedQuestions, setCorrectlyRetriedQuestions] = useState<number[]>([])
-
-  // Adicione este estado para rastrear o índice atual na lista de questões erradas
   const [currentRetryIndex, setCurrentRetryIndex] = useState(0)
-
-  // Estado para controlar a visibilidade do modal de confirmação de saída
   const [showExitConfirmation, setShowExitConfirmation] = useState(false)
-
-  // Key to force re-render of game components
   const [gameKey, setGameKey] = useState(0)
 
-  // Animation values
+  // Refs
+  const helpButtonPulse = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.95)).current
   const opacityAnim = useRef(new Animated.Value(0)).current
   const slideAnim = useRef(new Animated.Value(50)).current
-
-  // Timer interval reference
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const shouldShowTutorial = useRef(false)
 
-  const { trails: trilhas, isLoading: trailsLoading, error: trailsError } = useTrails()
+  // Valores derivados usando useMemo para evitar recálculos desnecessários
+  const currentQuestion = useMemo(() => questions[currentQuestionIndex], [questions, currentQuestionIndex])
 
-  //TODO CURRENT QUESTION
-  const currentQuestion = questions[currentQuestionIndex]
+  const progress = useMemo(() => {
+    if (isRetrying) {
+      return {
+        current: currentRetryIndex + 1,
+        total: wrongQuestions.length,
+      }
+    } else {
+      return {
+        current: currentQuestionIndex + 1,
+        total: questions.length,
+      }
+    }
+  }, [isRetrying, currentRetryIndex, wrongQuestions.length, currentQuestionIndex, questions.length])
 
+  // Detector de inatividade
   const { panResponder, resetTimer } = useInactivityDetector({
     timeout: 6000,
     onInactivity: () => {
@@ -267,6 +272,9 @@ const MainGame = () => {
     },
     resetOnActivity: true,
   })
+
+  // Debug log
+  console.log("MainGame rendered, phaseId:", phaseId, "trailId:", trailId, "stageId:", stageId)
 
   // Function to handle help button press
   const handleHelpPress = () => {
@@ -312,11 +320,8 @@ const MainGame = () => {
     ).start()
   }
 
-  // Debug log
-  console.log("MainGame rendered, phaseId:", phaseId, "trailId:", trailId, "stageId:", stageId)
-
+  // Inicialização
   useEffect(() => {
-    // Defina um pequeno atraso para garantir que o contexto esteja pronto
     const timer = setTimeout(() => {
       setIsInitialized(true)
     }, 100)
@@ -324,109 +329,137 @@ const MainGame = () => {
     return () => clearTimeout(timer)
   }, [])
 
-  // Show loading screen if trails data is not yet loaded
-  if (trailsLoading || !trilhas || trilhas.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text className="text-gray-700 text-lg font-medium mt-4">Carregando trilhas...</Text>
-        <Text className="text-gray-500 text-sm mt-2">Phase ID: {phaseId}</Text>
-        <Text className="text-gray-500 text-sm">Stage ID: {stageId}</Text>
-        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
-          <Text className="text-white">Voltar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    )
-  }
-
-  // Show error screen if there was an error loading trails data
-  if (trailsError) {
-    return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <Text className="text-red-500 text-lg font-medium">Erro ao carregar trilhas</Text>
-        <Text className="text-gray-500 text-sm mt-2">{trailsError}</Text>
-        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
-          <Text className="text-white">Voltar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    )
-  }
-
-  // Find the questions for this stage
+  // Efeito para encontrar questões
   useEffect(() => {
+    if (!isInitialized || !trilhas || trilhas.length === 0) return
+
     console.log("Finding questions for phase:", phaseId, "and stage:", stageId)
 
-    // Make sure trilhas is loaded
-    if (!trilhas || trilhas.length === 0) {
-      console.log("Trilhas not loaded yet")
-      return
-    }
+    try {
+      // Encontrar a trilha com o ID correspondente
+      const trilha = trilhas.find((t) => t.id === trailId)
+      if (!trilha) {
+        console.error("Trilha não encontrada:", trailId)
+        return
+      }
 
-    // Find the phase with the matching ID
-    let foundStage = false
-    for (const trilha of trilhas) {
-      const phase = trilha.etapas.find((etapa) => etapa.id === phaseId)
-      if (phase) {
-        // Encontrar o stage específico
-        const stage = phase.stages.find((s) => s.id === stageId)
-        if (stage) {
-          console.log("Found stage:", stage.title, "with", stage.questions?.length || 0, "questions")
-          foundStage = true
+      console.log("Trilha encontrada:", trilha.nome || trilha.id)
 
-          // Certifique-se de que as questões estão no formato correto
-          if (!stage.questions || stage.questions.length === 0) {
-            console.error("No questions found in stage:", stage.id)
-            setQuestions([])
-            break
-          }
+      // Verificar se etapas é um array ou um objeto
+      let etapas = []
+      if (Array.isArray(trilha.etapas)) {
+        etapas = trilha.etapas
+      } else if (typeof trilha.etapas === "object" && trilha.etapas !== null) {
+        etapas = Object.values(trilha.etapas)
+      }
 
-          const typedQuestions = stage.questions.map((q: any) => {
-            console.log("Processing question:", q.id, "of type:", q.type)
-            // Garantir que o tipo está correto
-            if (q.type === QuestionType.TRUE_OR_FALSE) {
-              return {
-                ...q,
-                type: QuestionType.TRUE_OR_FALSE,
-              } as TrueOrFalseQuestion
-            } else if (q.type === QuestionType.MULTIPLE_CHOICE) {
-              return {
-                ...q,
-                type: QuestionType.MULTIPLE_CHOICE,
-                options: q.options || [],
-                correctOptions: q.correctOptions || [],
-                multipleCorrect: q.multipleCorrect || false,
-              } as MultipleChoiceQuestion
-            } else if (q.type === QuestionType.ORDERING) {
-              return {
-                ...q,
-                type: QuestionType.ORDERING,
-                items: q.items || [],
-                correctOrder: q.correctOrder || [],
-              } as OrderingQuestion
-            } else if (q.type === QuestionType.MATCHING) {
-              return {
-                ...q,
-                type: QuestionType.MATCHING,
-                leftColumn: q.leftColumn || [],
-                rightColumn: q.rightColumn || [],
-                correctMatches: q.correctMatches || [],
-              } as MatchingQuestion
-            }
-            return q as Question
-          })
+      // Encontrar a etapa com o ID correspondente
+      const etapa = etapas.find((e: { id: string }) => e.id === phaseId)
+      if (!etapa) {
+        console.error("Etapa não encontrada:", phaseId)
+        return
+      }
 
-          console.log("Processed questions:", typedQuestions)
-          setQuestions(typedQuestions)
+      console.log("Etapa encontrada:", etapa.titulo || etapa.id)
 
-          // Start tracking progress for this phase
-          startPhase(trailId, phaseId)
-          break
+      // Verificar se stages é um array ou um objeto
+      let stages = []
+      if (Array.isArray(etapa.stages)) {
+        stages = etapa.stages
+      } else if (typeof etapa.stages === "object" && etapa.stages !== null) {
+        stages = Object.values(etapa.stages)
+      }
+
+      // Encontrar o stage com o ID correspondente
+      const stage = stages.find((s: { id: string }) => s.id === stageId)
+      if (!stage) {
+        console.error("Stage não encontrado:", stageId)
+        return
+      }
+
+      console.log("Stage encontrado:", stage.title || stage.id)
+
+      // Verificar se o stage tem questões
+      let stageQuestions = []
+      if (Array.isArray(stage.questions)) {
+        stageQuestions = stage.questions
+      } else if (typeof stage.questions === "object" && stage.questions !== null) {
+        stageQuestions = Object.values(stage.questions)
+      } else {
+        // Se não encontrar questões no stage, verificar se há questões diretamente na etapa
+        console.log("Nenhuma questão encontrada no stage, verificando questões na etapa...")
+
+        if (Array.isArray(etapa.questions)) {
+          stageQuestions = etapa.questions
+        } else if (typeof etapa.questions === "object" && etapa.questions !== null) {
+          stageQuestions = Object.values(etapa.questions)
         }
       }
-    }
 
-    if (!foundStage) {
-      console.error("Stage not found:", stageId, "in phase:", phaseId)
+      // Se ainda não encontrou questões, verificar se há questões diretamente na trilha
+      if (stageQuestions.length === 0) {
+        console.log("Nenhuma questão encontrada na etapa, verificando questões na trilha...")
+
+        if (Array.isArray(trilha.questions)) {
+          stageQuestions = trilha.questions
+        } else if (typeof trilha.questions === "object" && trilha.questions !== null) {
+          stageQuestions = Object.values(trilha.questions)
+        }
+      }
+
+      if (!stageQuestions || stageQuestions.length === 0) {
+        console.error("Nenhuma questão encontrada para este stage:", stageId)
+        setQuestions([])
+        return
+      }
+
+      console.log("Encontradas", stageQuestions.length, "questões")
+
+      // Processar as questões para o formato esperado
+      const typedQuestions = stageQuestions.map((q: any) => {
+        console.log("Processando questão:", q.id, "de tipo:", q.type)
+
+        // Garantir que o tipo está correto
+        if (q.type === QuestionType.TRUE_OR_FALSE || q.type === "trueOrFalse") {
+          return {
+            ...q,
+            type: QuestionType.TRUE_OR_FALSE,
+          } as TrueOrFalseQuestion
+        } else if (q.type === QuestionType.MULTIPLE_CHOICE || q.type === "multipleChoice") {
+          return {
+            ...q,
+            type: QuestionType.MULTIPLE_CHOICE,
+            options: q.options || [],
+            correctOptions: q.correctOptions || [],
+            multipleCorrect: q.multipleCorrect || false,
+          } as MultipleChoiceQuestion
+        } else if (q.type === QuestionType.ORDERING || q.type === "ordering") {
+          return {
+            ...q,
+            type: QuestionType.ORDERING,
+            items: q.items || [],
+            correctOrder: q.correctOrder || [],
+          } as OrderingQuestion
+        } else if (q.type === QuestionType.MATCHING || q.type === "matching") {
+          return {
+            ...q,
+            type: QuestionType.MATCHING,
+            leftColumn: q.leftColumn || [],
+            rightColumn: q.rightColumn || [],
+            correctMatches: q.correctMatches || [],
+          } as MatchingQuestion
+        }
+        return q as Question
+      })
+
+      console.log("Questões processadas:", typedQuestions)
+      setQuestions(typedQuestions)
+
+      // Start tracking progress for this phase
+      startPhase(trailId, phaseId)
+    } catch (error) {
+      console.error("Erro ao processar questões:", error)
+      setQuestions([])
     }
 
     // Start entrance animations
@@ -451,27 +484,27 @@ const MainGame = () => {
 
     // Show tutorial on first load
     setTimeout(() => {
-      setShowTutorial(true)
+      if (currentQuestion && !isTutorialDismissed(currentQuestion.type)) {
+        setShowTutorial(true)
+      }
     }, 500)
-  }, [phaseId, trailId, stageId, trilhas, currentQuestion?.type, isTutorialDismissed, isInitialized])
+  }, [phaseId, trailId, stageId, trilhas, isInitialized])
 
-  const shouldShowTutorial = useRef(false)
-
+  // Efeito para atualizar shouldShowTutorial
   useEffect(() => {
     shouldShowTutorial.current =
-      isInitialized && currentQuestion !== undefined && !isTutorialDismissed(currentQuestion.type)
+      isInitialized && currentQuestion !== undefined && !isTutorialDismissed(currentQuestion?.type)
   }, [currentQuestion?.type, isTutorialDismissed, isInitialized])
 
+  // Efeito para mostrar tutorial quando shouldShowTutorial mudar
   useEffect(() => {
     if (shouldShowTutorial.current) {
       console.log("Should show tutorial for type:", currentQuestion?.type)
       setTimeout(() => {
         setShowTutorial(true)
       }, 500)
-    } else {
-      console.log("Should NOT show tutorial")
     }
-  }, [shouldShowTutorial.current])
+  }, [shouldShowTutorial.current, currentQuestion?.type])
 
   // Background timer implementation
   useEffect(() => {
@@ -537,45 +570,16 @@ const MainGame = () => {
     setShowExitConfirmation(false)
   }
 
-  // If no questions found, show a loading screen
-  if (questions.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text className="text-gray-700 text-lg font-medium mt-4">Carregando questões...</Text>
-        <Text className="text-gray-500 text-sm mt-2">Phase ID: {phaseId}</Text>
-        <Text className="text-gray-500 text-sm">Stage ID: {stageId}</Text>
-        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
-          <Text className="text-white">Voltar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    )
-  }
-
-  // Verificação de segurança para garantir que a questão existe
-  if (!currentQuestion) {
-    return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <Text className="text-red-500 text-lg font-medium">Erro: Questão não encontrada</Text>
-        <Text className="text-gray-500 text-sm mt-2">Index: {currentQuestionIndex}</Text>
-        <Text className="text-gray-500 text-sm">Total Questions: {questions.length}</Text>
-        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
-          <Text className="text-white">Voltar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    )
-  }
-
-  console.log("Current question:", currentQuestion)
-
   // Handle answer from game components
   const handleAnswer = (correct: boolean, explanation?: string) => {
     console.log("MainGame - handleAnswer called with correct:", correct)
     setIsCorrect(correct)
-    setFeedbackExplanation(explanation || currentQuestion.explanation)
+    setFeedbackExplanation(explanation || currentQuestion?.explanation)
 
     // Record answer in context
-    answerQuestion(correct, currentQuestion.id)
+    if (currentQuestion) {
+      answerQuestion(correct, currentQuestion.id)
+    }
 
     // Se estamos em modo de revisão e a resposta está correta, adicione à lista de questões acertadas
     if (isRetrying && correct) {
@@ -710,25 +714,6 @@ const MainGame = () => {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Calcule o progresso atual para o StepIndicator
-  const calculateProgress = () => {
-    if (isRetrying) {
-      // Durante a revisão, mostre o progresso baseado na posição atual na lista de questões erradas
-      return {
-        current: currentRetryIndex + 1,
-        total: wrongQuestions.length,
-      }
-    } else {
-      // Durante o jogo normal, mostre o progresso baseado no índice da questão
-      return {
-        current: currentQuestionIndex + 1,
-        total: questions.length,
-      }
-    }
-  }
-
-  const progress = calculateProgress()
-
   // Render the appropriate game component based on question type
   const renderGameComponent = () => {
     if (!currentQuestion) {
@@ -779,10 +764,62 @@ const MainGame = () => {
       default:
         return (
           <View className="flex-1 justify-center items-center p-4">
-            <Text className="text-red-500">Tipo de questão não suportado: {questions[currentQuestionIndex].type}</Text>
+            <Text className="text-red-500">Tipo de questão não suportado: {currentQuestion.type}</Text>
           </View>
         )
     }
+  }  // Renderização condicional para estados de carregamento e erro
+  if (trailsLoading || !trilhas || trilhas.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text className="text-gray-700 text-lg font-medium mt-4">Carregando trilhas...</Text>
+        <Text className="text-gray-500 text-sm mt-2">Phase ID: {phaseId}</Text>
+        <Text className="text-gray-500 text-sm">Stage ID: {stageId}</Text>
+        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
+          <Text className="text-white">Voltar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    )
+  }
+
+  if (trailsError) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <Text className="text-red-500 text-lg font-medium">Erro ao carregar trilhas</Text>
+        <Text className="text-gray-500 text-sm mt-2">{trailsError}</Text>
+        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
+          <Text className="text-white">Voltar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    )
+  }
+
+  if (questions.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text className="text-gray-700 text-lg font-medium mt-4">Carregando questões...</Text>
+        <Text className="text-gray-500 text-sm mt-2">Phase ID: {phaseId}</Text>
+        <Text className="text-gray-500 text-sm">Stage ID: {stageId}</Text>
+        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
+          <Text className="text-white">Voltar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    )
+  }
+
+  if (!currentQuestion) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <Text className="text-red-500 text-lg font-medium">Erro: Questão não encontrada</Text>
+        <Text className="text-gray-500 text-sm mt-2">Index: {currentQuestionIndex}</Text>
+        <Text className="text-gray-500 text-sm">Total Questions: {questions.length}</Text>
+        <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
+          <Text className="text-white">Voltar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    )
   }
 
   return (

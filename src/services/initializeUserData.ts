@@ -17,12 +17,16 @@ export const initializeUserData = async (userId: string, userData: any): Promise
     // 2. Se não existir, criar dados básicos do usuário
     if (!userSnapshot.exists()) {
       console.log("Criando dados básicos do usuário...")
+      const today = new Date().toISOString().split("T")[0]
       await set(userRef, {
         email: userData.email || "",
         nome: userData.nome || userData.displayName || "",
         sobrenome: userData.sobrenome || "",
         points: 0,
         createdAt: new Date().toISOString(),
+        lastLogin: today,
+        consecutiveDays: 1,
+        totalConsecutiveDays: 1,
         ...userData,
       })
     }

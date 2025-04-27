@@ -37,6 +37,9 @@ interface User {
   name: string
   points: number
   createdAt: string
+  lastLogin?: string
+  consecutiveDays?: number
+  totalConsecutiveDays?: number
 }
 
 interface AuthProviderProps {
@@ -119,8 +122,46 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const snapshot = await get(userRef)
             if (snapshot.exists() && isMounted) {
               const userDataFromDB = snapshot.val()
-              setUserData({ id: user.uid, ...userDataFromDB })
-              console.log("User data loaded successfully")
+
+              // Atualizar lastLogin e consecutiveDays
+              const now = new Date()
+              const today = now.toISOString().split("T")[0] // YYYY-MM-DD format
+              const lastLogin = userDataFromDB.lastLogin || today
+              let consecutiveDays = userDataFromDB.consecutiveDays || 1
+              let totalConsecutiveDays = userDataFromDB.totalConsecutiveDays || 1
+
+              // Verificar se o último login foi ontem
+              const lastLoginDate = new Date(lastLogin)
+              const yesterday = new Date(now)
+              yesterday.setDate(yesterday.getDate() - 1)
+
+              // Se o último login foi ontem, incrementar consecutiveDays
+              if (lastLoginDate.toISOString().split("T")[0] === yesterday.toISOString().split("T")[0]) {
+                consecutiveDays += 1
+                totalConsecutiveDays = Math.max(totalConsecutiveDays, consecutiveDays)
+              }
+              // Se o último login foi antes de ontem, resetar consecutiveDays
+              else if (lastLoginDate.toISOString().split("T")[0] !== today) {
+                consecutiveDays = 1
+              }
+
+              // Atualizar os dados do usuário com lastLogin e consecutiveDays
+              await update(userRef, {
+                lastLogin: today,
+                consecutiveDays,
+                totalConsecutiveDays,
+              })
+
+              // Atualizar userData com os novos valores
+              setUserData({
+                id: user.uid,
+                ...userDataFromDB,
+                lastLogin: today,
+                consecutiveDays,
+                totalConsecutiveDays,
+              })
+
+              console.log("User data loaded and updated successfully")
 
               // Garantir que o progresso do usuário esteja inicializado
               await initializeUserData(user.uid, userDataFromDB)
@@ -133,6 +174,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 nome: user.displayName?.split(" ")[0] || "",
                 sobrenome: user.displayName?.split(" ").slice(1).join(" ") || "",
                 points: 0,
+                lastLogin: new Date().toISOString().split("T")[0],
+                consecutiveDays: 1,
+                totalConsecutiveDays: 1,
               }
 
               await initializeUserData(user.uid, basicUserData)

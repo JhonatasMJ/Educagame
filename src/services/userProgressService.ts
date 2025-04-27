@@ -49,6 +49,7 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
 
     if (!forceCreate) {
       userProgress = await getUserProgressFromFirebase(userId)
+      console.log("Progresso existente encontrado no Firebase:", userProgress ? "Sim" : "Não")
     }
 
     // 2. Se não existir no Firebase ou forceCreate for true, tentar buscar da API
@@ -116,7 +117,7 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
       // Continuar com um array vazio se falhar
     }
 
-    // 5. Sincronizar trilhas
+    // 5. Sincronizar trilhas - MODIFICADO para preservar dados existentes
     const updatedProgress = syncTrails(userProgress, availableTrails)
 
     // 6. Salvar o progresso atualizado no servidor
@@ -164,6 +165,7 @@ export const initializeUserProgress = async (userId: string): Promise<UserProgre
 
 /**
  * Sincroniza as trilhas do usuário com as trilhas disponíveis
+ * MODIFICADO para preservar dados existentes
  */
 const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserProgress => {
   try {
@@ -200,7 +202,7 @@ const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserPro
         userTrail.phases = []
       }
 
-      // Sincronizar as etapas da trilha
+      // Sincronizar as etapas da trilha - PRESERVANDO dados existentes
       syncPhases(userTrail, availableTrail)
     }
 
@@ -214,6 +216,7 @@ const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserPro
 
 /**
  * Sincroniza as etapas de uma trilha
+ * MODIFICADO para preservar dados existentes
  */
 const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
   try {
@@ -257,7 +260,7 @@ const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
         userPhase.questionsProgress = []
       }
 
-      // Sincronizar as questões da etapa
+      // Sincronizar as questões da etapa - PRESERVANDO dados existentes
       syncQuestions(userPhase, availablePhase)
     }
   } catch (error) {
@@ -268,6 +271,7 @@ const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
 
 /**
  * Sincroniza as questões de uma etapa
+ * MODIFICADO para preservar dados existentes
  */
 const syncQuestions = (userPhase: PhaseProgress, availablePhase: any): void => {
   try {
@@ -321,6 +325,7 @@ const syncQuestions = (userPhase: PhaseProgress, availablePhase: any): void => {
         })
         console.log(`Nova questão adicionada ao progresso: ${availableQuestion.id}`)
       }
+      // NÃO modificar questões que já existem no progresso do usuário
     }
   } catch (error) {
     console.error("Erro ao sincronizar questões:", error)

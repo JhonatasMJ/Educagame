@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from "react"
+import { useEffect } from "react"
 import { useState } from "react"
 import { useRouter } from "expo-router"
 import { signInWithEmailAndPassword } from "firebase/auth"
