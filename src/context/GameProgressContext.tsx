@@ -1,15 +1,16 @@
 "use client"
 
 import React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
   startPhase as apiStartPhase,
   answerQuestion as apiAnswerQuestion,
   completePhase as apiCompletePhase,
+  getUserProgress,
 } from "../services/apiService"
-// Importe o contexto de autenticação
 import { useAuth } from "./AuthContext"
+import { getUserProgressFromFirebase, syncUserProgress, calculatePhaseProgress } from "../services/userProgressService"
 
 // Define types for our progress data
 interface QuestionProgress {
@@ -43,12 +44,15 @@ interface GameProgress {
 interface GameProgressContextType {
   progress: GameProgress
   isLoading: boolean
+  isSyncing: boolean
   startPhase: (trailId: string, phaseId: string) => void
   answerQuestion: (correct: boolean, questionId: string) => void
   completePhase: (phaseId: string, timeSpent: number) => void
   getPhaseProgress: (phaseId: string) => PhaseProgress | undefined
   getPhaseCompletionPercentage: (phaseId: string) => number
   resetProgress: () => void
+  syncProgress: () => Promise<void>
+  getTrailProgress: (trailId: string) => TrailProgress | undefined
 }
 
 // Create the context
@@ -62,29 +66,111 @@ const initialProgress: GameProgress = {
   trails: [],
 }
 
-// Modifique o GameProgressProvider para usar o contexto de autenticação
 export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [progress, setProgress] = useState<GameProgress>(initialProgress)
   const [isLoading, setIsLoading] = useState(true)
-  const { authUser, updateUserPoints } = useAuth() // Use o contexto de autenticação
+  const [isSyncing, setIsSyncing] = useState(false)
+  const { authUser, updateUserPoints } = useAuth()
 
-  // Load progress from AsyncStorage on mount
+  // Função para sincronizar o progresso do usuário
+  const syncProgress = useCallback(async () => {
+    if (!authUser) return
+
+    setIsSyncing(true)
+    try {
+      console.log("Sincronizando progresso do usuário...")
+      const updatedProgress = await syncUserProgress(authUser.uid)
+
+      if (updatedProgress) {
+        setProgress(updatedProgress)
+        console.log("Progresso do usuário sincronizado com sucesso")
+      }
+    } catch (error) {
+      console.error("Erro ao sincronizar progresso do usuário:", error)
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [authUser])
+
+  // Carregar progresso quando o usuário autenticar
   useEffect(() => {
-    const loadProgress = async () => {
+    const loadUserProgress = async () => {
+      if (!authUser) {
+        setIsLoading(false)
+        return
+      }
+
+      setIsLoading(true)
       try {
-        const savedProgress = await AsyncStorage.getItem("gameProgress")
-        if (savedProgress) {
-          setProgress(JSON.parse(savedProgress))
+        // Primeiro, tentar carregar do Firebase
+        const firebaseProgress = await getUserProgressFromFirebase(authUser.uid)
+
+        if (firebaseProgress) {
+          console.log("Progresso carregado do Firebase")
+          setProgress(firebaseProgress)
+        } else {
+          // Se não encontrar no Firebase, tentar carregar da API
+          console.log("Tentando carregar progresso da API...")
+          const apiProgressResponse = await getUserProgress(authUser.uid)
+
+          if (apiProgressResponse?.data) {
+            console.log("Progresso carregado da API")
+
+            // Garantir que trails seja sempre um array
+            const apiProgress = apiProgressResponse.data
+            if (!Array.isArray(apiProgress.trails)) {
+              apiProgress.trails = []
+            }
+
+            setProgress(apiProgress)
+          } else {
+            // Se não encontrar na API, iniciar com progresso vazio
+            console.log("Nenhum progresso encontrado, iniciando com progresso vazio")
+            setProgress(initialProgress)
+
+            // E sincronizar para criar o progresso inicial
+            console.log("Criando progresso inicial para o usuário...")
+            await syncProgress()
+          }
         }
       } catch (error) {
-        console.error("Failed to load progress:", error)
+        console.error("Erro ao carregar progresso do usuário:", error)
+
+        // Em caso de erro, tentar carregar do AsyncStorage como fallback
+        try {
+          const savedProgress = await AsyncStorage.getItem("gameProgress")
+          if (savedProgress) {
+            console.log("Progresso carregado do AsyncStorage")
+            const parsedProgress = JSON.parse(savedProgress)
+
+            // Garantir que trails seja sempre um array
+            if (!Array.isArray(parsedProgress.trails)) {
+              parsedProgress.trails = []
+            }
+
+            setProgress(parsedProgress)
+          } else {
+            // Se não encontrar no AsyncStorage, criar progresso inicial
+            console.log("Nenhum progresso encontrado no AsyncStorage, criando progresso inicial...")
+            await syncProgress()
+          }
+        } catch (storageError) {
+          console.error("Erro ao carregar progresso do AsyncStorage:", storageError)
+
+          // Mesmo com erro, tentar criar progresso inicial
+          try {
+            await syncProgress()
+          } catch (syncError) {
+            console.error("Erro ao criar progresso inicial:", syncError)
+          }
+        }
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadProgress()
-  }, [])
+    loadUserProgress()
+  }, [authUser, syncProgress])
 
   // Save progress to AsyncStorage whenever it changes
   useEffect(() => {
@@ -92,18 +178,23 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
       try {
         await AsyncStorage.setItem("gameProgress", JSON.stringify(progress))
       } catch (error) {
-        console.error("Failed to save progress:", error)
+        console.error("Failed to save progress to AsyncStorage:", error)
       }
     }
 
-    if (!isLoading) {
+    if (!isLoading && !isSyncing) {
       saveProgress()
     }
-  }, [progress, isLoading])
+  }, [progress, isLoading, isSyncing])
 
-  // Modifique a função startPhase para usar a API
+  // Função para iniciar uma fase
   const startPhase = (trailId: string, phaseId: string) => {
     setProgress((prev) => {
+      // Garantir que trails seja sempre um array
+      if (!Array.isArray(prev.trails)) {
+        prev = { ...prev, trails: [] }
+      }
+
       // Find or create trail
       let trail = prev.trails.find((t) => t.id === trailId)
       if (!trail) {
@@ -142,9 +233,14 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }
 
-  // Modifique a função answerQuestion para usar a API
+  // Função para responder uma questão
   const answerQuestion = (correct: boolean, questionId: string) => {
     setProgress((prev) => {
+      // Garantir que trails seja sempre um array
+      if (!Array.isArray(prev.trails)) {
+        prev = { ...prev, trails: [] }
+      }
+
       const newProgress = { ...prev }
 
       // Update consecutive correct count
@@ -204,9 +300,14 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }
 
-  // Modifique a função completePhase para usar a API
+  // Função para completar uma fase
   const completePhase = async (phaseId: string, timeSpent: number) => {
     setProgress((prev) => {
+      // Garantir que trails seja sempre um array
+      if (!Array.isArray(prev.trails)) {
+        prev = { ...prev, trails: [] }
+      }
+
       const newProgress = { ...prev }
 
       // Find and update phase
@@ -247,8 +348,13 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }
 
-  // Get progress for a specific phase
+  // Função para obter o progresso de uma fase específica
   const getPhaseProgress = (phaseId: string): PhaseProgress | undefined => {
+    // Garantir que trails seja sempre um array antes de usar find
+    if (!Array.isArray(progress.trails)) {
+      return undefined
+    }
+
     for (const trail of progress.trails) {
       const phase = trail.phases.find((p) => p.id === phaseId)
       if (phase) {
@@ -258,18 +364,25 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return undefined
   }
 
-  // Calculate completion percentage for a phase
-  const getPhaseCompletionPercentage = (phaseId: string): number => {
-    const phase = getPhaseProgress(phaseId)
-    if (!phase || phase.questionsProgress.length === 0) {
-      return 0
+  // Função para obter o progresso de uma trilha específica
+  const getTrailProgress = (trailId: string): TrailProgress | undefined => {
+    // Garantir que trails seja sempre um array antes de usar find
+    if (!Array.isArray(progress.trails)) {
+      return undefined
     }
 
-    const correctCount = phase.questionsProgress.filter((q) => q.correct).length
-    return (correctCount / phase.questionsProgress.length) * 100
+    return progress.trails.find((t) => t.id === trailId)
   }
 
-  // Reset all progress
+  // Função para calcular a porcentagem de conclusão de uma fase
+  const getPhaseCompletionPercentage = (phaseId: string): number => {
+    const phase = getPhaseProgress(phaseId)
+    if (!phase) return 0
+
+    return calculatePhaseProgress(phase)
+  }
+
+  // Função para resetar o progresso
   const resetProgress = () => {
     setProgress(initialProgress)
   }
@@ -279,12 +392,15 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
       value={{
         progress,
         isLoading,
+        isSyncing,
         startPhase,
         answerQuestion,
         completePhase,
         getPhaseProgress,
         getPhaseCompletionPercentage,
         resetProgress,
+        syncProgress,
+        getTrailProgress,
       }}
     >
       {children}

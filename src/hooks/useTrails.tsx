@@ -18,6 +18,8 @@ export const useTrails = () => {
   // Implementar fetchTrails como useCallback para evitar recriações desnecessárias
   const fetchTrails = useCallback(async () => {
     console.log("Fetching trails...")
+
+    console.log("Token JWT:", jwtToken)
     
     // Verificar se o token JWT está carregado
     if (!isTokenLoaded) {

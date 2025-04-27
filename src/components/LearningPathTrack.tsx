@@ -1,11 +1,13 @@
 "use client"
 
-import React from "react"
+import  React from "react"
 import { useState } from "react"
 import { View, ImageBackground, StyleSheet, type ImageSourcePropType, Text } from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
 import type { IconLibrary } from "../services/IconRenderer"
+import { useGameProgress } from "../context/GameProgressContext"
+import { calculatePhaseProgress } from "../services/userProgressService"
 
 // Tipos atualizados para refletir a nova estrutura
 interface StageInfo {
@@ -33,12 +35,12 @@ interface EtapaInfo {
 }
 
 interface LearningPathTrackProps {
-  etapas: EtapaInfo[] // Renomeado de stages para etapas para maior clareza
-  currentEtapaIndex: number // Renomeado de currentStage para currentEtapaIndex
-  onEtapaPress: (index: number) => void // Renomeado de onStagePress para onEtapaPress
+  etapas: any[] // Dados brutos das etapas da trilha
+  currentEtapaIndex: number
+  onEtapaPress: (index: number) => void
   containerHeight: number
   backgroundImage?: ImageSourcePropType
-  trailId?: string
+  trailId: string // Agora é obrigatório para buscar o progresso do usuário
 }
 
 // Constantes
@@ -55,11 +57,40 @@ const LearningPathTrack = ({
   onEtapaPress,
   containerHeight,
   backgroundImage,
-  trailId = "1",
+  trailId,
 }: LearningPathTrackProps) => {
+  // Obter o contexto de progresso do jogo
+  const { getTrailProgress, getPhaseProgress } = useGameProgress()
+
+  // Buscar o progresso do usuário para esta trilha
+  const trailProgress = getTrailProgress(trailId)
+
+  // Processar as etapas com o progresso do usuário
+  const processedEtapas: EtapaInfo[] = etapas.map((etapa) => {
+    // Buscar o progresso do usuário para esta etapa
+    const phaseProgress = getPhaseProgress(etapa.id)
+
+    // Determinar se a etapa está concluída com base no progresso do usuário
+    const concluida = phaseProgress ? phaseProgress.completed : false
+
+    // Calcular o progresso da etapa com base nas questões respondidas
+    const progress = phaseProgress ? calculatePhaseProgress(phaseProgress) : 0
+
+    return {
+      id: etapa.id,
+      titulo: etapa.titulo,
+      descricao: etapa.descricao || "Descrição da etapa não disponível",
+      concluida: concluida,
+      icon: etapa.icon || "crown",
+      iconLibrary: etapa.iconLibrary || "lucide",
+      stages: etapa.stages || [],
+      progress: progress,
+    }
+  })
+
   // Cálculos para layout
-  const nextEtapaIndex = etapas.findIndex((etapa) => !etapa.concluida)
-  const totalContentHeight = etapas.length * ETAPA_HEIGHT
+  const nextEtapaIndex = processedEtapas.findIndex((etapa) => !etapa.concluida)
+  const totalContentHeight = processedEtapas.length * ETAPA_HEIGHT
   const topPadding = Math.max(0, containerHeight - totalContentHeight - BOTTOM_SPACE_ADJUSTMENT)
 
   // Função para verificar se uma etapa está bloqueada
@@ -68,7 +99,7 @@ const LearningPathTrack = ({
     // 1. Não estiver completa
     // 2. Não for a próxima disponível (a primeira não completa)
     // 3. Não for a etapa atual
-    return !etapas[index].concluida && index !== nextEtapaIndex && index !== currentEtapaIndex
+    return !processedEtapas[index].concluida && index !== nextEtapaIndex && index !== currentEtapaIndex
   }
 
   // Função para lidar com o clique em uma etapa
@@ -84,7 +115,7 @@ const LearningPathTrack = ({
   return (
     <BackgroundContainer backgroundImage={backgroundImage} topPadding={topPadding}>
       <TrackContent
-        etapas={etapas}
+        etapas={processedEtapas}
         currentEtapaIndex={currentEtapaIndex}
         nextEtapaIndex={nextEtapaIndex}
         onEtapaPress={handleEtapaPress}
@@ -254,7 +285,7 @@ const EtapasList = ({
             {index < etapas.length - 1 && <View style={{ height: ETAPA_SPACING }} />}
           </View>
         )
-      })}{" "}
+      })}
     </>
   )
 }

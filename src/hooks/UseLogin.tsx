@@ -1,7 +1,6 @@
 "use client"
 
-import React,{ useEffect } from "react"
-
+import React, { useEffect } from "react"
 import { useState } from "react"
 import { useRouter } from "expo-router"
 import { signInWithEmailAndPassword } from "firebase/auth"
@@ -9,13 +8,15 @@ import { auth } from "../services/firebaseConfig"
 import Toast from "react-native-toast-message"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useAuth } from "../context/AuthContext"
-import { loginApi } from "../services/apiService" // Importe o serviço de API
+import { loginApi } from "../services/apiService"
+import { syncUserProgress } from "../services/userProgressService"
 
 export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [savedEmail, setSavedEmail] = useState<string | null>(null)
   const [savedPassword, setSavedPassword] = useState<string | null>(null)
+  const [isSyncingProgress, setIsSyncingProgress] = useState(false)
   const router = useRouter()
   const { refreshUserData, setShowLoadingTransition } = useAuth()
 
@@ -41,6 +42,7 @@ export const useLogin = () => {
     loadSavedCredentials()
   }, [])
 
+  // Modificar a função handleLogin para incluir a inicialização de progresso para novos usuários
   const handleLogin = async (email: string, password: string, rememberMe: boolean) => {
     if (!email || !password) {
       Toast.show({
@@ -68,7 +70,8 @@ export const useLogin = () => {
       }
 
       // Sign in with Firebase
-      await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
 
       // Após autenticação com Firebase, obter token JWT da API
       try {
@@ -83,9 +86,21 @@ export const useLogin = () => {
         // Não interromper o fluxo se falhar a obtenção do token JWT
       }
 
+      // Sincronizar o progresso do usuário com as trilhas disponíveis
+      setIsSyncingProgress(true)
+      try {
+        console.log("Sincronizando progresso do usuário...")
+        await syncUserProgress(user.uid)
+        console.log("Progresso do usuário sincronizado com sucesso")
+      } catch (syncError) {
+        console.error("Erro ao sincronizar progresso do usuário:", syncError)
+        // Não interromper o fluxo se falhar a sincronização
+      } finally {
+        setIsSyncingProgress(false)
+      }
+
       // Don't navigate here - let the auth state listener handle it
       console.log("Login successful, auth state listener will handle navigation")
-      //await refreshUserData();
     } catch (error: any) {
       console.error("Login error:", error.code, error.message)
       setShowLoadingTransition(false)
@@ -107,16 +122,9 @@ export const useLogin = () => {
           type: "error",
           position: "top",
           text1: "Erro",
-          text2: "Email ou senha inválidos.",
+          text2: "Erro ao fazer login, verifique suas credenciais!",
         })
       }
-
-      Toast.show({
-        type: "error",
-        position: "top",
-        text1: "Erro",
-        text2: "Erro ao fazer login, verifique suas credenciais!",
-      })
     } finally {
       setIsLoading(false)
     }
@@ -158,5 +166,6 @@ export const useLogin = () => {
     savedEmail,
     savedPassword,
     clearSavedCredentials,
+    isSyncingProgress,
   }
 }

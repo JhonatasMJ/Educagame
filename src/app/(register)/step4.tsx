@@ -1,6 +1,6 @@
 "use client"
 
-import { useLocalSearchParams, router } from "expo-router"
+import React, { useLocalSearchParams, router } from "expo-router"
 import { useState } from "react"
 import { View, Text, SafeAreaView, StyleSheet, StatusBar, Dimensions } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
@@ -13,12 +13,13 @@ import ProgressDots from "@/src/components/ProgressDots"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import ArrowBack from "@/src/components/ArrowBack"
 import { loginApi } from "@/src/services/apiService" // Importe o serviço de API
-import React from "react"
+import { syncUserProgress } from "@/src/services/userProgressService" // Importar o serviço de sincronização
 
 const { height } = Dimensions.get("window")
 
 const Step04 = () => {
   const [isCreating, setIsCreating] = useState(false)
+  const [isSyncingProgress, setIsSyncingProgress] = useState(false)
 
   // Get all params from previous screens
   const { avatarId, avatarSource, nome, sobrenome, email, birthDate, phone, termsAccepted, lgpdAccepted, password } =
@@ -126,7 +127,20 @@ const Step04 = () => {
         })
       }
 
-      // 4. Atualizar o contexto de autenticação
+      // 4. Inicializar o progresso do usuário com todas as trilhas disponíveis
+      setIsSyncingProgress(true)
+      try {
+        console.log("Inicializando progresso do usuário...")
+        await syncUserProgress(user.uid)
+        console.log("Progresso do usuário inicializado com sucesso")
+      } catch (syncError) {
+        console.error("Erro ao inicializar progresso do usuário:", syncError)
+        // Não interromper o fluxo se falhar a inicialização do progresso
+      } finally {
+        setIsSyncingProgress(false)
+      }
+
+      // 5. Atualizar o contexto de autenticação
       try {
         await refreshUserData()
         console.log("Dados do usuário atualizados no contexto")
@@ -134,14 +148,14 @@ const Step04 = () => {
         console.error("Erro ao atualizar dados do usuário no contexto:", refreshError)
       }
 
-      // 5. Mostrar mensagem de sucesso
+      // 6. Mostrar mensagem de sucesso
       Toast.show({
         type: "success",
         text1: "Sucesso!",
         text2: "Sua conta foi criada com sucesso!",
       })
 
-      // 6. Adicionar um atraso maior antes de navegar
+      // 7. Adicionar um atraso maior antes de navegar
       console.log("Aguardando antes de redirecionar para home...")
       setTimeout(() => {
         console.log("Redirecionando para home")
@@ -184,9 +198,9 @@ const Step04 = () => {
         <View style={styles.buttonContainer}>
           <View style={{ width: "100%", alignItems: "center", paddingHorizontal: 30 }}>
             <CustomButton
-              title={isCreating ? "Criando conta..." : "Criar conta"}
+              title={isCreating || isSyncingProgress ? "Criando conta..." : "Criar conta"}
               onPress={handleFinalRegister}
-              disabled={isCreating}
+              disabled={isCreating || isSyncingProgress}
             />
           </View>
           <View style={{ height: 5 }} />

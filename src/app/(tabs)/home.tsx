@@ -59,22 +59,18 @@ export interface Stage {
   questions: Question[]
 }
 
-// Update the trilhas data structure to include backgroundSvg property
-// Find the trilhas declaration and modify the first two objects:
-// Remove the export const trilhas = [...] declaration completely
-
 // Main Home component
 const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
   const { userData, authUser, refreshUserData, isTokenLoaded } = useAuth()
-  const { getPhaseCompletionPercentage } = useGameProgress()
+  const { getPhaseCompletionPercentage, syncProgress, isSyncing } = useGameProgress()
   const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
-  const [hasLoadedTrails, setHasLoadedTrails] = useState(false);
+  const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
 
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
@@ -96,18 +92,42 @@ const Home = () => {
   // In the Home component, add the following after the other useState declarations:
   const { trails: trilhas, isLoading: trailsLoading, error: trailsError, fetchTrails } = useTrails()
 
+  // Adicione um mecanismo de throttle para o refreshTrails
+
   async function refreshTrails() {
-    console.log('clicou no refresh');
-    await fetchTrails();
+    console.log("clicou no refresh")
+
+    // Evitar múltiplos cliques em sequência
+    if (trailsLoading || isSyncing) {
+      console.log("Já está carregando, ignorando requisição")
+      return
+    }
+
+    await fetchTrails() // Passar true para forçar atualização
+
+    // Também sincronizar o progresso do usuário quando atualizar as trilhas
+    if (authUser) {
+      await syncProgress()
+    }
   }
 
   // Estatísticas do usuário para o cabeçalho
   const [userStats, setUserStats] = useState({
-    points: 1430,
+    points: userData?.points || 0,
     streak: 7,
     gems: 45,
     lives: 5,
   })
+
+  // Atualizar pontos quando userData mudar
+  useEffect(() => {
+    if (userData) {
+      setUserStats((prev) => ({
+        ...prev,
+        points: userData.points || 0,
+      }))
+    }
+  }, [userData])
 
   // Dados da trilha atual
   // Update the currentTrilha assignment to handle the case when trilhas is empty
@@ -174,25 +194,25 @@ const Home = () => {
   const stages =
     currentTrilha && currentTrilha.etapas
       ? currentTrilha.etapas.map(
-        (etapa: { id: any; titulo: any; descricao: any; icon: any; iconLibrary: any; stages: any }, index: any) => {
-          // Calcular o progresso com base nos stages concluídos
-          const progress = calculateEtapaProgress(etapa)
+          (etapa: { id: any; titulo: any; descricao: any; icon: any; iconLibrary: any; stages: any }, index: any) => {
+            // Calcular o progresso com base nos stages concluídos
+            const progress = calculateEtapaProgress(etapa)
 
-          // Verificar se a etapa está totalmente concluída
-          const concluida = isEtapaCompleted(etapa)
+            // Verificar se a etapa está totalmente concluída
+            const concluida = isEtapaCompleted(etapa)
 
-          return {
-            id: etapa.id,
-            titulo: etapa.titulo,
-            descricao: etapa.descricao || "Descrição da etapa não disponível",
-            concluida: concluida,
-            icon: etapa.icon || "crown",
-            iconLibrary: etapa.iconLibrary || "lucide",
-            stages: etapa.stages || [],
-            progress: progress,
-          } as EtapaInfo
-        },
-      )
+            return {
+              id: etapa.id,
+              titulo: etapa.titulo,
+              descricao: etapa.descricao || "Descrição da etapa não disponível",
+              concluida: concluida,
+              icon: etapa.icon || "crown",
+              iconLibrary: etapa.iconLibrary || "lucide",
+              stages: etapa.stages || [],
+              progress: progress,
+            } as EtapaInfo
+          },
+        )
       : []
 
   // 3. Corrigir o acesso às propriedades no handleStagePress
@@ -346,30 +366,53 @@ const Home = () => {
   // Create a dynamic SVG background component variable before the return statement
   const BackgroundSvg = currentBackgroundSvg
 
-// Adicione isso após suas declarações de estado
-const fetchTrailsRef = useRef(fetchTrails);
+  // Adicione isso após suas declarações de estado
+  const fetchTrailsRef = useRef(fetchTrails)
 
-useEffect(() => {
-  // Atualiza a referência quando fetchTrails mudar
-  fetchTrailsRef.current = fetchTrails;
-}, [fetchTrails]);
+  useEffect(() => {
+    // Atualiza a referência quando fetchTrails mudar
+    fetchTrailsRef.current = fetchTrails
+  }, [fetchTrails])
 
-// Substitua seu useEffect atual por este
-useEffect(() => {
-  // Agora verificamos se o token foi carregado e se o usuário está autenticado
-  if (authUser && isTokenLoaded) {
-    fetchTrailsRef.current();
-  }
-}, [authUser, isTokenLoaded]);
+  // Substitua seu useEffect atual por este
+  useEffect(() => {
+    // Usamos uma flag para garantir que a requisição só aconteça uma vez
+    let isMounted = true
+
+    const loadTrails = async () => {
+      // Verificamos se o usuário está autenticado e o token foi carregado
+      if (authUser && isTokenLoaded && isMounted && !hasLoadedTrails) {
+        console.log("Carregando trilhas uma única vez")
+        await fetchTrailsRef.current()
+
+        // Sincronizar o progresso apenas quando as trilhas forem carregadas com sucesso
+        if (trilhas && trilhas.length > 0 && isMounted) {
+          await syncProgress()
+          if (isMounted) {
+            setHasLoadedTrails(true)
+          }
+        }
+      }
+    }
+
+    loadTrails()
+
+    // Cleanup function para evitar memory leaks e chamadas após desmontagem
+    return () => {
+      isMounted = false
+    }
+  }, [authUser, isTokenLoaded]) // Removemos trilhas e hasLoadedTrails das dependências
 
   return (
     <View className="flex-1">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
-      {trailsLoading && (
+      {(trailsLoading || isSyncing) && (
         <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <View className="bg-white p-6 rounded-xl shadow-lg">
-            <Text className="text-lg font-medium text-center mb-4">Carregando trilhas...</Text>
+            <Text className="text-lg font-medium text-center mb-4">
+              {isSyncing ? "Sincronizando progresso..." : "Carregando trilhas..."}
+            </Text>
             <ActivityIndicator size="large" color="#F6A608" />
           </View>
         </View>
@@ -387,7 +430,7 @@ useEffect(() => {
         </View>
       )}
 
-      {!trailsLoading && trilhas && trilhas.length === 0 && (
+      {!trailsLoading && !isSyncing && trilhas && trilhas.length === 0 && (
         <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4">Nenhuma trilha encontrada</Text>
@@ -464,22 +507,22 @@ useEffect(() => {
           <View className="flex-row justify-center items-center mt-1">
             {trilhas && trilhas.length > 0
               ? trilhas.map((_, index) => (
-                <TouchableOpacity
-                  key={`indicator-${index}`}
-                  onPress={() => {
-                    if (index < trilhaAtualIndex) {
-                      handlePreviousTrilha()
-                    } else if (index > trilhaAtualIndex) {
-                      handleNextTrilha()
-                    }
-                  }}
-                  className="mx-1"
-                >
-                  <View
-                    className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
-                  />
-                </TouchableOpacity>
-              ))
+                  <TouchableOpacity
+                    key={`indicator-${index}`}
+                    onPress={() => {
+                      if (index < trilhaAtualIndex) {
+                        handlePreviousTrilha()
+                      } else if (index > trilhaAtualIndex) {
+                        handleNextTrilha()
+                      }
+                    }}
+                    className="mx-1"
+                  >
+                    <View
+                      className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
+                    />
+                  </TouchableOpacity>
+                ))
               : null}
           </View>
         </View>
@@ -487,7 +530,7 @@ useEffect(() => {
         <TouchableOpacity
           onPress={handleNextTrilha}
           className="bg-tertiary p-2 rounded-md"
-          disabled={trilhaAtualIndex === trilhas.length - 1 || isAnimating}
+          disabled={trilhaAtualIndex === trilhas?.length - 1 || isAnimating}
         >
           <ChevronRight size={24} color="white" />
         </TouchableOpacity>
@@ -522,7 +565,7 @@ useEffect(() => {
             onEtapaPress={handleStagePress}
             containerHeight={containerHeight}
             backgroundImage={currentTrilha?.image}
-            trailId={currentTrilha?.id}
+            trailId={currentTrilha?.id || ""}
           />
           <View style={{ height: 100 }} />
         </ScrollView>

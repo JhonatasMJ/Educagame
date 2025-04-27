@@ -124,12 +124,12 @@ export const getTrails = async (): Promise<any> => {
 
 // Obter progresso do usuário
 export const getUserProgress = async (userId: string): Promise<any> => {
-  return fetchWithAuth(`/userProgress/${userId}`)
+  return fetchWithAuth(`/trails/users/${userId}/progress/`)
 }
 
 // Atualizar progresso do usuário
 export const updateUserProgress = async (userId: string, trailId: string, progressData: any): Promise<any> => {
-  return fetchWithAuth(`/userProgress/${userId}/trails/${trailId}`, {
+  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}`,  {
     method: "PUT",
     body: JSON.stringify(progressData),
   })
@@ -137,10 +137,11 @@ export const updateUserProgress = async (userId: string, trailId: string, progre
 
 // Iniciar uma fase
 export const startPhase = async (userId: string, trailId: string, phaseId: string): Promise<any> => {
-  return fetchWithAuth(`/userProgress/${userId}/trails/${trailId}/phases/${phaseId}/start`, {
+  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}/phases//${phaseId}/start `, {
     method: "POST",
   })
 }
+
 
 // Responder uma questão
 export const answerQuestion = async (
@@ -150,7 +151,7 @@ export const answerQuestion = async (
   questionId: string,
   isCorrect: boolean,
 ): Promise<any> => {
-  return fetchWithAuth(`/userProgress/${userId}/trails/${trailId}/phases/${phaseId}/questions/${questionId}/answer`, {
+  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}/phases/${phaseId}/questions/${questionId}/answer`, {
     method: "POST",
     body: JSON.stringify({ isCorrect }),
   })
@@ -163,7 +164,7 @@ export const completePhase = async (
   phaseId: string,
   timeSpent: number,
 ): Promise<any> => {
-  return fetchWithAuth(`/userProgress/${userId}/trails/${trailId}/phases/${phaseId}/complete`, {
+  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}/phases/${phaseId}/complete`, {
     method: "POST",
     body: JSON.stringify({ timeSpent }),
   })
