@@ -185,53 +185,104 @@ const Home = () => {
     progress: number
   }
 
+  // Modifique a parte que processa as etapas para garantir que etapas seja sempre um array
+  // Substitua o bloco de código que define a constante stages por:
+
   // 2. Now, let's correct the mapping of etapas
+  const stages = (() => {
+    // Verificar se currentTrilha existe
+    if (!currentTrilha) return []
 
-  // Update the stages mapping to handle the case when currentTrilha is null
-  // Replace:
-  // const stages = currentTrilha.etapas.map((etapa, index) => {
-  // With:
-  const stages =
-    currentTrilha && currentTrilha.etapas
-      ? currentTrilha.etapas.map(
-          (etapa: { id: any; titulo: any; descricao: any; icon: any; iconLibrary: any; stages: any }, index: any) => {
-            // Calcular o progresso com base nos stages concluídos
-            const progress = calculateEtapaProgress(etapa)
+    try {
+      // Garantir que etapas seja um array
+      let etapasArray = []
 
-            // Verificar se a etapa está totalmente concluída
-            const concluida = isEtapaCompleted(etapa)
+      if (currentTrilha.etapas) {
+        if (Array.isArray(currentTrilha.etapas)) {
+          etapasArray = currentTrilha.etapas
+        } else if (typeof currentTrilha.etapas === "object") {
+          etapasArray = Object.values(currentTrilha.etapas)
+        }
+      }
 
-            return {
-              id: etapa.id,
-              titulo: etapa.titulo,
-              descricao: etapa.descricao || "Descrição da etapa não disponível",
-              concluida: concluida,
-              icon: etapa.icon || "crown",
-              iconLibrary: etapa.iconLibrary || "lucide",
-              stages: etapa.stages || [],
-              progress: progress,
-            } as EtapaInfo
-          },
-        )
-      : []
+      // Se ainda não temos um array, retornar array vazio
+      if (!Array.isArray(etapasArray)) {
+        console.error("Não foi possível converter etapas para array:", currentTrilha.etapas)
+        return []
+      }
+
+      // Mapear as etapas para o formato esperado
+      return etapasArray.map((etapa: any, index: number) => {
+        // Verificar se etapa é um objeto válido
+        if (!etapa || typeof etapa !== "object") {
+          return {
+            id: `default-${Math.random().toString(36).substring(2, 9)}`,
+            titulo: "Etapa sem título",
+            descricao: "Descrição da etapa não disponível",
+            concluida: false,
+            icon: "crown",
+            iconLibrary: "lucide",
+            stages: [],
+            progress: 0,
+          }
+        }
+
+        // Garantir que stages seja um array
+        let stagesArray = []
+
+        if (etapa.stages) {
+          if (Array.isArray(etapa.stages)) {
+            stagesArray = etapa.stages
+          } else if (typeof etapa.stages === "object") {
+            stagesArray = Object.values(etapa.stages)
+          }
+        }
+
+        // Calcular o progresso com base nos stages concluídos
+        const progress = calculateEtapaProgress({
+          ...etapa,
+          stages: stagesArray,
+        })
+
+        // Verificar se a etapa está totalmente concluída
+        const concluida = isEtapaCompleted({
+          ...etapa,
+          stages: stagesArray,
+        })
+
+        return {
+          id: etapa.id || `etapa-${Math.random().toString(36).substring(2, 9)}`,
+          titulo: etapa.titulo || "Etapa sem título",
+          descricao: etapa.descricao || "Descrição da etapa não disponível",
+          concluida: concluida,
+          icon: etapa.icon || "crown",
+          iconLibrary: etapa.iconLibrary || "lucide",
+          stages: stagesArray,
+          progress: progress,
+        } as EtapaInfo
+      })
+    } catch (error) {
+      console.error("Erro ao processar etapas:", error)
+      return []
+    }
+  })()
 
   // 3. Corrigir o acesso às propriedades no handleStagePress
-
   const handleStagePress = (index: number) => {
     setEtapaAtualIndex(index)
 
-    // Get the current etapa
-    // Update the handleStagePress function to handle the case when currentTrilha is null
-    // Replace:
-    // const currentEtapa = currentTrilha.etapas[index]
-    // With:
-    if (!currentTrilha || !currentTrilha.etapas) return
-    const currentEtapa = currentTrilha.etapas[index]
+    // Verificar se temos uma trilha atual e se o índice é válido
+    if (!currentTrilha || !stages || index >= stages.length) return
+
+    const currentEtapa = stages[index]
+    if (!currentEtapa || !currentEtapa.stages || currentEtapa.stages.length === 0) return
 
     // Encontrar o primeiro stage não concluído ou o primeiro stage se todos estiverem concluídos
-    const currentStageIndex = currentEtapa.stages.findIndex((stage: { completed: any }) => !stage.completed)
+    const currentStageIndex = currentEtapa.stages.findIndex((stage: any) => !stage.completed)
     const stageIndex = currentStageIndex >= 0 ? currentStageIndex : 0
     const currentStage = currentEtapa.stages[stageIndex]
+
+    if (!currentStage) return
 
     // Navigate to the start phase with the stage data
     router.push({

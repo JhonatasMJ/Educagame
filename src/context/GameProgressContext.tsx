@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import  React from "react"
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
@@ -48,11 +48,11 @@ interface GameProgressContextType {
   startPhase: (trailId: string, phaseId: string) => void
   answerQuestion: (correct: boolean, questionId: string) => void
   completePhase: (phaseId: string, timeSpent: number) => void
-  getPhaseProgress: (phaseId: string) => PhaseProgress | undefined
+  getPhaseProgress: (phaseId: string | undefined) => PhaseProgress | undefined
   getPhaseCompletionPercentage: (phaseId: string) => number
   resetProgress: () => void
   syncProgress: () => Promise<void>
-  getTrailProgress: (trailId: string) => TrailProgress | undefined
+  getTrailProgress: (trailId: string | undefined) => TrailProgress | undefined
 }
 
 // Create the context
@@ -196,14 +196,19 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
 
       // Find or create trail
-      let trail = prev.trails.find((t) => t.id === trailId)
+      let trail = prev.trails.find((t) => t && t.id === trailId)
       if (!trail) {
         trail = { id: trailId, phases: [] }
         prev.trails.push(trail)
       }
 
+      // Garantir que phases seja sempre um array
+      if (!Array.isArray(trail.phases)) {
+        trail.phases = []
+      }
+
       // Find or create phase
-      let phase = trail.phases.find((p) => p.id === phaseId)
+      let phase = trail.phases.find((p) => p && p.id === phaseId)
       if (!phase) {
         phase = {
           id: phaseId,
@@ -257,10 +262,17 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Find current phase
       if (newProgress.currentPhaseId) {
         for (const trail of newProgress.trails) {
-          const phase = trail.phases.find((p) => p.id === newProgress.currentPhaseId)
+          if (!trail || !Array.isArray(trail.phases)) continue
+
+          const phase = trail.phases.find((p) => p && p.id === newProgress.currentPhaseId)
           if (phase) {
+            // Garantir que questionsProgress seja sempre um array
+            if (!Array.isArray(phase.questionsProgress)) {
+              phase.questionsProgress = []
+            }
+
             // Find or create question progress
-            let questionProgress = phase.questionsProgress.find((q) => q.id === questionId)
+            let questionProgress = phase.questionsProgress.find((q) => q && q.id === questionId)
             if (!questionProgress) {
               questionProgress = { id: questionId, answered: true, correct }
               phase.questionsProgress.push(questionProgress)
@@ -281,7 +293,9 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
             // Chamar a API para atualizar o progresso no servidor
             if (authUser && prev.currentPhaseId) {
               for (const trail of prev.trails) {
-                const phase = trail.phases.find((p) => p.id === prev.currentPhaseId)
+                if (!trail || !Array.isArray(trail.phases)) continue
+
+                const phase = trail.phases.find((p) => p && p.id === prev.currentPhaseId)
                 if (phase) {
                   apiAnswerQuestion(authUser.uid, trail.id, prev.currentPhaseId, questionId, correct)
                     .then(() => console.log("Resposta registrada na API com sucesso"))
@@ -312,7 +326,9 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       // Find and update phase
       for (const trail of newProgress.trails) {
-        const phase = trail.phases.find((p) => p.id === phaseId)
+        if (!trail || !Array.isArray(trail.phases)) continue
+
+        const phase = trail.phases.find((p) => p && p.id === phaseId)
         if (phase) {
           phase.completed = true
           phase.timeSpent = timeSpent
@@ -326,15 +342,9 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
           // Chamar a API para atualizar o progresso no servidor
           if (authUser) {
-            for (const trail of newProgress.trails) {
-              const phase = trail.phases.find((p) => p.id === phaseId)
-              if (phase) {
-                apiCompletePhase(authUser.uid, trail.id, phaseId, timeSpent)
-                  .then(() => console.log("Fase completada na API com sucesso"))
-                  .catch((error) => console.error("Erro ao completar fase na API:", error))
-                break
-              }
-            }
+            apiCompletePhase(authUser.uid, trail.id, phaseId, timeSpent)
+              .then(() => console.log("Fase completada na API com sucesso"))
+              .catch((error) => console.error("Erro ao completar fase na API:", error))
           }
           break
         }
@@ -349,14 +359,19 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }
 
   // Função para obter o progresso de uma fase específica
-  const getPhaseProgress = (phaseId: string): PhaseProgress | undefined => {
+  const getPhaseProgress = (phaseId: string | undefined): PhaseProgress | undefined => {
+    // Se phaseId for undefined, retornar undefined
+    if (!phaseId) return undefined
+
     // Garantir que trails seja sempre um array antes de usar find
     if (!Array.isArray(progress.trails)) {
       return undefined
     }
 
     for (const trail of progress.trails) {
-      const phase = trail.phases.find((p) => p.id === phaseId)
+      if (!trail || !Array.isArray(trail.phases)) continue
+
+      const phase = trail.phases.find((p) => p && p.id === phaseId)
       if (phase) {
         return phase
       }
@@ -365,13 +380,16 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }
 
   // Função para obter o progresso de uma trilha específica
-  const getTrailProgress = (trailId: string): TrailProgress | undefined => {
+  const getTrailProgress = (trailId: string | undefined): TrailProgress | undefined => {
+    // Se trailId for undefined, retornar undefined
+    if (!trailId) return undefined
+
     // Garantir que trails seja sempre um array antes de usar find
     if (!Array.isArray(progress.trails)) {
       return undefined
     }
 
-    return progress.trails.find((t) => t.id === trailId)
+    return progress.trails.find((t) => t && t.id === trailId)
   }
 
   // Função para calcular a porcentagem de conclusão de uma fase

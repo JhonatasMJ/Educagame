@@ -54,14 +54,25 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
     // 2. Se não existir no Firebase ou forceCreate for true, tentar buscar da API
     if (!userProgress) {
       console.log("Nenhum progresso encontrado no Firebase ou forceCreate ativado, verificando na API...")
-      const userProgressResponse = await getUserProgress(userId)
+      try {
+        const userProgressResponse = await getUserProgress(userId)
 
-      if (userProgressResponse?.data && !forceCreate) {
-        userProgress = userProgressResponse.data
-        console.log("Progresso encontrado na API")
-      } else {
-        // 3. Se não existir na API ou forceCreate for true, criar um progresso inicial
-        console.log("Criando progresso inicial para o usuário...")
+        if (userProgressResponse?.data && !forceCreate) {
+          userProgress = userProgressResponse.data
+          console.log("Progresso encontrado na API")
+        } else {
+          // 3. Se não existir na API ou forceCreate for true, criar um progresso inicial
+          console.log("Criando progresso inicial para o usuário...")
+          userProgress = {
+            totalPoints: 0,
+            consecutiveCorrect: 0,
+            highestConsecutiveCorrect: 0,
+            trails: [],
+          }
+        }
+      } catch (apiError) {
+        console.error("Erro ao buscar progresso da API:", apiError)
+        // Se falhar ao buscar da API, criar um progresso inicial
         userProgress = {
           totalPoints: 0,
           consecutiveCorrect: 0,
@@ -73,7 +84,12 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
 
     // Garantir que userProgress não seja null neste ponto
     if (!userProgress) {
-      throw new Error("Falha ao inicializar o progresso do usuário")
+      userProgress = {
+        totalPoints: 0,
+        consecutiveCorrect: 0,
+        highestConsecutiveCorrect: 0,
+        trails: [],
+      }
     }
 
     // Garantir que trails seja sempre um array
@@ -85,10 +101,20 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
     console.log("Progresso do usuário carregado:", userProgress)
 
     // 4. Buscar todas as trilhas disponíveis
-    const trailsResponse = await getTrails()
-    const availableTrails = trailsResponse?.data || []
-
-    console.log("Trilhas disponíveis carregadas:", availableTrails.length)
+    let availableTrails: any[] = []
+    try {
+      const trailsResponse = await getTrails()
+      if (trailsResponse?.data) {
+        // Garantir que temos um array
+        availableTrails = Array.isArray(trailsResponse.data)
+          ? trailsResponse.data
+          : Object.values(trailsResponse.data || {})
+      }
+      console.log("Trilhas disponíveis carregadas:", availableTrails.length)
+    } catch (trailsError) {
+      console.error("Erro ao buscar trilhas disponíveis:", trailsError)
+      // Continuar com um array vazio se falhar
+    }
 
     // 5. Sincronizar trilhas
     const updatedProgress = syncTrails(userProgress, availableTrails)
@@ -140,64 +166,103 @@ export const initializeUserProgress = async (userId: string): Promise<UserProgre
  * Sincroniza as trilhas do usuário com as trilhas disponíveis
  */
 const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserProgress => {
-  const updatedProgress = { ...userProgress }
+  try {
+    const updatedProgress = { ...userProgress }
 
-  // Garantir que trails seja sempre um array
-  if (!Array.isArray(updatedProgress.trails)) {
-    updatedProgress.trails = []
-  }
-
-  // Para cada trilha disponível
-  for (const availableTrail of availableTrails) {
-    // Verificar se o usuário já tem progresso nesta trilha
-    let userTrail = updatedProgress.trails.find((t) => t.id === availableTrail.id)
-
-    // Se não tiver, criar uma nova trilha no progresso do usuário
-    if (!userTrail) {
-      userTrail = {
-        id: availableTrail.id,
-        phases: [],
-      }
-      updatedProgress.trails.push(userTrail)
-      console.log(`Nova trilha adicionada ao progresso: ${availableTrail.id}`)
+    // Garantir que trails seja sempre um array
+    if (!Array.isArray(updatedProgress.trails)) {
+      updatedProgress.trails = []
     }
 
-    // Sincronizar as etapas da trilha
-    syncPhases(userTrail, availableTrail)
-  }
+    // Para cada trilha disponível
+    for (const availableTrail of availableTrails) {
+      // Verificar se a trilha disponível é válida
+      if (!availableTrail || typeof availableTrail !== "object" || !availableTrail.id) {
+        console.warn("Trilha inválida encontrada, ignorando:", availableTrail)
+        continue
+      }
 
-  return updatedProgress
+      // Verificar se o usuário já tem progresso nesta trilha
+      let userTrail = updatedProgress.trails.find((t) => t && t.id === availableTrail.id)
+
+      // Se não tiver, criar uma nova trilha no progresso do usuário
+      if (!userTrail) {
+        userTrail = {
+          id: availableTrail.id,
+          phases: [],
+        }
+        updatedProgress.trails.push(userTrail)
+        console.log(`Nova trilha adicionada ao progresso: ${availableTrail.id}`)
+      }
+
+      // Garantir que phases seja sempre um array
+      if (!Array.isArray(userTrail.phases)) {
+        userTrail.phases = []
+      }
+
+      // Sincronizar as etapas da trilha
+      syncPhases(userTrail, availableTrail)
+    }
+
+    return updatedProgress
+  } catch (error) {
+    console.error("Erro ao sincronizar trilhas:", error)
+    // Retornar o progresso original em caso de erro
+    return userProgress
+  }
 }
 
 /**
  * Sincroniza as etapas de uma trilha
  */
 const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
-  // Verificar se a trilha disponível tem etapas
-  const availablePhases = Array.isArray(availableTrail.etapas)
-    ? availableTrail.etapas
-    : Object.values(availableTrail.etapas || {})
+  try {
+    // Verificar se a trilha disponível tem etapas
+    let availablePhases: any[] = []
 
-  // Para cada etapa disponível
-  for (const availablePhase of availablePhases) {
-    // Verificar se o usuário já tem progresso nesta etapa
-    let userPhase = userTrail.phases.find((p) => p.id === availablePhase.id)
-
-    // Se não tiver, criar uma nova etapa no progresso do usuário
-    if (!userPhase) {
-      userPhase = {
-        id: availablePhase.id,
-        started: false,
-        completed: false,
-        questionsProgress: [],
-        timeSpent: 0,
+    if (availableTrail.etapas) {
+      if (Array.isArray(availableTrail.etapas)) {
+        availablePhases = availableTrail.etapas
+      } else if (typeof availableTrail.etapas === "object") {
+        availablePhases = Object.values(availableTrail.etapas)
       }
-      userTrail.phases.push(userPhase)
-      console.log(`Nova etapa adicionada ao progresso: ${availablePhase.id}`)
     }
 
-    // Sincronizar as questões da etapa
-    syncQuestions(userPhase, availablePhase)
+    // Para cada etapa disponível
+    for (const availablePhase of availablePhases) {
+      // Verificar se a etapa disponível é válida
+      if (!availablePhase || typeof availablePhase !== "object" || !availablePhase.id) {
+        console.warn("Etapa inválida encontrada, ignorando:", availablePhase)
+        continue
+      }
+
+      // Verificar se o usuário já tem progresso nesta etapa
+      let userPhase = userTrail.phases.find((p) => p && p.id === availablePhase.id)
+
+      // Se não tiver, criar uma nova etapa no progresso do usuário
+      if (!userPhase) {
+        userPhase = {
+          id: availablePhase.id,
+          started: false,
+          completed: false,
+          questionsProgress: [],
+          timeSpent: 0,
+        }
+        userTrail.phases.push(userPhase)
+        console.log(`Nova etapa adicionada ao progresso: ${availablePhase.id}`)
+      }
+
+      // Garantir que questionsProgress seja sempre um array
+      if (!Array.isArray(userPhase.questionsProgress)) {
+        userPhase.questionsProgress = []
+      }
+
+      // Sincronizar as questões da etapa
+      syncQuestions(userPhase, availablePhase)
+    }
+  } catch (error) {
+    console.error("Erro ao sincronizar etapas:", error)
+    // Continuar mesmo se houver erro
   }
 }
 
@@ -205,36 +270,61 @@ const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
  * Sincroniza as questões de uma etapa
  */
 const syncQuestions = (userPhase: PhaseProgress, availablePhase: any): void => {
-  // Verificar se a etapa disponível tem stages
-  const availableStages = Array.isArray(availablePhase.stages)
-    ? availablePhase.stages
-    : Object.values(availablePhase.stages || {})
+  try {
+    // Verificar se a etapa disponível tem stages
+    let availableStages: any[] = []
 
-  // Coletar todas as questões de todos os stages
-  const availableQuestions: any[] = []
-
-  for (const stage of availableStages) {
-    if (stage.questions) {
-      const questions = Array.isArray(stage.questions) ? stage.questions : Object.values(stage.questions || {})
-
-      availableQuestions.push(...questions)
+    if (availablePhase.stages) {
+      if (Array.isArray(availablePhase.stages)) {
+        availableStages = availablePhase.stages
+      } else if (typeof availablePhase.stages === "object") {
+        availableStages = Object.values(availablePhase.stages)
+      }
     }
-  }
 
-  // Para cada questão disponível
-  for (const availableQuestion of availableQuestions) {
-    // Verificar se o usuário já respondeu esta questão
-    const userQuestion = userPhase.questionsProgress.find((q) => q.id === availableQuestion.id)
+    // Coletar todas as questões de todos os stages
+    const availableQuestions: any[] = []
 
-    // Se não tiver, adicionar a questão ao progresso do usuário (como não respondida)
-    if (!userQuestion) {
-      userPhase.questionsProgress.push({
-        id: availableQuestion.id,
-        answered: false,
-        correct: false,
-      })
-      console.log(`Nova questão adicionada ao progresso: ${availableQuestion.id}`)
+    for (const stage of availableStages) {
+      if (!stage || typeof stage !== "object") continue
+
+      if (stage.questions) {
+        let questions = []
+        if (Array.isArray(stage.questions)) {
+          questions = stage.questions
+        } else if (typeof stage.questions === "object") {
+          questions = Object.values(stage.questions)
+        }
+
+        // Filtrar questões inválidas
+        const validQuestions = questions.filter((q: { id: any }) => q && typeof q === "object" && q.id)
+        availableQuestions.push(...validQuestions)
+      }
     }
+
+    // Para cada questão disponível
+    for (const availableQuestion of availableQuestions) {
+      // Verificar se a questão disponível é válida
+      if (!availableQuestion || typeof availableQuestion !== "object" || !availableQuestion.id) {
+        continue
+      }
+
+      // Verificar se o usuário já respondeu esta questão
+      const userQuestion = userPhase.questionsProgress.find((q) => q && q.id === availableQuestion.id)
+
+      // Se não tiver, adicionar a questão ao progresso do usuário (como não respondida)
+      if (!userQuestion) {
+        userPhase.questionsProgress.push({
+          id: availableQuestion.id,
+          answered: false,
+          correct: false,
+        })
+        console.log(`Nova questão adicionada ao progresso: ${availableQuestion.id}`)
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao sincronizar questões:", error)
+    // Continuar mesmo se houver erro
   }
 }
 
@@ -284,12 +374,17 @@ export const getUserProgressFromFirebase = async (userId: string): Promise<UserP
  * Calcula o progresso de uma etapa com base nas questões respondidas corretamente
  */
 export const calculatePhaseProgress = (phase: PhaseProgress): number => {
-  if (!phase.questionsProgress || phase.questionsProgress.length === 0) {
-    return phase.completed ? 100 : 0
+  if (
+    !phase ||
+    !phase.questionsProgress ||
+    !Array.isArray(phase.questionsProgress) ||
+    phase.questionsProgress.length === 0
+  ) {
+    return phase && phase.completed ? 100 : 0
   }
 
-  const answeredQuestions = phase.questionsProgress.filter((q) => q.answered)
-  const correctQuestions = phase.questionsProgress.filter((q) => q.correct)
+  const answeredQuestions = phase.questionsProgress.filter((q) => q && q.answered)
+  const correctQuestions = phase.questionsProgress.filter((q) => q && q.correct)
 
   if (answeredQuestions.length === 0) {
     return 0
@@ -302,8 +397,12 @@ export const calculatePhaseProgress = (phase: PhaseProgress): number => {
  * Verifica se uma etapa está completa
  */
 export const isPhaseCompleted = (phase: PhaseProgress): boolean => {
+  if (!phase || !phase.questionsProgress || !Array.isArray(phase.questionsProgress)) {
+    return false
+  }
+
   return (
     phase.completed ||
-    (phase.questionsProgress.length > 0 && phase.questionsProgress.every((q) => q.answered && q.correct))
+    (phase.questionsProgress.length > 0 && phase.questionsProgress.every((q) => q && q.answered && q.correct))
   )
 }

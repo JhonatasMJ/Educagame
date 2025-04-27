@@ -11,7 +11,7 @@ export const useTrails = () => {
   const [error, setError] = useState<string | null>(null)
   // Novo estado para controlar se as trilhas já foram carregadas pelo menos uma vez
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
-  
+
   // Obter o token JWT do contexto de autenticação
   const { jwtToken, isTokenLoaded } = useAuth()
 
@@ -20,16 +20,16 @@ export const useTrails = () => {
     console.log("Fetching trails...")
 
     console.log("Token JWT:", jwtToken)
-    
+
     // Verificar se o token JWT está carregado
     if (!isTokenLoaded) {
       console.log("Token JWT ainda não foi carregado, aguardando...")
       return
     }
-    
+
     setIsLoading(true)
     console.log("Requisição de trilhas iniciada com token válido")
-    
+
     try {
       const data = await getTrails()
       console.log("Requisição de trilhas concluída", data)
@@ -37,29 +37,74 @@ export const useTrails = () => {
       // Check if data exists and has the expected structure
       if (data && data.data) {
         // Make sure we're getting an array
-        const trailsArray = Array.isArray(data.data) ? data.data : Object.values(data.data)
+        const trailsArray = Array.isArray(data.data) ? data.data : Object.values(data.data || {})
         console.log("Trilhas carregadas:", trailsArray.length)
 
         // Process the trails to ensure they have the expected structure
-        const processedTrails = trailsArray.map((trail: any) => {
-          // Ensure etapas is an array
-          const etapas = Array.isArray(trail.etapas) ? trail.etapas : Object.values(trail.etapas || {})
+        const processedTrails = trailsArray
+          .map((trail: any) => {
+            // Skip invalid trails
+            if (!trail || typeof trail !== "object") return null
 
-          // Process each etapa to ensure stages is an array
-          const processedEtapas = etapas.map((etapa: any) => {
-            const stages = Array.isArray(etapa.stages) ? etapa.stages : Object.values(etapa.stages || {})
-            
+            // Ensure etapas is an array
+            let etapas = []
+            try {
+              if (trail.etapas) {
+                if (Array.isArray(trail.etapas)) {
+                  etapas = trail.etapas
+                } else if (typeof trail.etapas === "object") {
+                  etapas = Object.values(trail.etapas)
+                }
+              }
+            } catch (err) {
+              console.error("Erro ao processar etapas:", err)
+              etapas = []
+            }
+
+            // Process each etapa to ensure stages is an array
+            const processedEtapas = etapas.map((etapa: any) => {
+              // Ensure etapa is an object
+              if (!etapa || typeof etapa !== "object") {
+                return {
+                  id: `generated-${Math.random().toString(36).substr(2, 9)}`,
+                  titulo: "Etapa sem título",
+                  descricao: "Etapa sem descrição",
+                  stages: [],
+                }
+              }
+
+              let stages = []
+              try {
+                if (etapa.stages) {
+                  if (Array.isArray(etapa.stages)) {
+                    stages = etapa.stages
+                  } else if (typeof etapa.stages === "object") {
+                    stages = Object.values(etapa.stages)
+                  }
+                }
+              } catch (err) {
+                console.error("Erro ao processar stages:", err)
+                stages = []
+              }
+
+              return {
+                ...etapa,
+                id: etapa.id || `etapa-${Math.random().toString(36).substr(2, 9)}`,
+                titulo: etapa.titulo || "Etapa sem título",
+                descricao: etapa.descricao || "Sem descrição",
+                stages: stages,
+              }
+            })
+
             return {
-              ...etapa,
-              stages,
+              ...trail,
+              id: trail.id || `trail-${Math.random().toString(36).substr(2, 9)}`,
+              nome: trail.nome || "Trilha sem nome",
+              descricao: trail.descricao || "Sem descrição",
+              etapas: processedEtapas.filter(Boolean), // Remove any null/undefined etapas
             }
           })
-          
-          return {
-            ...trail,
-            etapas: processedEtapas,
-          }
-        })
+          .filter(Boolean) // Remove any null/undefined trails
 
         setTrails(processedTrails)
         setError(null)
@@ -70,7 +115,7 @@ export const useTrails = () => {
       }
     } catch (err: any) {
       console.error("Erro ao buscar trilhas:", err)
-      
+
       // Tratamento de erros mais específico
       if (err.message?.includes("401")) {
         setError("Sessão expirada. Por favor, faça login novamente.")
@@ -79,7 +124,7 @@ export const useTrails = () => {
       } else {
         setError(err.message || "Não foi possível carregar as trilhas. Tente novamente mais tarde.")
       }
-      
+
       setTrails([])
     } finally {
       console.log("Encerrou a requisição de trilhas")
@@ -87,21 +132,21 @@ export const useTrails = () => {
       // Marcar que as trilhas foram carregadas pelo menos uma vez
       setHasLoadedTrails(true)
     }
-  }, [jwtToken, isTokenLoaded]);
+  }, [jwtToken, isTokenLoaded])
 
   // Efeito para carregar as trilhas quando o token estiver disponível
   useEffect(() => {
     // Só tenta carregar as trilhas se o token estiver carregado (mesmo que seja null)
     if (isTokenLoaded) {
-      fetchTrails();
+      fetchTrails()
     }
-  }, [isTokenLoaded, fetchTrails]);
+  }, [isTokenLoaded, fetchTrails])
 
-  return { 
-    trails, 
-    isLoading, 
-    error, 
+  return {
+    trails,
+    isLoading,
+    error,
     fetchTrails,
-    hasLoadedTrails 
+    hasLoadedTrails,
   }
 }
