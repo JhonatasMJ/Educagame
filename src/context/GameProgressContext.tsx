@@ -315,7 +315,7 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }
 
   // Função para completar uma fase
-  const completePhase = async (phaseId: string, timeSpent: number) => {
+  const completePhase = (phaseId: string, timeSpent: number) => {
     setProgress((prev) => {
       // Garantir que trails seja sempre um array
       if (!Array.isArray(prev.trails)) {
@@ -350,11 +350,13 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
       }
 
-      // Clear current phase
-      newProgress.currentPhaseId = undefined
-      newProgress.currentQuestionIndex = undefined
+      // Não definir currentPhaseId e currentQuestionIndex como undefined
+      // Em vez disso, remover essas propriedades do objeto
+      const result = { ...newProgress }
+      delete result.currentPhaseId
+      delete result.currentQuestionIndex
 
-      return newProgress
+      return result
     })
   }
 

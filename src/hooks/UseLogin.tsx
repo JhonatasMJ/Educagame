@@ -87,10 +87,11 @@ export const useLogin = () => {
       }
 
       // Sincronizar o progresso do usuário com as trilhas disponíveis
+      // IMPORTANTE: Não forçar a criação de um novo progresso (forceCreate = false)
       setIsSyncingProgress(true)
       try {
         console.log("Sincronizando progresso do usuário...")
-        await syncUserProgress(user.uid)
+        await syncUserProgress(user.uid, false) // Explicitamente definir forceCreate como false
         console.log("Progresso do usuário sincronizado com sucesso")
       } catch (syncError) {
         console.error("Erro ao sincronizar progresso do usuário:", syncError)

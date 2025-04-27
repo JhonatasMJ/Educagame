@@ -114,8 +114,7 @@ export const fetchWithAuth = async (endpoint: string, options: RequestInit = {})
     console.error("Erro na requisição:", error)
     throw error
   }
-
-}// Funções específicas para interagir com endpoints da API
+} // Funções específicas para interagir com endpoints da API
 
 // Obter todas as trilhas
 export const getTrails = async (): Promise<any> => {
@@ -129,21 +128,20 @@ export const getUserProgress = async (userId: string): Promise<any> => {
 
 // Atualizar progresso do usuário
 export const updateUserProgress = async (userId: string, trailId: string, progressData: any): Promise<any> => {
-  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}`,  {
+  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}`, {
     method: "PUT",
     body: JSON.stringify(progressData),
   })
 }
 
-// Iniciar uma fase
+// Corrigir a URL da rota de iniciar fase (remover o duplo slash)
 export const startPhase = async (userId: string, trailId: string, phaseId: string): Promise<any> => {
-  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}/phases//${phaseId}/start `, {
+  return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}/phases/${phaseId}/start`, {
     method: "POST",
   })
 }
 
-
-// Responder uma questão
+// Corrigir a função answerQuestion para enviar o corpo da requisição corretamente
 export const answerQuestion = async (
   userId: string,
   trailId: string,
@@ -153,11 +151,11 @@ export const answerQuestion = async (
 ): Promise<any> => {
   return fetchWithAuth(`/trails/users/${userId}/trails/${trailId}/phases/${phaseId}/questions/${questionId}/answer`, {
     method: "POST",
-    body: JSON.stringify({ isCorrect }),
+    body: JSON.stringify({ correct: isCorrect }),
   })
 }
 
-// Completar uma fase
+// Corrigir a função completePhase para enviar o corpo da requisição corretamente
 export const completePhase = async (
   userId: string,
   trailId: string,
