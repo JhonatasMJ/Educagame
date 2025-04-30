@@ -72,6 +72,26 @@ const Home = () => {
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
 
+
+  const trailBackgroundImages = [
+    require("@/assets/images/fundo.png"),
+    require("@/assets/images/fundo.png"),
+    require("@/assets/images/fundo.png"),
+    require("@/assets/images/fundo.png"),
+    require("@/assets/images/fundo.png"),
+  ];
+  
+  // Define a fallback image in case we run out of images in the array
+  const fallbackImage = require("@/assets/images/fundo.png");
+
+  const getTrailBackgroundImage = (index: number) => {
+    if (index >= 0 && index < trailBackgroundImages.length) {
+      return trailBackgroundImages[index];
+    }
+    return fallbackImage;
+  };
+  
+
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
 
@@ -454,6 +474,7 @@ const Home = () => {
     }
   }, [authUser, isTokenLoaded]) // Removemos trilhas e hasLoadedTrails das dependências
 
+
   return (
     <View className="flex-1">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
@@ -492,53 +513,6 @@ const Home = () => {
         </View>
       )}
 
-      {/* Background SVG with parallax effect */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "#F0E6D2", // Background color that shows if image ends
-          zIndex: -1,
-        }}
-      >
-        <Animated.View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            transform: [{ translateY: backgroundScrollY }],
-          }}
-        >
-          {BackgroundSvg ? (
-            <BackgroundSvg
-              width="100%"
-              height={height * 1.5} // Make SVG taller than screen for scrolling effect
-              preserveAspectRatio="xMidYMid slice"
-              onError={() => {
-                console.log("Error loading background SVG")
-                setCurrentBackgroundSvg(null)
-              }}
-            />
-          ) : (
-            // Fallback background when SVG fails to load
-            <View
-              style={{
-                width: "100%",
-                height: height * 1.5,
-                justifyContent: "center",
-                alignItems: "center",
-                opacity: 0.1,
-              }}
-            >
-              <Text style={{ fontSize: 100, color: "#333" }}>🏞️</Text>
-            </View>
-          )}
-        </Animated.View>
-      </View>
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
@@ -558,22 +532,22 @@ const Home = () => {
           <View className="flex-row justify-center items-center mt-1">
             {trilhas && trilhas.length > 0
               ? trilhas.map((_, index) => (
-                  <TouchableOpacity
-                    key={`indicator-${index}`}
-                    onPress={() => {
-                      if (index < trilhaAtualIndex) {
-                        handlePreviousTrilha()
-                      } else if (index > trilhaAtualIndex) {
-                        handleNextTrilha()
-                      }
-                    }}
-                    className="mx-1"
-                  >
-                    <View
-                      className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
-                    />
-                  </TouchableOpacity>
-                ))
+                <TouchableOpacity
+                  key={`indicator-${index}`}
+                  onPress={() => {
+                    if (index < trilhaAtualIndex) {
+                      handlePreviousTrilha()
+                    } else if (index > trilhaAtualIndex) {
+                      handleNextTrilha()
+                    }
+                  }}
+                  className="mx-1"
+                >
+                  <View
+                    className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
+                  />
+                </TouchableOpacity>
+              ))
               : null}
           </View>
         </View>
@@ -615,9 +589,10 @@ const Home = () => {
             currentEtapaIndex={etapaAtualIndex}
             onEtapaPress={handleStagePress}
             containerHeight={containerHeight}
-            backgroundImage={currentTrilha?.image}
+            backgroundImage={getTrailBackgroundImage(trilhaAtualIndex)}
             trailId={currentTrilha?.id || ""}
           />
+
           <View style={{ height: 100 }} />
         </ScrollView>
       </Animated.View>

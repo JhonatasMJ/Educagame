@@ -11,6 +11,7 @@ import {
 } from "../services/apiService"
 import { useAuth } from "./AuthContext"
 import { getUserProgressFromFirebase, syncUserProgress, calculatePhaseProgress } from "../services/userProgressService"
+import { logSync, LogLevel } from "../services/syncLogger"
 
 // Define types for our progress data
 interface QuestionProgress {
@@ -39,6 +40,7 @@ interface GameProgress {
   trails: TrailProgress[]
   currentPhaseId?: string
   currentQuestionIndex?: number
+  lastSyncTimestamp?: number // Add timestamp for tracking last sync
 }
 
 interface GameProgressContextType {
@@ -64,6 +66,7 @@ const initialProgress: GameProgress = {
   consecutiveCorrect: 0,
   highestConsecutiveCorrect: 0,
   trails: [],
+  lastSyncTimestamp: Date.now(),
 }
 
 export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -71,6 +74,7 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const { authUser, updateUserPoints } = useAuth()
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false)
 
   // Função para sincronizar o progresso do usuário
   const syncProgress = useCallback(async () => {
@@ -78,15 +82,15 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     setIsSyncing(true)
     try {
-      console.log("Sincronizando progresso do usuário...")
+      logSync(LogLevel.INFO, "Sincronizando progresso do usuário...")
       const updatedProgress = await syncUserProgress(authUser.uid)
 
       if (updatedProgress) {
         setProgress(updatedProgress)
-        console.log("Progresso do usuário sincronizado com sucesso")
+        logSync(LogLevel.INFO, "Progresso do usuário sincronizado com sucesso")
       }
     } catch (error) {
-      console.error("Erro ao sincronizar progresso do usuário:", error)
+      logSync(LogLevel.ERROR, "Erro ao sincronizar progresso do usuário:", error)
     } finally {
       setIsSyncing(false)
     }
@@ -102,19 +106,41 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       setIsLoading(true)
       try {
+        // CRITICAL: First, try to load from AsyncStorage to prevent data loss during page refresh
+        try {
+          const cachedProgress = await AsyncStorage.getItem(`userProgress_${authUser.uid}`)
+          if (cachedProgress) {
+            const parsedProgress = JSON.parse(cachedProgress)
+            logSync(LogLevel.INFO, "Progresso carregado do AsyncStorage")
+            setProgress(parsedProgress)
+
+            // We still need to verify with Firebase, but we'll use this as initial data
+            setIsLoading(false)
+          }
+        } catch (cacheError) {
+          logSync(LogLevel.ERROR, "Erro ao carregar progresso do AsyncStorage:", cacheError)
+        }
+
         // Primeiro, tentar carregar do Firebase
         const firebaseProgress = await getUserProgressFromFirebase(authUser.uid)
 
         if (firebaseProgress) {
-          console.log("Progresso carregado do Firebase")
+          logSync(LogLevel.INFO, "Progresso carregado do Firebase")
           setProgress(firebaseProgress)
+
+          // Cache the progress in AsyncStorage
+          try {
+            await AsyncStorage.setItem(`userProgress_${authUser.uid}`, JSON.stringify(firebaseProgress))
+          } catch (cacheError) {
+            logSync(LogLevel.ERROR, "Erro ao salvar progresso no AsyncStorage:", cacheError)
+          }
         } else {
           // Se não encontrar no Firebase, tentar carregar da API
-          console.log("Tentando carregar progresso da API...")
+          logSync(LogLevel.INFO, "Tentando carregar progresso da API...")
           const apiProgressResponse = await getUserProgress(authUser.uid)
 
           if (apiProgressResponse?.data) {
-            console.log("Progresso carregado da API")
+            logSync(LogLevel.INFO, "Progresso carregado da API")
 
             // Garantir que trails seja sempre um array
             const apiProgress = apiProgressResponse.data
@@ -123,24 +149,35 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
             }
 
             setProgress(apiProgress)
+
+            // Cache the progress in AsyncStorage
+            try {
+              await AsyncStorage.setItem(`userProgress_${authUser.uid}`, JSON.stringify(apiProgress))
+            } catch (cacheError) {
+              logSync(LogLevel.ERROR, "Erro ao salvar progresso no AsyncStorage:", cacheError)
+            }
           } else {
             // Se não encontrar na API, iniciar com progresso vazio
-            console.log("Nenhum progresso encontrado, iniciando com progresso vazio")
-            setProgress(initialProgress)
+            logSync(LogLevel.INFO, "Nenhum progresso encontrado, iniciando com progresso vazio")
 
-            // E sincronizar para criar o progresso inicial
-            console.log("Criando progresso inicial para o usuário...")
-            await syncProgress()
+            // Only create new progress if we didn't load from AsyncStorage earlier
+            if (!(await AsyncStorage.getItem(`userProgress_${authUser.uid}`))) {
+              setProgress(initialProgress)
+
+              // E sincronizar para criar o progresso inicial
+              logSync(LogLevel.INFO, "Criando progresso inicial para o usuário...")
+              await syncProgress()
+            }
           }
         }
       } catch (error) {
-        console.error("Erro ao carregar progresso do usuário:", error)
+        logSync(LogLevel.ERROR, "Erro ao carregar progresso do usuário:", error)
 
         // Em caso de erro, tentar carregar do AsyncStorage como fallback
         try {
-          const savedProgress = await AsyncStorage.getItem("gameProgress")
+          const savedProgress = await AsyncStorage.getItem(`userProgress_${authUser.uid}`)
           if (savedProgress) {
-            console.log("Progresso carregado do AsyncStorage")
+            logSync(LogLevel.INFO, "Progresso carregado do AsyncStorage como fallback")
             const parsedProgress = JSON.parse(savedProgress)
 
             // Garantir que trails seja sempre um array
@@ -151,21 +188,22 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
             setProgress(parsedProgress)
           } else {
             // Se não encontrar no AsyncStorage, criar progresso inicial
-            console.log("Nenhum progresso encontrado no AsyncStorage, criando progresso inicial...")
+            logSync(LogLevel.INFO, "Nenhum progresso encontrado no AsyncStorage, criando progresso inicial...")
             await syncProgress()
           }
         } catch (storageError) {
-          console.error("Erro ao carregar progresso do AsyncStorage:", storageError)
+          logSync(LogLevel.ERROR, "Erro ao carregar progresso do AsyncStorage:", storageError)
 
           // Mesmo com erro, tentar criar progresso inicial
           try {
             await syncProgress()
           } catch (syncError) {
-            console.error("Erro ao criar progresso inicial:", syncError)
+            logSync(LogLevel.ERROR, "Erro ao criar progresso inicial:", syncError)
           }
         }
       } finally {
         setIsLoading(false)
+        setIsInitialLoadComplete(true)
       }
     }
 
@@ -175,17 +213,20 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Save progress to AsyncStorage whenever it changes
   useEffect(() => {
     const saveProgress = async () => {
+      if (!authUser) return
+
       try {
-        await AsyncStorage.setItem("gameProgress", JSON.stringify(progress))
+        await AsyncStorage.setItem(`userProgress_${authUser.uid}`, JSON.stringify(progress))
+        logSync(LogLevel.DEBUG, "Progresso salvo no AsyncStorage")
       } catch (error) {
-        console.error("Failed to save progress to AsyncStorage:", error)
+        logSync(LogLevel.ERROR, "Erro ao salvar progresso no AsyncStorage:", error)
       }
     }
 
-    if (!isLoading && !isSyncing) {
+    if (!isLoading && !isSyncing && isInitialLoadComplete) {
       saveProgress()
     }
-  }, [progress, isLoading, isSyncing])
+  }, [progress, isLoading, isSyncing, authUser, isInitialLoadComplete])
 
   // Função para iniciar uma fase
   const startPhase = (trailId: string, phaseId: string) => {
@@ -226,14 +267,15 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Chamar a API para atualizar o progresso no servidor
       if (authUser) {
         apiStartPhase(authUser.uid, trailId, phaseId)
-          .then(() => console.log("Fase iniciada na API com sucesso"))
-          .catch((error) => console.error("Erro ao iniciar fase na API:", error))
+          .then(() => logSync(LogLevel.INFO, "Fase iniciada na API com sucesso"))
+          .catch((error) => logSync(LogLevel.ERROR, "Erro ao iniciar fase na API:", error))
       }
 
       return {
         ...prev,
         currentPhaseId: phaseId,
         currentQuestionIndex: 0,
+        lastSyncTimestamp: Date.now(),
       }
     })
   }
@@ -298,8 +340,8 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 const phase = trail.phases.find((p) => p && p.id === prev.currentPhaseId)
                 if (phase) {
                   apiAnswerQuestion(authUser.uid, trail.id, prev.currentPhaseId, questionId, correct)
-                    .then(() => console.log("Resposta registrada na API com sucesso"))
-                    .catch((error) => console.error("Erro ao registrar resposta na API:", error))
+                    .then(() => logSync(LogLevel.INFO, "Resposta registrada na API com sucesso"))
+                    .catch((error) => logSync(LogLevel.ERROR, "Erro ao registrar resposta na API:", error))
                   break
                 }
               }
@@ -309,6 +351,9 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
           }
         }
       }
+
+      // Update timestamp
+      newProgress.lastSyncTimestamp = Date.now()
 
       return newProgress
     })
@@ -343,8 +388,8 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
           // Chamar a API para atualizar o progresso no servidor
           if (authUser) {
             apiCompletePhase(authUser.uid, trail.id, phaseId, timeSpent)
-              .then(() => console.log("Fase completada na API com sucesso"))
-              .catch((error) => console.error("Erro ao completar fase na API:", error))
+              .then(() => logSync(LogLevel.INFO, "Fase completada na API com sucesso"))
+              .catch((error) => logSync(LogLevel.ERROR, "Erro ao completar fase na API:", error))
           }
           break
         }
@@ -355,6 +400,9 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const result = { ...newProgress }
       delete result.currentPhaseId
       delete result.currentQuestionIndex
+
+      // Update timestamp
+      result.lastSyncTimestamp = Date.now()
 
       return result
     })
@@ -404,7 +452,10 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Função para resetar o progresso
   const resetProgress = () => {
-    setProgress(initialProgress)
+    setProgress({
+      ...initialProgress,
+      lastSyncTimestamp: Date.now(),
+    })
   }
 
   return (

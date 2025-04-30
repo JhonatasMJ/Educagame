@@ -1,14 +1,12 @@
 "use client"
 
-import React from "react"
+import  React from "react"
 import { createContext, useState, useEffect, useContext, type ReactNode } from "react"
-import { getDatabase, ref, get, update } from "firebase/database"
+import { getDatabase, ref, get, update, set } from "firebase/database"
 import { signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth"
 import { auth } from "../services/firebaseConfig"
 import { useRouter } from "expo-router"
 import { getAuthToken, removeAuthToken } from "../services/apiService"
-// Importar a função de inicialização de dados
-import { initializeUserData } from "../services/initializeUserData"
 
 // Adicione o token JWT à interface AuthContextData
 interface AuthContextData {
@@ -163,8 +161,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
               console.log("User data loaded and updated successfully")
 
-              // Garantir que o progresso do usuário esteja inicializado
-              await initializeUserData(user.uid, userDataFromDB)
+              // IMPORTANTE: Não inicializar progresso aqui, deixar isso para o useLogin
+              // Isso evita que o progresso seja sobrescrito durante o login
             } else if (isMounted) {
               console.log("No user data available")
 
@@ -179,7 +177,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 totalConsecutiveDays: 1,
               }
 
-              await initializeUserData(user.uid, basicUserData)
+              // Apenas inicializar dados básicos do usuário, não o progresso
+              await set(userRef, basicUserData)
 
               // Carregar os dados recém-criados
               const newSnapshot = await get(userRef)

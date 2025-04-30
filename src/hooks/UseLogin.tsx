@@ -9,7 +9,9 @@ import Toast from "react-native-toast-message"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useAuth } from "../context/AuthContext"
 import { loginApi } from "../services/apiService"
-import { syncUserProgress } from "../services/userProgressService"
+import { syncUserProgress, getUserProgressFromFirebase } from "../services/userProgressService"
+import { logSync, LogLevel } from "../services/syncLogger"
+import { getDatabase, ref, set } from "firebase/database"
 
 export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -42,7 +44,7 @@ export const useLogin = () => {
     loadSavedCredentials()
   }, [])
 
-  // Modificar a função handleLogin para incluir a inicialização de progresso para novos usuários
+  // Modify the handleLogin function to better preserve existing progress data
   const handleLogin = async (email: string, password: string, rememberMe: boolean) => {
     if (!email || !password) {
       Toast.show({
@@ -57,53 +59,123 @@ export const useLogin = () => {
     setIsLoading(true)
     setShowLoadingTransition(true)
 
-    try {
-      console.log("Attempting login with:", email)
+    // Start a new log session
+    logSync(LogLevel.INFO, "=== INICIANDO NOVA SESSÃO DE LOGIN ===")
+    logSync(LogLevel.INFO, `Tentando login com: ${email}`)
 
+    try {
       // Save or remove credentials based on rememberMe checkbox
       if (rememberMe) {
         await AsyncStorage.setItem("rememberedEmail", email)
         await AsyncStorage.setItem("rememberedPassword", password)
+        logSync(LogLevel.INFO, "Credenciais salvas para lembrar")
       } else {
         await AsyncStorage.removeItem("rememberedEmail")
         await AsyncStorage.removeItem("rememberedPassword")
+        logSync(LogLevel.INFO, "Credenciais não serão lembradas")
       }
 
       // Sign in with Firebase
+      logSync(LogLevel.INFO, "Autenticando com Firebase...")
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
+      logSync(LogLevel.INFO, `Autenticação Firebase bem-sucedida para usuário: ${user.uid}`)
+
+      // CRITICAL: Check for cached progress in AsyncStorage before proceeding
+      let cachedProgress = null
+      try {
+        const cachedProgressStr = await AsyncStorage.getItem(`userProgress_${user.uid}`)
+        if (cachedProgressStr) {
+          cachedProgress = JSON.parse(cachedProgressStr)
+          logSync(LogLevel.INFO, "Progresso em cache encontrado no AsyncStorage", {
+            trailsCount: cachedProgress.trails?.length || 0,
+            hasCompletedPhases: checkForCompletedPhases(cachedProgress),
+          })
+
+          // Log detailed information about completed phases and questions
+          if (cachedProgress.trails && Array.isArray(cachedProgress.trails)) {
+            logSync(LogLevel.INFO, "Detalhes do progresso em cache:")
+            cachedProgress.trails.forEach((trail: { phases: any[]; id: any }) => {
+              if (trail && trail.phases && Array.isArray(trail.phases)) {
+                trail.phases.forEach((phase) => {
+                  if (phase && phase.completed) {
+                    logSync(LogLevel.INFO, `Fase completada encontrada: ${phase.id} na trilha ${trail.id}`)
+                  }
+
+                  if (phase && phase.questionsProgress && Array.isArray(phase.questionsProgress)) {
+                    const answeredQuestions = phase.questionsProgress.filter((q: { answered: any }) => q && q.answered).length
+                    const correctQuestions = phase.questionsProgress.filter((q: { correct: any }) => q && q.correct).length
+
+                    if (answeredQuestions > 0) {
+                      logSync(
+                        LogLevel.INFO,
+                        `Fase ${phase.id}: ${answeredQuestions} questões respondidas, ${correctQuestions} corretas`,
+                      )
+                    }
+                  }
+                })
+              }
+            })
+          }
+        }
+      } catch (cacheError) {
+        logSync(LogLevel.ERROR, "Erro ao verificar progresso em cache:", cacheError)
+      }
 
       // Após autenticação com Firebase, obter token JWT da API
       try {
+        logSync(LogLevel.INFO, "Obtendo token JWT da API...")
         const apiResponse = await loginApi(email, password)
         if (!apiResponse) {
-          console.warn("Não foi possível obter token JWT da API")
+          logSync(LogLevel.WARNING, "Não foi possível obter token JWT da API")
         } else {
-          console.log("Token JWT obtido com sucesso")
+          logSync(LogLevel.INFO, "Token JWT obtido com sucesso")
         }
       } catch (apiError) {
-        console.error("Erro ao obter token JWT:", apiError)
+        logSync(LogLevel.ERROR, "Erro ao obter token JWT:", apiError)
         // Não interromper o fluxo se falhar a obtenção do token JWT
       }
 
+      // CRITICAL: Check if there's already progress in Firebase
+      const existingFirebaseProgress = await getUserProgressFromFirebase(user.uid)
+
+      // If we have cached progress with completed phases but no Firebase progress,
+      // or if the cached progress has more completed phases than Firebase
+      if (
+        cachedProgress &&
+        (!existingFirebaseProgress ||
+          countCompletedItems(cachedProgress) > countCompletedItems(existingFirebaseProgress))
+      ) {
+        logSync(LogLevel.INFO, "O progresso em cache tem mais itens completados que o Firebase, salvando primeiro...")
+
+        // Save cached progress to Firebase to ensure it's not lost
+        const db = getDatabase()
+        const userProgressRef = ref(db, `userProgress/${user.uid}`)
+        await set(userProgressRef, cachedProgress)
+        logSync(LogLevel.INFO, "Progresso em cache salvo no Firebase com sucesso")
+      }
+
       // Sincronizar o progresso do usuário com as trilhas disponíveis
-      // IMPORTANTE: Não forçar a criação de um novo progresso (forceCreate = false)
+      // IMPORTANTE: Passamos false para NÃO forçar a criação de novo progresso
+      // Isso preservará os dados existentes
       setIsSyncingProgress(true)
       try {
-        console.log("Sincronizando progresso do usuário...")
-        await syncUserProgress(user.uid, false) // Explicitamente definir forceCreate como false
-        console.log("Progresso do usuário sincronizado com sucesso")
+        logSync(LogLevel.INFO, "Iniciando sincronização de progresso (preservando dados existentes)...")
+
+        // CRITICAL: Set preserveCompletion to true to ensure completed status is preserved
+        await syncUserProgress(user.uid, false, true)
+        logSync(LogLevel.INFO, "Sincronização de progresso concluída com sucesso")
       } catch (syncError) {
-        console.error("Erro ao sincronizar progresso do usuário:", syncError)
+        logSync(LogLevel.ERROR, "Erro ao sincronizar progresso do usuário:", syncError)
         // Não interromper o fluxo se falhar a sincronização
       } finally {
         setIsSyncingProgress(false)
       }
 
       // Don't navigate here - let the auth state listener handle it
-      console.log("Login successful, auth state listener will handle navigation")
+      logSync(LogLevel.INFO, "Login bem-sucedido, o listener de estado de autenticação tratará a navegação")
     } catch (error: any) {
-      console.error("Login error:", error.code, error.message)
+      logSync(LogLevel.ERROR, `Erro de login: ${error.code} - ${error.message}`)
       setShowLoadingTransition(false)
 
       if (
@@ -131,8 +203,78 @@ export const useLogin = () => {
     }
   }
 
+  // Helper function to check if there are any completed phases in the progress
+  const checkForCompletedPhases = (progress: any): boolean => {
+    if (!progress || !Array.isArray(progress.trails)) {
+      return false
+    }
+
+    for (const trail of progress.trails) {
+      if (!trail || !Array.isArray(trail.phases)) continue
+
+      for (const phase of trail.phases) {
+        if (phase && phase.completed) {
+          return true
+        }
+
+        // Also check for completed questions
+        if (phase && Array.isArray(phase.questionsProgress)) {
+          for (const question of phase.questionsProgress) {
+            if (question && question.answered && question.correct) {
+              return true
+            }
+          }
+        }
+      }
+    }
+
+    return false
+  }
+
+  // Helper function to count completed items (phases and questions)
+  const countCompletedItems = (progress: any): number => {
+    if (!progress || !Array.isArray(progress.trails)) {
+      return 0
+    }
+
+    let count = 0
+
+    for (const trail of progress.trails) {
+      if (!trail || !Array.isArray(trail.phases)) continue
+
+      for (const phase of trail.phases) {
+        // Count completed phases
+        if (phase && phase.completed) {
+          count += 10 // Give higher weight to completed phases
+        }
+
+        // Count started phases
+        if (phase && phase.started) {
+          count += 1
+        }
+
+        // Count answered and correct questions
+        if (phase && Array.isArray(phase.questionsProgress)) {
+          for (const question of phase.questionsProgress) {
+            if (question && question.answered) {
+              count += 1
+
+              if (question.correct) {
+                count += 1
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return count
+  }
+
   const clearSavedCredentials = async () => {
     try {
+      logSync(LogLevel.INFO, "Limpando credenciais salvas e realizando logout")
+
       // 1. Desconectar do Firebase Auth
       await auth.signOut()
 
@@ -154,9 +296,9 @@ export const useLogin = () => {
       setSavedEmail(null)
       setSavedPassword(null)
 
-      console.log("Logout realizado com sucesso")
+      logSync(LogLevel.INFO, "Logout realizado com sucesso")
     } catch (error) {
-      console.error("Erro ao fazer logout:", error)
+      logSync(LogLevel.ERROR, "Erro ao fazer logout:", error)
     }
   }
 

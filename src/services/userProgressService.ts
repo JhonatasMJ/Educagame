@@ -1,5 +1,6 @@
 import { getDatabase, ref, get, set } from "firebase/database"
 import { getUserProgress, getTrails, updateUserProgress } from "./apiService"
+import { logSync, LogLevel } from "./syncLogger"
 
 // Interface para o progresso de uma questão
 interface QuestionProgress {
@@ -31,6 +32,7 @@ interface UserProgress {
   trails: TrailProgress[]
   currentPhaseId?: string
   currentQuestionIndex?: number
+  lastSyncTimestamp?: number
 }
 
 /**
@@ -39,46 +41,86 @@ interface UserProgress {
  *
  * @param userId ID do usuário
  * @param forceCreate Se true, força a criação de um novo progresso mesmo se já existir
+ * @param preserveCompletion Se true, garante que o status de conclusão seja preservado
  */
-export const syncUserProgress = async (userId: string, forceCreate = false): Promise<UserProgress | null> => {
+export const syncUserProgress = async (
+  userId: string,
+  forceCreate = false,
+  preserveCompletion = true,
+): Promise<UserProgress | null> => {
   try {
-    console.log("Iniciando sincronização de progresso para o usuário:", userId)
+    logSync(LogLevel.INFO, `Iniciando sincronização de progresso para o usuário: ${userId}`, {
+      forceCreate,
+      preserveCompletion,
+    })
 
     // 1. Verificar se já existe progresso no Firebase
     let userProgress: UserProgress | null = null
 
     if (!forceCreate) {
       userProgress = await getUserProgressFromFirebase(userId)
-      console.log("Progresso existente encontrado no Firebase:", userProgress ? "Sim" : "Não")
+      logSync(LogLevel.INFO, `Progresso existente encontrado no Firebase: ${userProgress ? "Sim" : "Não"}`)
+
+      if (userProgress) {
+        logSync(LogLevel.DEBUG, "Progresso atual do usuário:", userProgress)
+
+        // Log detailed information about completed phases
+        if (userProgress.trails && Array.isArray(userProgress.trails)) {
+          let completedPhasesCount = 0
+          let startedPhasesCount = 0
+          let answeredQuestionsCount = 0
+
+          userProgress.trails.forEach((trail) => {
+            if (trail && trail.phases && Array.isArray(trail.phases)) {
+              trail.phases.forEach((phase) => {
+                if (phase.completed) completedPhasesCount++
+                if (phase.started) startedPhasesCount++
+
+                if (phase.questionsProgress && Array.isArray(phase.questionsProgress)) {
+                  answeredQuestionsCount += phase.questionsProgress.filter((q) => q && q.answered).length
+                }
+              })
+            }
+          })
+
+          logSync(
+            LogLevel.INFO,
+            `Estatísticas do progresso: ${completedPhasesCount} fases completas, ${startedPhasesCount} fases iniciadas, ${answeredQuestionsCount} questões respondidas`,
+          )
+        }
+      }
     }
 
     // 2. Se não existir no Firebase ou forceCreate for true, tentar buscar da API
     if (!userProgress) {
-      console.log("Nenhum progresso encontrado no Firebase ou forceCreate ativado, verificando na API...")
+      logSync(LogLevel.INFO, "Nenhum progresso encontrado no Firebase ou forceCreate ativado, verificando na API...")
       try {
         const userProgressResponse = await getUserProgress(userId)
 
         if (userProgressResponse?.data && !forceCreate) {
           userProgress = userProgressResponse.data
-          console.log("Progresso encontrado na API")
+          logSync(LogLevel.INFO, "Progresso encontrado na API")
+          logSync(LogLevel.DEBUG, "Progresso da API:", userProgress)
         } else {
           // 3. Se não existir na API ou forceCreate for true, criar um progresso inicial
-          console.log("Criando progresso inicial para o usuário...")
+          logSync(LogLevel.INFO, "Criando progresso inicial para o usuário...")
           userProgress = {
             totalPoints: 0,
             consecutiveCorrect: 0,
             highestConsecutiveCorrect: 0,
             trails: [],
+            lastSyncTimestamp: Date.now(),
           }
         }
       } catch (apiError) {
-        console.error("Erro ao buscar progresso da API:", apiError)
+        logSync(LogLevel.ERROR, "Erro ao buscar progresso da API:", apiError)
         // Se falhar ao buscar da API, criar um progresso inicial
         userProgress = {
           totalPoints: 0,
           consecutiveCorrect: 0,
           highestConsecutiveCorrect: 0,
           trails: [],
+          lastSyncTimestamp: Date.now(),
         }
       }
     }
@@ -90,16 +132,19 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
         consecutiveCorrect: 0,
         highestConsecutiveCorrect: 0,
         trails: [],
+        lastSyncTimestamp: Date.now(),
       }
     }
 
+    // Fazer uma cópia profunda do progresso original para comparação posterior
+    const originalProgress = JSON.parse(JSON.stringify(userProgress))
+    logSync(LogLevel.DEBUG, "Cópia do progresso original para comparação:", originalProgress)
+
     // Garantir que trails seja sempre um array
     if (!Array.isArray(userProgress.trails)) {
-      console.log("Progresso do usuário não contém um array de trilhas, inicializando...")
+      logSync(LogLevel.WARNING, "Progresso do usuário não contém um array de trilhas, inicializando...")
       userProgress.trails = []
     }
-
-    console.log("Progresso do usuário carregado:", userProgress)
 
     // 4. Buscar todas as trilhas disponíveis
     let availableTrails: any[] = []
@@ -111,38 +156,47 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
           ? trailsResponse.data
           : Object.values(trailsResponse.data || {})
       }
-      console.log("Trilhas disponíveis carregadas:", availableTrails.length)
+      logSync(LogLevel.INFO, `Trilhas disponíveis carregadas: ${availableTrails.length}`)
+      logSync(LogLevel.DEBUG, "Trilhas disponíveis:", availableTrails)
     } catch (trailsError) {
-      console.error("Erro ao buscar trilhas disponíveis:", trailsError)
+      logSync(LogLevel.ERROR, "Erro ao buscar trilhas disponíveis:", trailsError)
       // Continuar com um array vazio se falhar
     }
 
     // 5. Sincronizar trilhas - MODIFICADO para preservar dados existentes
-    const updatedProgress = syncTrails(userProgress, availableTrails)
+    const updatedProgress = mergeProgressWithTrails(userProgress, availableTrails, preserveCompletion)
 
-    // 6. Salvar o progresso atualizado no servidor
-    console.log("Salvando progresso do usuário no Firebase...")
-    await saveUserProgressToFirebase(userId, updatedProgress)
+    // Verificar se houve alterações no progresso
+    const hasChanges = JSON.stringify(updatedProgress) !== JSON.stringify(originalProgress)
+    logSync(LogLevel.INFO, `Houve alterações no progresso: ${hasChanges ? "Sim" : "Não"}`)
 
-    // 7. Também atualizar na API
-    try {
-      for (const trail of updatedProgress.trails) {
-        await updateUserProgress(userId, trail.id, {
-          phases: trail.phases,
-          totalPoints: updatedProgress.totalPoints,
-          consecutiveCorrect: updatedProgress.consecutiveCorrect,
-          highestConsecutiveCorrect: updatedProgress.highestConsecutiveCorrect,
-        })
+    if (hasChanges) {
+      // 6. Salvar o progresso atualizado no servidor
+      logSync(LogLevel.INFO, "Salvando progresso do usuário no Firebase...")
+      await saveUserProgressToFirebase(userId, updatedProgress)
+
+      // 7. Também atualizar na API
+      try {
+        for (const trail of updatedProgress.trails) {
+          await updateUserProgress(userId, trail.id, {
+            phases: trail.phases,
+            totalPoints: updatedProgress.totalPoints,
+            consecutiveCorrect: updatedProgress.consecutiveCorrect,
+            highestConsecutiveCorrect: updatedProgress.highestConsecutiveCorrect,
+          })
+        }
+        logSync(LogLevel.INFO, "Progresso do usuário atualizado na API com sucesso")
+      } catch (apiError) {
+        logSync(LogLevel.ERROR, "Erro ao atualizar progresso na API:", apiError)
+        // Continuar mesmo se falhar a atualização na API
       }
-      console.log("Progresso do usuário atualizado na API com sucesso")
-    } catch (apiError) {
-      console.error("Erro ao atualizar progresso na API:", apiError)
-      // Continuar mesmo se falhar a atualização na API
+    } else {
+      logSync(LogLevel.INFO, "Nenhuma alteração detectada, não é necessário salvar")
     }
 
     return updatedProgress
   } catch (error) {
-    console.error("Erro ao sincronizar progresso do usuário:", error)
+    logSync(LogLevel.ERROR, "Erro ao sincronizar progresso do usuário:", error)
     return null
   }
 }
@@ -153,22 +207,24 @@ export const syncUserProgress = async (userId: string, forceCreate = false): Pro
  */
 export const initializeUserProgress = async (userId: string): Promise<UserProgress | null> => {
   try {
-    console.log("Inicializando progresso para novo usuário:", userId)
+    logSync(LogLevel.INFO, `Inicializando progresso para novo usuário: ${userId}`)
 
     // Forçar a criação de um novo progresso
-    return await syncUserProgress(userId, true)
+    return await syncUserProgress(userId, true, false)
   } catch (error) {
-    console.error("Erro ao inicializar progresso para novo usuário:", error)
+    logSync(LogLevel.ERROR, "Erro ao inicializar progresso para novo usuário:", error)
     return null
   }
 }
 
-/**
- * Sincroniza as trilhas do usuário com as trilhas disponíveis
- * MODIFICADO para preservar dados existentes
- */
-const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserProgress => {
+// Modify the mergeProgressWithTrails function to implement a more robust comparison and merging strategy
+const mergeProgressWithTrails = (
+  userProgress: UserProgress,
+  availableTrails: any[],
+  preserveCompletion = true,
+): UserProgress => {
   try {
+    logSync(LogLevel.INFO, "Iniciando mesclagem de progresso com trilhas disponíveis")
     const updatedProgress = { ...userProgress }
 
     // Garantir que trails seja sempre um array
@@ -176,16 +232,24 @@ const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserPro
       updatedProgress.trails = []
     }
 
+    // Criar um mapa de trilhas existentes para facilitar a busca
+    const existingTrailsMap = new Map()
+    updatedProgress.trails.forEach((trail) => {
+      if (trail && trail.id) {
+        existingTrailsMap.set(trail.id, trail)
+      }
+    })
+
     // Para cada trilha disponível
     for (const availableTrail of availableTrails) {
       // Verificar se a trilha disponível é válida
       if (!availableTrail || typeof availableTrail !== "object" || !availableTrail.id) {
-        console.warn("Trilha inválida encontrada, ignorando:", availableTrail)
+        logSync(LogLevel.WARNING, "Trilha inválida encontrada, ignorando:", availableTrail)
         continue
       }
 
       // Verificar se o usuário já tem progresso nesta trilha
-      let userTrail = updatedProgress.trails.find((t) => t && t.id === availableTrail.id)
+      let userTrail = existingTrailsMap.get(availableTrail.id)
 
       // Se não tiver, criar uma nova trilha no progresso do usuário
       if (!userTrail) {
@@ -194,7 +258,9 @@ const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserPro
           phases: [],
         }
         updatedProgress.trails.push(userTrail)
-        console.log(`Nova trilha adicionada ao progresso: ${availableTrail.id}`)
+        logSync(LogLevel.INFO, `Nova trilha adicionada ao progresso: ${availableTrail.id}`)
+      } else {
+        logSync(LogLevel.INFO, `Trilha existente encontrada: ${availableTrail.id}, preservando dados`)
       }
 
       // Garantir que phases seja sempre um array
@@ -203,23 +269,46 @@ const syncTrails = (userProgress: UserProgress, availableTrails: any[]): UserPro
       }
 
       // Sincronizar as etapas da trilha - PRESERVANDO dados existentes
-      syncPhases(userTrail, availableTrail)
+      mergePhases(userTrail, availableTrail, preserveCompletion)
     }
+
+    // Remover trilhas que não existem mais nas trilhas disponíveis
+    // IMPORTANTE: Só remover se não tiver fases completadas
+    const availableTrailIds = new Set(availableTrails.map((trail) => trail?.id).filter(Boolean))
+    updatedProgress.trails = updatedProgress.trails.filter((trail) => {
+      if (!trail || !trail.id) return false
+
+      const exists = availableTrailIds.has(trail.id)
+
+      // Se a trilha não existe mais, mas tem fases completadas e preserveCompletion é true, mantê-la
+      if (!exists) {
+        const hasCompletedPhases =
+          trail.phases && Array.isArray(trail.phases) && trail.phases.some((p) => p && p.completed)
+
+        if (preserveCompletion && hasCompletedPhases) {
+          logSync(LogLevel.INFO, `Mantendo trilha ${trail.id} que não existe mais, mas tem fases completadas`)
+          return true
+        }
+
+        logSync(LogLevel.INFO, `Removendo trilha que não existe mais: ${trail.id}`)
+      }
+
+      return exists
+    })
 
     return updatedProgress
   } catch (error) {
-    console.error("Erro ao sincronizar trilhas:", error)
+    logSync(LogLevel.ERROR, "Erro ao mesclar progresso com trilhas:", error)
     // Retornar o progresso original em caso de erro
     return userProgress
   }
 }
 
-/**
- * Sincroniza as etapas de uma trilha
- * MODIFICADO para preservar dados existentes
- */
-const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
+// Modify the mergePhases function to better preserve completed phases
+const mergePhases = (userTrail: TrailProgress, availableTrail: any, preserveCompletion = true): void => {
   try {
+    logSync(LogLevel.INFO, `Mesclando etapas para trilha: ${userTrail.id}`)
+
     // Verificar se a trilha disponível tem etapas
     let availablePhases: any[] = []
 
@@ -231,16 +320,26 @@ const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
       }
     }
 
+    logSync(LogLevel.DEBUG, `Etapas disponíveis: ${availablePhases.length}`)
+
+    // Criar um mapa de etapas existentes para facilitar a busca
+    const existingPhasesMap = new Map()
+    userTrail.phases.forEach((phase) => {
+      if (phase && phase.id) {
+        existingPhasesMap.set(phase.id, phase)
+      }
+    })
+
     // Para cada etapa disponível
     for (const availablePhase of availablePhases) {
       // Verificar se a etapa disponível é válida
       if (!availablePhase || typeof availablePhase !== "object" || !availablePhase.id) {
-        console.warn("Etapa inválida encontrada, ignorando:", availablePhase)
+        logSync(LogLevel.WARNING, "Etapa inválida encontrada, ignorando:", availablePhase)
         continue
       }
 
       // Verificar se o usuário já tem progresso nesta etapa
-      let userPhase = userTrail.phases.find((p) => p && p.id === availablePhase.id)
+      let userPhase = existingPhasesMap.get(availablePhase.id)
 
       // Se não tiver, criar uma nova etapa no progresso do usuário
       if (!userPhase) {
@@ -252,7 +351,17 @@ const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
           timeSpent: 0,
         }
         userTrail.phases.push(userPhase)
-        console.log(`Nova etapa adicionada ao progresso: ${availablePhase.id}`)
+        logSync(LogLevel.INFO, `Nova etapa adicionada ao progresso: ${availablePhase.id}`)
+      } else {
+        // IMPORTANTE: Log detalhado sobre o status da fase existente
+        logSync(
+          LogLevel.INFO,
+          `Etapa existente encontrada: ${availablePhase.id}, status: started=${userPhase.started}, completed=${userPhase.completed}, timeSpent=${userPhase.timeSpent}`,
+        )
+
+        if (userPhase.completed) {
+          logSync(LogLevel.INFO, `PRESERVANDO fase completada: ${availablePhase.id}`)
+        }
       }
 
       // Garantir que questionsProgress seja sempre um array
@@ -261,20 +370,40 @@ const syncPhases = (userTrail: TrailProgress, availableTrail: any): void => {
       }
 
       // Sincronizar as questões da etapa - PRESERVANDO dados existentes
-      syncQuestions(userPhase, availablePhase)
+      mergeQuestions(userPhase, availablePhase, preserveCompletion)
     }
+
+    // Remover etapas que não existem mais nas etapas disponíveis
+    // IMPORTANTE: Só remover se não estiver completada
+    const availablePhaseIds = new Set(availablePhases.map((phase) => phase?.id).filter(Boolean))
+    userTrail.phases = userTrail.phases.filter((phase) => {
+      if (!phase || !phase.id) return false
+
+      const exists = availablePhaseIds.has(phase.id)
+
+      // Se a fase não existe mais, mas está completada e preserveCompletion é true, mantê-la
+      if (!exists && preserveCompletion && phase.completed) {
+        logSync(LogLevel.INFO, `Mantendo fase ${phase.id} que não existe mais, mas está completada`)
+        return true
+      }
+
+      if (!exists) {
+        logSync(LogLevel.INFO, `Removendo etapa que não existe mais: ${phase.id}`)
+      }
+
+      return exists
+    })
   } catch (error) {
-    console.error("Erro ao sincronizar etapas:", error)
+    logSync(LogLevel.ERROR, "Erro ao mesclar etapas:", error)
     // Continuar mesmo se houver erro
   }
 }
 
-/**
- * Sincroniza as questões de uma etapa
- * MODIFICADO para preservar dados existentes
- */
-const syncQuestions = (userPhase: PhaseProgress, availablePhase: any): void => {
+// Modify the mergeQuestions function to better preserve completed questions
+const mergeQuestions = (userPhase: PhaseProgress, availablePhase: any, preserveCompletion = true): void => {
   try {
+    logSync(LogLevel.INFO, `Mesclando questões para etapa: ${userPhase.id}`)
+
     // Verificar se a etapa disponível tem stages
     let availableStages: any[] = []
 
@@ -306,6 +435,16 @@ const syncQuestions = (userPhase: PhaseProgress, availablePhase: any): void => {
       }
     }
 
+    logSync(LogLevel.DEBUG, `Questões disponíveis: ${availableQuestions.length}`)
+
+    // Criar um mapa de questões existentes para facilitar a busca
+    const existingQuestionsMap = new Map()
+    userPhase.questionsProgress.forEach((question) => {
+      if (question && question.id) {
+        existingQuestionsMap.set(question.id, question)
+      }
+    })
+
     // Para cada questão disponível
     for (const availableQuestion of availableQuestions) {
       // Verificar se a questão disponível é válida
@@ -314,7 +453,7 @@ const syncQuestions = (userPhase: PhaseProgress, availablePhase: any): void => {
       }
 
       // Verificar se o usuário já respondeu esta questão
-      const userQuestion = userPhase.questionsProgress.find((q) => q && q.id === availableQuestion.id)
+      const userQuestion = existingQuestionsMap.get(availableQuestion.id)
 
       // Se não tiver, adicionar a questão ao progresso do usuário (como não respondida)
       if (!userQuestion) {
@@ -323,12 +462,42 @@ const syncQuestions = (userPhase: PhaseProgress, availablePhase: any): void => {
           answered: false,
           correct: false,
         })
-        console.log(`Nova questão adicionada ao progresso: ${availableQuestion.id}`)
+        logSync(LogLevel.INFO, `Nova questão adicionada ao progresso: ${availableQuestion.id}`)
+      } else {
+        // IMPORTANTE: Log detalhado sobre o status da questão existente
+        logSync(
+          LogLevel.INFO,
+          `Questão existente encontrada: ${availableQuestion.id}, status: answered=${userQuestion.answered}, correct=${userQuestion.correct}`,
+        )
+
+        if (userQuestion.answered) {
+          logSync(LogLevel.INFO, `PRESERVANDO questão respondida: ${availableQuestion.id}`)
+        }
       }
-      // NÃO modificar questões que já existem no progresso do usuário
     }
+
+    // Remover questões que não existem mais nas questões disponíveis
+    // IMPORTANTE: Só remover se não estiver respondida corretamente
+    const availableQuestionIds = new Set(availableQuestions.map((question) => question?.id).filter(Boolean))
+    userPhase.questionsProgress = userPhase.questionsProgress.filter((question) => {
+      if (!question || !question.id) return false
+
+      const exists = availableQuestionIds.has(question.id)
+
+      // Se a questão não existe mais, mas foi respondida corretamente e preserveCompletion é true, mantê-la
+      if (!exists && preserveCompletion && question.answered && question.correct) {
+        logSync(LogLevel.INFO, `Mantendo questão ${question.id} que não existe mais, mas foi respondida corretamente`)
+        return true
+      }
+
+      if (!exists) {
+        logSync(LogLevel.INFO, `Removendo questão que não existe mais: ${question.id}`)
+      }
+
+      return exists
+    })
   } catch (error) {
-    console.error("Erro ao sincronizar questões:", error)
+    logSync(LogLevel.ERROR, "Erro ao mesclar questões:", error)
     // Continuar mesmo se houver erro
   }
 }
@@ -341,9 +510,9 @@ const saveUserProgressToFirebase = async (userId: string, progress: UserProgress
     const db = getDatabase()
     const userProgressRef = ref(db, `userProgress/${userId}`)
     await set(userProgressRef, progress)
-    console.log("Progresso do usuário salvo no Firebase com sucesso")
+    logSync(LogLevel.INFO, "Progresso do usuário salvo no Firebase com sucesso")
   } catch (error) {
-    console.error("Erro ao salvar progresso do usuário no Firebase:", error)
+    logSync(LogLevel.ERROR, "Erro ao salvar progresso do usuário no Firebase:", error)
     throw error
   }
 }
@@ -370,7 +539,7 @@ export const getUserProgressFromFirebase = async (userId: string): Promise<UserP
 
     return null
   } catch (error) {
-    console.error("Erro ao obter progresso do usuário do Firebase:", error)
+    logSync(LogLevel.ERROR, "Erro ao obter progresso do usuário do Firebase:", error)
     return null
   }
 }
