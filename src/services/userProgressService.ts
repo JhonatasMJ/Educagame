@@ -1,6 +1,7 @@
-import { getDatabase, ref, get, set, remove } from "firebase/database"
+import { getDatabase, ref, get, set } from "firebase/database"
 import { getUserProgress, getTrails, updateUserProgress } from "./apiService"
 import { logSync, LogLevel } from "./syncLogger"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 // Interface para o progresso de uma questão
 interface QuestionProgress {
@@ -26,6 +27,7 @@ interface TrailProgress {
   highestConsecutiveCorrect?: number
   currentPhaseId?: string
   currentQuestionIndex?: number
+  totalPoints?: number
 }
 
 // Interface para o progresso completo do usuário
@@ -76,167 +78,6 @@ export const syncUserProgress = async (
     if (!forceCreate) {
       userProgress = await getUserProgressFromFirebase(userId)
       logSync(LogLevel.INFO, `Progresso existente encontrado no Firebase: ${userProgress ? "Sim" : "Não"}`)
-
-      if (userProgress) {
-        // Remover propriedades diretas de trilhas
-        const directTrailKeys = Object.keys(userProgress).filter((key) => key.startsWith("trilha_"))
-        if (directTrailKeys.length > 0) {
-          logSync(LogLevel.INFO, `Removendo ${directTrailKeys.length} propriedades diretas de trilhas`)
-
-          // Criar uma cópia limpa do progresso
-          const cleanProgress = { ...userProgress }
-
-          // Mesclar propriedades diretas com o array trails
-          if (!Array.isArray(cleanProgress.trails)) {
-            cleanProgress.trails = []
-          }
-
-          // Mapa para evitar duplicatas
-          const trailsMap = new Map()
-
-          // Adicionar trilhas existentes ao mapa
-          cleanProgress.trails.forEach((trail) => {
-            if (trail?.id) {
-              trailsMap.set(trail.id, { ...trail })
-            }
-          })
-
-          // Processar propriedades diretas
-          directTrailKeys.forEach((key) => {
-            const directTrail = userProgress[key]
-
-            // Se já existe no mapa, mesclar dados
-            const existingTrail = trailsMap.get(key)
-            if (existingTrail) {
-              // Preservar dados importantes
-              if (directTrail.currentPhaseId) {
-                existingTrail.currentPhaseId = directTrail.currentPhaseId
-              }
-
-              if (directTrail.currentQuestionIndex !== undefined) {
-                existingTrail.currentQuestionIndex = directTrail.currentQuestionIndex
-              }
-
-              // Mesclar fases se existirem
-              if (Array.isArray(directTrail.phases)) {
-                if (!Array.isArray(existingTrail.phases)) {
-                  existingTrail.phases = []
-                }
-
-                // Mapa para mesclar fases
-                const phasesMap = new Map()
-
-                // Adicionar fases existentes
-                existingTrail.phases.forEach((phase) => {
-                  if (phase?.id) {
-                    phasesMap.set(phase.id, { ...phase })
-                  }
-                })
-
-                // Mesclar com fases da propriedade direta
-                directTrail.phases.forEach((phase) => {
-                  if (!phase?.id) return
-
-                  const existingPhase = phasesMap.get(phase.id)
-                  if (existingPhase) {
-                    // Preservar status de conclusão
-                    if (phase.completed) {
-                      existingPhase.completed = true
-                    }
-
-                    // Preservar status de início
-                    if (phase.started) {
-                      existingPhase.started = true
-                    }
-
-                    // Preservar tempo gasto
-                    if (phase.timeSpent) {
-                      existingPhase.timeSpent = phase.timeSpent
-                    }
-
-                    // Mesclar questões
-                    if (Array.isArray(phase.questionsProgress)) {
-                      if (!Array.isArray(existingPhase.questionsProgress)) {
-                        existingPhase.questionsProgress = []
-                      }
-
-                      // Mapa para mesclar questões
-                      const questionsMap = new Map()
-
-                      // Adicionar questões existentes
-                      existingPhase.questionsProgress.forEach((question) => {
-                        if (question?.id) {
-                          questionsMap.set(question.id, { ...question })
-                        }
-                      })
-
-                      // Mesclar com questões da fase direta
-                      phase.questionsProgress.forEach((question) => {
-                        if (!question?.id) return
-
-                        const existingQuestion = questionsMap.set(question.id, {
-                          ...question,
-                          answered: question.answered || false,
-                          correct: question.correct || false,
-                        })
-                      })
-
-                      // Atualizar questões
-                      existingPhase.questionsProgress = Array.from(questionsMap.values())
-                    }
-                  } else {
-                    // Se não existe, adicionar
-                    phasesMap.set(phase.id, { ...phase })
-                  }
-                })
-
-                // Atualizar fases
-                existingTrail.phases = Array.from(phasesMap.values())
-              }
-            } else {
-              // Se não existe no array, adicionar
-              trailsMap.set(key, {
-                id: key,
-                phases: Array.isArray(directTrail.phases) ? [...directTrail.phases] : [],
-                currentPhaseId: directTrail.currentPhaseId,
-                currentQuestionIndex: directTrail.currentQuestionIndex,
-              })
-            }
-
-            // Remover a propriedade direta
-            delete cleanProgress[key]
-          })
-
-          // Atualizar array de trilhas
-          cleanProgress.trails = Array.from(trailsMap.values())
-
-          // Atualizar o progresso
-          userProgress = cleanProgress
-
-          // Salvar o progresso limpo no Firebase
-          await saveUserProgressToFirebase(userId, cleanProgress)
-          logSync(LogLevel.INFO, "Progresso limpo salvo no Firebase")
-        }
-
-        // Log do progresso existente
-        if (Array.isArray(userProgress.trails)) {
-          logSync(LogLevel.INFO, `Progresso existente: ${userProgress.trails.length} trilhas`)
-
-          userProgress.trails.forEach((trail) => {
-            if (trail && Array.isArray(trail.phases)) {
-              const completedPhases = trail.phases.filter((p) => p?.completed).length
-              logSync(LogLevel.INFO, `Trilha ${trail.id}: ${trail.phases.length} fases, ${completedPhases} completadas`)
-
-              // Log detalhado das fases completadas
-              trail.phases.forEach((phase) => {
-                if (phase?.completed) {
-                  logSync(LogLevel.INFO, `Fase completada: ${phase.id}`)
-                }
-              })
-            }
-          })
-        }
-      }
     }
 
     // 3. Se não existir no Firebase ou forceCreate for true, tentar buscar da API
@@ -282,6 +123,9 @@ export const syncUserProgress = async (
       }
     }
 
+    // NOVO: Corrigir duplicações no array trails antes de prosseguir
+    userProgress = fixDuplicateTrailsInArray(userProgress)
+
     // Fazer uma cópia profunda do progresso original para comparação posterior
     const originalProgress = JSON.parse(JSON.stringify(userProgress))
 
@@ -320,23 +164,23 @@ export const syncUserProgress = async (
       logSync(LogLevel.INFO, "Nenhuma alteração detectada no progresso, não é necessário salvar")
     }
 
-    // Verificação final para garantir que não haja propriedades diretas de trilhas
+    // Salvar uma cópia no AsyncStorage para backup
+    try {
+      await AsyncStorage.setItem(`userProgress_${userId}`, JSON.stringify(updatedProgress))
+      logSync(LogLevel.INFO, "Progresso salvo no AsyncStorage para backup")
+    } catch (storageError) {
+      logSync(LogLevel.ERROR, "Erro ao salvar progresso no AsyncStorage:", storageError)
+    }
+
+    // NOVO: Verificação final para garantir que não haja duplicações
     const finalProgress = await getUserProgressFromFirebase(userId)
     if (finalProgress) {
-      const directTrailKeys = Object.keys(finalProgress).filter((key) => key.startsWith("trilha_"))
-      if (directTrailKeys.length > 0) {
-        logSync(
-          LogLevel.WARNING,
-          `Ainda existem ${directTrailKeys.length} propriedades diretas de trilhas após sincronização`,
-        )
-
-        // Remover propriedades diretas
-        const db = getDatabase()
-        for (const key of directTrailKeys) {
-          const directTrailRef = ref(db, `userProgress/${userId}/${key}`)
-          await remove(directTrailRef)
-          logSync(LogLevel.INFO, `Propriedade direta ${key} removida`)
-        }
+      const hasDuplicates = checkForDuplicateTrails(finalProgress)
+      if (hasDuplicates) {
+        logSync(LogLevel.WARNING, "Ainda existem duplicações após sincronização, corrigindo...")
+        const fixedProgress = fixDuplicateTrailsInArray(finalProgress)
+        await saveUserProgressToFirebase(userId, fixedProgress)
+        logSync(LogLevel.INFO, "Duplicações corrigidas com sucesso")
       }
     }
 
@@ -345,6 +189,253 @@ export const syncUserProgress = async (
     logSync(LogLevel.ERROR, "Erro ao sincronizar progresso do usuário:", error)
     return null
   }
+}
+
+/**
+ * NOVA FUNÇÃO: Verifica se há trilhas duplicadas no array trails
+ */
+const checkForDuplicateTrails = (progress: UserProgress): boolean => {
+  if (!progress || !Array.isArray(progress.trails)) {
+    return false
+  }
+
+  // Verificar se há duplicações por ID
+  const trailIds = new Set<string>()
+  let hasDuplicates = false
+
+  for (const trail of progress.trails) {
+    if (!trail?.id) continue
+
+    if (trailIds.has(trail.id)) {
+      hasDuplicates = true
+      logSync(LogLevel.WARNING, `Trilha duplicada encontrada: ${trail.id}`)
+    } else {
+      trailIds.add(trail.id)
+    }
+  }
+
+  // Verificar se há trilhas com índices numéricos e string ao mesmo tempo
+  const numericIndices = progress.trails.filter((_, index) => typeof index === "number")
+  const stringIndices = Object.keys(progress.trails).filter((key) => isNaN(Number(key)) && key !== "length")
+
+  if (stringIndices.length > 0) {
+    hasDuplicates = true
+    logSync(LogLevel.WARNING, `Encontrados ${stringIndices.length} índices de string no array trails`)
+  }
+
+  return hasDuplicates
+}
+
+// Modificar a função fixDuplicateTrailsInArray para garantir que não haja duplicações
+// Substituir a implementação atual da função fixDuplicateTrailsInArray com esta versão:
+
+const fixDuplicateTrailsInArray = (progress: UserProgress): UserProgress => {
+  if (!progress) {
+    return progress
+  }
+
+  logSync(LogLevel.INFO, "Verificando e corrigindo duplicações no array trails...")
+
+  // Criar uma cópia do progresso
+  const fixedProgress = { ...progress }
+
+  // Verificar se trails existe
+  if (!fixedProgress.trails) {
+    fixedProgress.trails = []
+    return fixedProgress
+  }
+
+  // Extrair TODAS as trilhas, incluindo as que estão como propriedades diretas do objeto trails
+  const allTrails: TrailProgress[] = []
+  const trailsObj = fixedProgress.trails as any
+
+  // 1. Adicionar trilhas de índices numéricos
+  if (Array.isArray(fixedProgress.trails)) {
+    for (let i = 0; i < fixedProgress.trails.length; i++) {
+      const trail = fixedProgress.trails[i]
+      if (trail && trail.id) {
+        logSync(LogLevel.INFO, `Encontrada trilha com índice numérico ${i}: ${trail.id}`)
+        allTrails.push({ ...trail })
+      }
+    }
+  }
+
+  // 2. Adicionar trilhas de índices string (propriedades diretas do objeto trails)
+  Object.keys(trailsObj).forEach((key) => {
+    if (isNaN(Number(key)) && key !== "length") {
+      const trail = trailsObj[key]
+      if (trail && (trail.id || key.startsWith("trilha_"))) {
+        // Se não tiver ID, usar a chave como ID
+        if (!trail.id) {
+          trail.id = key
+        }
+        logSync(LogLevel.INFO, `Encontrada trilha com índice string ${key}: ${trail.id}`)
+        allTrails.push({ ...trail })
+      }
+    }
+  })
+
+  // 3. Verificar propriedades diretas no objeto progress que são trilhas
+  Object.keys(progress).forEach((key) => {
+    if (key.startsWith("trilha_") && key !== "trails") {
+      const directTrail = progress[key]
+      if (directTrail) {
+        // Garantir que tenha um ID
+        if (!directTrail.id) {
+          directTrail.id = key
+        }
+        logSync(LogLevel.INFO, `Encontrada trilha como propriedade direta ${key}: ${directTrail.id}`)
+        allTrails.push({ ...directTrail })
+
+        // Remover a propriedade direta
+        delete fixedProgress[key]
+      }
+    }
+  })
+
+  logSync(LogLevel.INFO, `Total de trilhas encontradas: ${allTrails.length}`)
+
+  // Mesclar trilhas com o mesmo ID
+  const trailMap = new Map<string, TrailProgress>()
+
+  for (const trail of allTrails) {
+    if (!trail.id) continue
+
+    const existingTrail = trailMap.get(trail.id)
+
+    if (existingTrail) {
+      // Mesclar dados
+      logSync(LogLevel.INFO, `Mesclando dados da trilha duplicada: ${trail.id}`)
+
+      // Preservar campos importantes
+      if (trail.currentPhaseId) {
+        existingTrail.currentPhaseId = trail.currentPhaseId
+      }
+
+      if (trail.currentQuestionIndex !== undefined) {
+        existingTrail.currentQuestionIndex = trail.currentQuestionIndex
+      }
+
+      if (trail.consecutiveCorrect !== undefined) {
+        existingTrail.consecutiveCorrect = trail.consecutiveCorrect
+      }
+
+      if (trail.highestConsecutiveCorrect !== undefined) {
+        existingTrail.highestConsecutiveCorrect = trail.highestConsecutiveCorrect
+      }
+
+      if (trail.totalPoints !== undefined) {
+        existingTrail.totalPoints = trail.totalPoints
+      }
+
+      // Mesclar fases
+      if (Array.isArray(trail.phases)) {
+        if (!Array.isArray(existingTrail.phases)) {
+          existingTrail.phases = []
+        }
+
+        // Mapa para mesclar fases
+        const phaseMap = new Map<string, PhaseProgress>()
+
+        // Adicionar fases existentes
+        existingTrail.phases.forEach((phase) => {
+          if (phase?.id) {
+            phaseMap.set(phase.id, { ...phase })
+          }
+        })
+
+        // Mesclar com novas fases
+        trail.phases.forEach((phase) => {
+          if (!phase?.id) return
+
+          const existingPhase = phaseMap.get(phase.id)
+
+          if (existingPhase) {
+            // Preservar status de conclusão
+            if (phase.completed) {
+              existingPhase.completed = true
+            }
+
+            // Preservar status de início
+            if (phase.started) {
+              existingPhase.started = true
+            }
+
+            // Preservar tempo gasto
+            if (phase.timeSpent) {
+              existingPhase.timeSpent = phase.timeSpent
+            }
+
+            // Mesclar questões
+            if (Array.isArray(phase.questionsProgress)) {
+              if (!Array.isArray(existingPhase.questionsProgress)) {
+                existingPhase.questionsProgress = []
+              }
+
+              // Mapa para mesclar questões
+              const questionMap = new Map<string, QuestionProgress>()
+
+              // Adicionar questões existentes
+              existingPhase.questionsProgress.forEach((question) => {
+                if (question?.id) {
+                  questionMap.set(question.id, { ...question })
+                }
+              })
+
+              // Mesclar com novas questões
+              phase.questionsProgress.forEach((question) => {
+                if (!question?.id) return
+
+                const existingQuestion = questionMap.get(question.id)
+
+                if (existingQuestion) {
+                  // Preservar status de resposta
+                  if (question.answered) {
+                    existingQuestion.answered = true
+                  }
+
+                  // Preservar status de correção
+                  if (question.correct) {
+                    existingQuestion.correct = true
+                  }
+                } else {
+                  questionMap.set(question.id, { ...question })
+                }
+              })
+
+              // Atualizar questões
+              existingPhase.questionsProgress = Array.from(questionMap.values())
+            }
+          } else {
+            phaseMap.set(phase.id, { ...phase })
+          }
+        })
+
+        // Atualizar fases
+        existingTrail.phases = Array.from(phaseMap.values())
+      }
+    } else {
+      trailMap.set(trail.id, { ...trail })
+    }
+  }
+
+  // Criar um novo array de trilhas sem duplicações
+  const cleanTrails = Array.from(trailMap.values())
+
+  // IMPORTANTE: Criar um array completamente novo para evitar propriedades diretas
+  fixedProgress.trails = []
+
+  // Adicionar cada trilha como um elemento do array
+  cleanTrails.forEach((trail) => {
+    fixedProgress.trails.push(trail)
+  })
+
+  logSync(
+    LogLevel.INFO,
+    `Correção concluída: ${allTrails.length} trilhas encontradas, ${fixedProgress.trails.length} após mesclagem`,
+  )
+
+  return fixedProgress
 }
 
 /**
@@ -359,30 +450,23 @@ const mergeProgressWithTrails = (
     logSync(LogLevel.INFO, "Iniciando mesclagem de progresso com trilhas disponíveis")
     const updatedProgress = { ...userProgress }
 
-    // Remover trilhas duplicadas ou sem ID antes de começar
-    if (Array.isArray(updatedProgress.trails)) {
-      const uniqueTrails = new Map()
-      updatedProgress.trails = updatedProgress.trails.filter((trail) => {
-        if (!trail?.id) return false
-        if (uniqueTrails.has(trail.id)) return false
-        uniqueTrails.set(trail.id, true)
-        return true
-      })
-    } else {
+    // Garantir que trails seja sempre um array
+    if (!Array.isArray(updatedProgress.trails)) {
       updatedProgress.trails = []
     }
 
     // Log do estado inicial
     logSync(LogLevel.INFO, `Estado inicial: ${updatedProgress.trails.length} trilhas no progresso do usuário`)
-    updatedProgress.trails.forEach((trail) => {
-      if (trail && Array.isArray(trail.phases)) {
-        const completedPhases = trail.phases.filter((p) => p?.completed).length
-        logSync(LogLevel.INFO, `Trilha ${trail.id}: ${trail.phases.length} fases, ${completedPhases} completadas`)
-      }
-    })
 
     // Create map of existing trails
-    const existingTrails = new Map(updatedProgress.trails.filter((t) => t?.id).map((t) => [t.id, t]))
+    const existingTrails = new Map<string, TrailProgress>()
+
+    // Adicionar apenas trilhas com ID válido
+    updatedProgress.trails.forEach((trail) => {
+      if (trail?.id) {
+        existingTrails.set(trail.id, { ...trail })
+      }
+    })
 
     // Process each available trail
     for (const availableTrail of availableTrails) {
@@ -399,7 +483,7 @@ const mergeProgressWithTrails = (
           id: availableTrail.id,
           phases: [],
         }
-        updatedProgress.trails.push(trail)
+        existingTrails.set(availableTrail.id, trail)
       } else {
         logSync(LogLevel.INFO, `Atualizando trilha existente: ${availableTrail.id}`)
       }
@@ -408,44 +492,11 @@ const mergeProgressWithTrails = (
       mergePhases(trail, availableTrail, preserveCompletion)
     }
 
-    // IMPORTANTE: Manter apenas as trilhas que existem nas trilhas disponíveis
-    // a menos que tenham fases completadas
-    const initialTrailCount = updatedProgress.trails.length
-    updatedProgress.trails = updatedProgress.trails.filter((trail) => {
-      if (!trail?.id) return false
-
-      const exists = availableTrails.some((at) => at?.id === trail.id)
-
-      if (!exists) {
-        if (preserveCompletion) {
-          const hasCompletedPhases = trail.phases?.some((p) => p?.completed)
-          if (hasCompletedPhases) {
-            logSync(
-              LogLevel.INFO,
-              `Mantendo trilha ${trail.id} que tem fases completadas mesmo não estando nas trilhas disponíveis`,
-            )
-            return true
-          }
-        }
-        logSync(LogLevel.INFO, `Removendo trilha ${trail.id} que não existe nas trilhas disponíveis`)
-        return false
-      }
-      return true
-    })
-
-    logSync(
-      LogLevel.INFO,
-      `Removidas ${initialTrailCount - updatedProgress.trails.length} trilhas que não existem nas trilhas disponíveis`,
-    )
+    // Atualizar o array de trilhas
+    updatedProgress.trails = Array.from(existingTrails.values())
 
     // Log do estado final
     logSync(LogLevel.INFO, `Estado final: ${updatedProgress.trails.length} trilhas no progresso do usuário`)
-    updatedProgress.trails.forEach((trail) => {
-      if (trail && Array.isArray(trail.phases)) {
-        const completedPhases = trail.phases.filter((p) => p?.completed).length
-        logSync(LogLevel.INFO, `Trilha ${trail.id}: ${trail.phases.length} fases, ${completedPhases} completadas`)
-      }
-    })
 
     return updatedProgress
   } catch (error) {
@@ -478,11 +529,14 @@ const mergePhases = (userTrail: TrailProgress, availableTrail: any, preserveComp
     logSync(LogLevel.INFO, `Trilha ${userTrail.id}: ${availablePhases.length} fases disponíveis para mesclagem`)
 
     // Create map of existing phases
-    const existingPhases = new Map(
-      userTrail.phases
-        .filter((p) => p?.id)
-        .map((p) => [p.id, { ...p }]), // Create a copy of each phase
-    )
+    const existingPhases = new Map<string, PhaseProgress>()
+
+    // Adicionar apenas fases com ID válido
+    userTrail.phases.forEach((phase) => {
+      if (phase?.id) {
+        existingPhases.set(phase.id, { ...phase })
+      }
+    })
 
     // Process each available phase
     for (const availablePhase of availablePhases) {
@@ -502,20 +556,13 @@ const mergePhases = (userTrail: TrailProgress, availableTrail: any, preserveComp
           questionsProgress: [],
           timeSpent: 0,
         }
+        existingPhases.set(availablePhase.id, phase)
       } else if (preserveCompletion) {
         // CRITICAL: Preserve completion status
         logSync(LogLevel.INFO, `Verificando fase ${phase.id}: completed=${phase.completed}`)
         if (phase.completed) {
           logSync(LogLevel.INFO, `Preservando status completed=true para fase ${phase.id}`)
         }
-      }
-
-      // Ensure the phase is in the trail's phases array
-      const existingIndex = userTrail.phases.findIndex((p) => p?.id === phase.id)
-      if (existingIndex === -1) {
-        userTrail.phases.push(phase)
-      } else {
-        userTrail.phases[existingIndex] = phase
       }
 
       // Merge questions
@@ -531,29 +578,8 @@ const mergePhases = (userTrail: TrailProgress, availableTrail: any, preserveComp
       }
     }
 
-    // Remove phases that don't exist in available phases, unless completed
-    const phasesBeforeFilter = userTrail.phases.length
-    userTrail.phases = userTrail.phases.filter((phase) => {
-      if (!phase?.id) return false
-
-      const exists = availablePhases.some((ap) => ap?.id === phase.id)
-      if (!exists && preserveCompletion && phase.completed) {
-        logSync(LogLevel.INFO, `Mantendo fase ${phase.id} que está completa mesmo não estando nas fases disponíveis`)
-        return true
-      }
-
-      if (!exists) {
-        logSync(LogLevel.INFO, `Removendo fase ${phase.id} que não existe nas fases disponíveis`)
-        return false
-      }
-
-      return true
-    })
-
-    logSync(
-      LogLevel.INFO,
-      `Removidas ${phasesBeforeFilter - userTrail.phases.length} fases que não existem nas fases disponíveis`,
-    )
+    // Atualizar o array de fases
+    userTrail.phases = Array.from(existingPhases.values())
 
     // Log do estado final
     const finalCompletedPhases = userTrail.phases.filter((p) => p?.completed).length
@@ -598,11 +624,14 @@ const mergeQuestions = (userPhase: PhaseProgress, availablePhase: any, preserveC
     logSync(LogLevel.INFO, `Fase ${userPhase.id}: ${availableQuestions.length} questões disponíveis para mesclagem`)
 
     // Create map of existing questions
-    const existingQuestions = new Map(
-      userPhase.questionsProgress
-        .filter((q) => q?.id)
-        .map((q) => [q.id, { ...q }]), // Create a copy of each question
-    )
+    const existingQuestions = new Map<string, QuestionProgress>()
+
+    // Adicionar apenas questões com ID válido
+    userPhase.questionsProgress.forEach((question) => {
+      if (question?.id) {
+        existingQuestions.set(question.id, { ...question })
+      }
+    })
 
     // Process each available question
     for (const availableQuestion of availableQuestions) {
@@ -620,6 +649,7 @@ const mergeQuestions = (userPhase: PhaseProgress, availablePhase: any, preserveC
           answered: false,
           correct: false,
         }
+        existingQuestions.set(availableQuestion.id, question)
       } else if (preserveCompletion && question.answered) {
         // CRITICAL: Preserve answer status
         logSync(
@@ -627,51 +657,10 @@ const mergeQuestions = (userPhase: PhaseProgress, availablePhase: any, preserveC
           `Preservando status para questão ${question.id}: answered=${question.answered}, correct=${question.correct}`,
         )
       }
-
-      // Ensure the question is in the phase's questions array
-      const existingIndex = userPhase.questionsProgress.findIndex((q) => q?.id === question.id)
-      if (existingIndex === -1) {
-        userPhase.questionsProgress.push(question)
-      } else {
-        userPhase.questionsProgress[existingIndex] = question
-      }
     }
 
-    // Remove questions that don't exist in available questions, unless answered correctly
-    const questionsBeforeFilter = userPhase.questionsProgress.length
-    userPhase.questionsProgress = userPhase.questionsProgress.filter((question) => {
-      if (!question?.id) return false
-
-      const exists = availableQuestions.some((aq) => aq?.id === question.id)
-      if (!exists && preserveCompletion && question.answered && question.correct) {
-        logSync(
-          LogLevel.INFO,
-          `Mantendo questão ${question.id} que foi respondida corretamente mesmo não estando nas questões disponíveis`,
-        )
-        return true
-      }
-
-      if (!exists) {
-        logSync(LogLevel.INFO, `Removendo questão ${question.id} que não existe nas questões disponíveis`)
-        return false
-      }
-
-      return true
-    })
-
-    logSync(
-      LogLevel.INFO,
-      `Removidas ${questionsBeforeFilter - userPhase.questionsProgress.length} questões que não existem nas questões disponíveis`,
-    )
-
-    // Check if all questions are completed to set phase completion
-    if (preserveCompletion && userPhase.questionsProgress.length > 0) {
-      const allQuestionsComplete = userPhase.questionsProgress.every((q) => q?.answered && q?.correct)
-      if (allQuestionsComplete) {
-        userPhase.completed = true
-        logSync(LogLevel.INFO, `Fase ${userPhase.id} marcada como completa pois todas as questões estão corretas`)
-      }
-    }
+    // Atualizar o array de questões
+    userPhase.questionsProgress = Array.from(existingQuestions.values())
 
     // Log do estado final
     const finalAnsweredQuestions = userPhase.questionsProgress.filter((q) => q?.answered).length
@@ -700,27 +689,10 @@ const saveUserProgressToFirebase = async (userId: string, progress: UserProgress
     // NOVO: Criar uma cópia limpa do objeto para evitar problemas de serialização
     const cleanProgress = JSON.parse(JSON.stringify(progress))
 
-    // Remover propriedades que começam com "trilha_"
-    Object.keys(cleanProgress).forEach((key) => {
-      if (key.startsWith("trilha_")) {
-        logSync(LogLevel.INFO, `Removendo propriedade direta de trilha: ${key}`)
-        delete cleanProgress[key]
-      }
-    })
-
     // NOVO: Verificar se o array de trilhas é válido
     if (!Array.isArray(cleanProgress.trails)) {
       cleanProgress.trails = []
       logSync(LogLevel.WARNING, "Array de trilhas inválido, criando um novo array vazio")
-    } else {
-      // Remover duplicatas no array de trilhas
-      const uniqueTrails = new Map()
-      cleanProgress.trails.forEach((trail) => {
-        if (trail?.id) {
-          uniqueTrails.set(trail.id, trail)
-        }
-      })
-      cleanProgress.trails = Array.from(uniqueTrails.values())
     }
 
     // NOVO: Verificar se o userId é válido
@@ -738,24 +710,6 @@ const saveUserProgressToFirebase = async (userId: string, progress: UserProgress
     try {
       await set(userProgressRef, cleanProgress)
       logSync(LogLevel.INFO, "Progresso do usuário salvo no Firebase com sucesso")
-
-      // Verificação adicional para garantir que não haja propriedades diretas
-      const snapshot = await get(userProgressRef)
-      if (snapshot.exists()) {
-        const savedData = snapshot.val()
-        const directTrailKeys = Object.keys(savedData).filter((key) => key.startsWith("trilha_"))
-
-        if (directTrailKeys.length > 0) {
-          logSync(LogLevel.WARNING, `Ainda existem ${directTrailKeys.length} propriedades diretas após salvar`)
-
-          // Remover propriedades diretas uma a uma
-          for (const key of directTrailKeys) {
-            const directTrailRef = ref(db, `userProgress/${userId}/${key}`)
-            await remove(directTrailRef)
-            logSync(LogLevel.INFO, `Propriedade direta ${key} removida`)
-          }
-        }
-      }
     } catch (setError) {
       // Capturar detalhes específicos do erro de set
       logSync(LogLevel.ERROR, "Erro específico ao executar set() no Firebase:", setError)
@@ -823,6 +777,13 @@ export const getUserProgressFromFirebase = async (userId: string): Promise<UserP
 
     if (snapshot.exists()) {
       const data = snapshot.val()
+
+      // NOVO: Verificar e corrigir duplicações antes de retornar
+      if (data && data.trails) {
+        const fixedData = fixDuplicateTrailsInArray(data)
+        return fixedData as UserProgress
+      }
+
       return data as UserProgress
     }
 
@@ -860,7 +821,7 @@ export const isPhaseCompleted = (phase: PhaseProgress): boolean => {
   return phase.questionsProgress.every((q) => q?.answered && q?.correct)
 }
 
-/**
+/**\
  * Limpa completamente o progresso do usuário e recria com base nas trilhas disponíveis
  */
 export const resetUserProgress = async (userId: string): Promise<UserProgress | null> => {
