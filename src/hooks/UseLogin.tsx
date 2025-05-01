@@ -9,9 +9,10 @@ import Toast from "react-native-toast-message"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useAuth } from "../context/AuthContext"
 import { loginApi } from "../services/apiService"
-import { syncUserProgress, getUserProgressFromFirebase } from "../services/userProgressService"
+import { syncUserProgress, getUserProgressFromFirebase, resetUserProgress } from "../services/userProgressService"
 import { logSync, LogLevel } from "../services/syncLogger"
-import { getDatabase, ref, set } from "firebase/database"
+import { getDatabase, ref, get, remove } from "firebase/database"
+import { getTrails } from "../services/trailsService"
 
 export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -44,7 +45,124 @@ export const useLogin = () => {
     loadSavedCredentials()
   }, [])
 
-  // Modify the handleLogin function to better preserve existing progress data
+  // Função para verificar e remover propriedades diretas de trilhas
+  const removeDirectTrailProperties = async (userId: string) => {
+    try {
+      logSync(LogLevel.INFO, "Verificando e removendo propriedades diretas de trilhas...")
+
+      const db = getDatabase()
+      const userProgressRef = ref(db, `userProgress/${userId}`)
+      const snapshot = await get(userProgressRef)
+
+      if (!snapshot.exists()) {
+        logSync(LogLevel.INFO, "Nenhum progresso encontrado para o usuário")
+        return false
+      }
+
+      const data = snapshot.val()
+      const directTrailKeys = Object.keys(data).filter((key) => key.startsWith("trilha_"))
+
+      if (directTrailKeys.length > 0) {
+        logSync(LogLevel.INFO, `Encontradas ${directTrailKeys.length} propriedades diretas de trilhas`)
+
+        // Remover cada propriedade direta
+        for (const key of directTrailKeys) {
+          const directTrailRef = ref(db, `userProgress/${userId}/${key}`)
+          await remove(directTrailRef)
+          logSync(LogLevel.INFO, `Propriedade direta ${key} removida`)
+        }
+
+        return true
+      } else {
+        logSync(LogLevel.INFO, "Nenhuma propriedade direta de trilha encontrada")
+        return false
+      }
+    } catch (error) {
+      logSync(LogLevel.ERROR, "Erro ao remover propriedades diretas de trilhas:", error)
+      return false
+    }
+  }
+
+  // Função para verificar se o número de trilhas está correto
+  const verifyTrailCount = async (userId: string) => {
+    try {
+      logSync(LogLevel.INFO, "Verificando se o número de trilhas está correto...")
+
+      // Obter trilhas disponíveis
+      const trailsResponse = await getTrails()
+      if (!trailsResponse?.data) {
+        logSync(LogLevel.ERROR, "Erro ao obter trilhas disponíveis")
+        return false
+      }
+
+      const availableTrailsCount = trailsResponse.data.length
+      logSync(LogLevel.INFO, `Número de trilhas disponíveis: ${availableTrailsCount}`)
+
+      // Obter progresso do usuário
+      const userProgress = await getUserProgressFromFirebase(userId)
+      if (!userProgress) {
+        logSync(LogLevel.INFO, "Nenhum progresso encontrado para o usuário")
+        return false
+      }
+
+      // Verificar se o número de trilhas corresponde
+      if (!Array.isArray(userProgress.trails)) {
+        logSync(LogLevel.WARNING, "Array de trilhas não encontrado no progresso do usuário")
+        return false
+      }
+
+      const userTrailsCount = userProgress.trails.length
+      logSync(LogLevel.INFO, `Número de trilhas no progresso do usuário: ${userTrailsCount}`)
+
+      if (userTrailsCount !== availableTrailsCount) {
+        logSync(
+          LogLevel.WARNING,
+          `Inconsistência detectada: ${userTrailsCount} trilhas no progresso, mas ${availableTrailsCount} trilhas disponíveis`,
+        )
+        return false
+      }
+
+      logSync(LogLevel.INFO, "Número de trilhas está correto")
+      return true
+    } catch (error) {
+      logSync(LogLevel.ERROR, "Erro ao verificar número de trilhas:", error)
+      return false
+    }
+  }
+
+  // Função para corrigir o progresso do usuário
+  const fixUserProgress = async (userId: string) => {
+    try {
+      logSync(LogLevel.INFO, "Iniciando correção do progresso do usuário...")
+
+      // 1. Remover propriedades diretas de trilhas
+      await removeDirectTrailProperties(userId)
+
+      // 2. Verificar se o número de trilhas está correto
+      const isTrailCountCorrect = await verifyTrailCount(userId)
+
+      if (!isTrailCountCorrect) {
+        logSync(LogLevel.WARNING, "Número de trilhas incorreto, resetando progresso...")
+
+        // 3. Se o número de trilhas estiver incorreto, resetar o progresso
+        await resetUserProgress(userId)
+
+        // 4. Sincronizar novamente
+        await syncUserProgress(userId, false, true)
+
+        logSync(LogLevel.INFO, "Progresso do usuário corrigido com sucesso")
+        return true
+      }
+
+      logSync(LogLevel.INFO, "Progresso do usuário já está correto")
+      return true
+    } catch (error) {
+      logSync(LogLevel.ERROR, "Erro ao corrigir progresso do usuário:", error)
+      return false
+    }
+  }
+
+  // Modifique a função handleLogin para incluir a correção do progresso
   const handleLogin = async (email: string, password: string, rememberMe: boolean) => {
     if (!email || !password) {
       Toast.show({
@@ -81,47 +199,6 @@ export const useLogin = () => {
       const user = userCredential.user
       logSync(LogLevel.INFO, `Autenticação Firebase bem-sucedida para usuário: ${user.uid}`)
 
-      // CRITICAL: Check for cached progress in AsyncStorage before proceeding
-      let cachedProgress = null
-      try {
-        const cachedProgressStr = await AsyncStorage.getItem(`userProgress_${user.uid}`)
-        if (cachedProgressStr) {
-          cachedProgress = JSON.parse(cachedProgressStr)
-          logSync(LogLevel.INFO, "Progresso em cache encontrado no AsyncStorage", {
-            trailsCount: cachedProgress.trails?.length || 0,
-            hasCompletedPhases: checkForCompletedPhases(cachedProgress),
-          })
-
-          // Log detailed information about completed phases and questions
-          if (cachedProgress.trails && Array.isArray(cachedProgress.trails)) {
-            logSync(LogLevel.INFO, "Detalhes do progresso em cache:")
-            cachedProgress.trails.forEach((trail: { phases: any[]; id: any }) => {
-              if (trail && trail.phases && Array.isArray(trail.phases)) {
-                trail.phases.forEach((phase) => {
-                  if (phase && phase.completed) {
-                    logSync(LogLevel.INFO, `Fase completada encontrada: ${phase.id} na trilha ${trail.id}`)
-                  }
-
-                  if (phase && phase.questionsProgress && Array.isArray(phase.questionsProgress)) {
-                    const answeredQuestions = phase.questionsProgress.filter((q: { answered: any }) => q && q.answered).length
-                    const correctQuestions = phase.questionsProgress.filter((q: { correct: any }) => q && q.correct).length
-
-                    if (answeredQuestions > 0) {
-                      logSync(
-                        LogLevel.INFO,
-                        `Fase ${phase.id}: ${answeredQuestions} questões respondidas, ${correctQuestions} corretas`,
-                      )
-                    }
-                  }
-                })
-              }
-            })
-          }
-        }
-      } catch (cacheError) {
-        logSync(LogLevel.ERROR, "Erro ao verificar progresso em cache:", cacheError)
-      }
-
       // Após autenticação com Firebase, obter token JWT da API
       try {
         logSync(LogLevel.INFO, "Obtendo token JWT da API...")
@@ -136,38 +213,20 @@ export const useLogin = () => {
         // Não interromper o fluxo se falhar a obtenção do token JWT
       }
 
-      // CRITICAL: Check if there's already progress in Firebase
-      const existingFirebaseProgress = await getUserProgressFromFirebase(user.uid)
-
-      // If we have cached progress with completed phases but no Firebase progress,
-      // or if the cached progress has more completed phases than Firebase
-      if (
-        cachedProgress &&
-        (!existingFirebaseProgress ||
-          countCompletedItems(cachedProgress) > countCompletedItems(existingFirebaseProgress))
-      ) {
-        logSync(LogLevel.INFO, "O progresso em cache tem mais itens completados que o Firebase, salvando primeiro...")
-
-        // Save cached progress to Firebase to ensure it's not lost
-        const db = getDatabase()
-        const userProgressRef = ref(db, `userProgress/${user.uid}`)
-        await set(userProgressRef, cachedProgress)
-        logSync(LogLevel.INFO, "Progresso em cache salvo no Firebase com sucesso")
-      }
-
-      // Sincronizar o progresso do usuário com as trilhas disponíveis
-      // IMPORTANTE: Passamos false para NÃO forçar a criação de novo progresso
-      // Isso preservará os dados existentes
+      // Corrigir o progresso do usuário
       setIsSyncingProgress(true)
       try {
-        logSync(LogLevel.INFO, "Iniciando sincronização de progresso (preservando dados existentes)...")
+        logSync(LogLevel.INFO, "Iniciando correção e sincronização do progresso...")
 
-        // CRITICAL: Set preserveCompletion to true to ensure completed status is preserved
+        // Primeiro, corrigir o progresso
+        await fixUserProgress(user.uid)
+
+        // Depois, sincronizar
         await syncUserProgress(user.uid, false, true)
-        logSync(LogLevel.INFO, "Sincronização de progresso concluída com sucesso")
+
+        logSync(LogLevel.INFO, "Correção e sincronização concluídas com sucesso")
       } catch (syncError) {
-        logSync(LogLevel.ERROR, "Erro ao sincronizar progresso do usuário:", syncError)
-        // Não interromper o fluxo se falhar a sincronização
+        logSync(LogLevel.ERROR, "Erro ao corrigir e sincronizar progresso:", syncError)
       } finally {
         setIsSyncingProgress(false)
       }
@@ -209,6 +268,7 @@ export const useLogin = () => {
       return false
     }
 
+    // Verificar fases completadas no array trails
     for (const trail of progress.trails) {
       if (!trail || !Array.isArray(trail.phases)) continue
 
@@ -228,39 +288,22 @@ export const useLogin = () => {
       }
     }
 
-    return false
-  }
+    // Verificar também trilhas diretas
+    for (const key in progress) {
+      if (key.startsWith("trilha_")) {
+        const directTrail = progress[key]
+        if (directTrail && Array.isArray(directTrail.phases)) {
+          for (const phase of directTrail.phases) {
+            if (phase && phase.completed) {
+              return true
+            }
 
-  // Helper function to count completed items (phases and questions)
-  const countCompletedItems = (progress: any): number => {
-    if (!progress || !Array.isArray(progress.trails)) {
-      return 0
-    }
-
-    let count = 0
-
-    for (const trail of progress.trails) {
-      if (!trail || !Array.isArray(trail.phases)) continue
-
-      for (const phase of trail.phases) {
-        // Count completed phases
-        if (phase && phase.completed) {
-          count += 10 // Give higher weight to completed phases
-        }
-
-        // Count started phases
-        if (phase && phase.started) {
-          count += 1
-        }
-
-        // Count answered and correct questions
-        if (phase && Array.isArray(phase.questionsProgress)) {
-          for (const question of phase.questionsProgress) {
-            if (question && question.answered) {
-              count += 1
-
-              if (question.correct) {
-                count += 1
+            // Verificar questões
+            if (phase && Array.isArray(phase.questionsProgress)) {
+              for (const question of phase.questionsProgress) {
+                if (question && question.answered && question.correct) {
+                  return true
+                }
               }
             }
           }
@@ -268,7 +311,7 @@ export const useLogin = () => {
       }
     }
 
-    return count
+    return false
   }
 
   const clearSavedCredentials = async () => {

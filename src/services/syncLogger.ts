@@ -128,3 +128,32 @@ export const loadLogs = async (): Promise<LogEntry[]> => {
   }
   return []
 }
+
+// Adicione esta função para melhorar o log de erros
+export const logError = (level: LogLevel, message: string, error: any): void => {
+  logSync(level, message)
+
+  if (!error) {
+    logSync(level, "Erro indefinido")
+    return
+  }
+
+  // Tentar extrair mais informações do erro
+  if (error instanceof Error) {
+    logSync(level, `Mensagem: ${error.message}`)
+    logSync(level, `Stack: ${error.stack}`)
+
+    // Verificar se é um erro do Firebase
+    if ("code" in error) {
+      logSync(level, `Código de erro: ${(error as any).code}`)
+    }
+  } else if (typeof error === "object") {
+    try {
+      logSync(level, `Objeto de erro: ${JSON.stringify(error)}`)
+    } catch (jsonError) {
+      logSync(level, `Erro não serializável: ${Object.keys(error).join(", ")}`)
+    }
+  } else {
+    logSync(level, `Erro não padrão: ${error}`)
+  }
+}
