@@ -52,19 +52,19 @@ const PlatformWrapper = ({ children }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F1592E",
+    backgroundColor: "#223AD2",
   },
   fullScreenContainer: {
     flex: 1,
     width: "100%",
     height: Platform.OS === "web" ? "100vh" : "100%",
-    backgroundColor: "#F1592E",
+    backgroundColor: "#223AD2",
   },
   desktopContainer: {
     flex: 1,
     height: Platform.OS === "web" ? "100vh" : "100%",
     width: "100%",
-    backgroundColor: "#F1592E",
+    backgroundColor: "#223AD2",
     alignItems: "center",
     justifyContent: "center",
     ...(Platform.OS === "web" && {

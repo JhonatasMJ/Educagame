@@ -1,12 +1,12 @@
 "use client"
-import React from "react";
+import  React from "react"
 import FontAwesome from "@expo/vector-icons/FontAwesome"
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons"
 import { Tabs } from "expo-router"
 import { View, Animated, Pressable, StyleSheet } from "react-native"
 import { useRef, useEffect } from "react"
 import { FontAwesome6 } from "@expo/vector-icons"
-import { useEditMode } from "@/src/context/EditableContext";
+import { useEditMode } from "@/src/context/EditableContext"
 
 interface TabBarButtonProps {
   accessibilityState: { selected: boolean }
@@ -71,7 +71,6 @@ export default function TabLayout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           paddingHorizontal: "5%",
-
           borderWidth: 5,
           borderColor: "#606060",
           backgroundColor: "#606060",
@@ -81,7 +80,8 @@ export default function TabLayout() {
           left: 0,
           right: 0,
           bottom: 0,
-          elevation: 4,
+          elevation: 10, // Increased from 4
+          zIndex: 1000, // Added to ensure it stays on top
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,

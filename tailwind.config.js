@@ -7,7 +7,7 @@ module.exports = {
     extend: {
       colors: {
         // Import colors from centralized color file
-        primary: "#F1592E", // BRAND_COLORS.PRIMARY
+        primary: "#223AD2", // BRAND_COLORS.PRIMARY
         secondary: "#F6A608", // BRAND_COLORS.SECONDARY
         tertiary: "#0D153A", // BRAND_COLORS.TERTIARY
         green: "#95C11F", // BRAND_COLORS.GREEN

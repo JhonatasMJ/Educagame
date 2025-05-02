@@ -12,6 +12,7 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
@@ -64,7 +65,7 @@ const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
-  const { userData, authUser, refreshUserData, isTokenLoaded } = useAuth()
+  const { userData, authUser, refreshUserData, isTokenLoaded, justLoggedIn, setJustLoggedIn } = useAuth()
   const { getPhaseCompletionPercentage, syncProgress, isSyncing } = useGameProgress()
   const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
@@ -72,6 +73,45 @@ const Home = () => {
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
 
+  const [isRefreshing, setIsRefreshing] = useState(false) // Novo estado para controlar o refresh
+
+  // Adicione este useEffect para detectar o login recente e forçar um refresh
+  useEffect(() => {
+    if (justLoggedIn && authUser && !isRefreshing) {
+      console.log("Login recente detectado, forçando refresh da home...")
+      setIsRefreshing(true)
+
+      // Função para realizar o refresh completo
+      const performFullRefresh = async () => {
+        try {
+          // 1. Sincronizar progresso do usuário
+          await syncProgress()
+
+          // 2. Recarregar trilhas
+          await fetchTrails() // Passar true para forçar atualização
+
+          // 3. Atualizar dados do usuário
+          await refreshUserData()
+
+          console.log("Refresh completo realizado com sucesso após login")
+        } catch (error) {
+          console.error("Erro ao realizar refresh após login:", error)
+        } finally {
+          // Resetar os estados
+          setIsRefreshing(false)
+          setJustLoggedIn(false) // Importante: resetar o sinalizador
+        }
+      }
+
+      performFullRefresh()
+    }
+  }, [justLoggedIn, authUser, isRefreshing])
+
+
+  // Calculate the bottom tab height - typically around 72px plus any safe area
+  const TAB_HEIGHT = 72 + (Platform.OS === "ios" ? 34 : 0)
+  // Calculate the trail selector height
+  const TRAIL_SELECTOR_HEIGHT = 80
 
   const trailBackgroundImages = [
     require("@/assets/images/fundo.png"),
@@ -79,18 +119,17 @@ const Home = () => {
     require("@/assets/images/fundo.png"),
     require("@/assets/images/fundo.png"),
     require("@/assets/images/fundo.png"),
-  ];
-  
+  ]
+
   // Define a fallback image in case we run out of images in the array
-  const fallbackImage = require("@/assets/images/fundo.png");
+  const fallbackImage = require("@/assets/images/fundo.png")
 
   const getTrailBackgroundImage = (index: number) => {
     if (index >= 0 && index < trailBackgroundImages.length) {
-      return trailBackgroundImages[index];
+      return trailBackgroundImages[index]
     }
-    return fallbackImage;
-  };
-  
+    return fallbackImage
+  }
 
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
@@ -341,11 +380,14 @@ const Home = () => {
   useEffect(() => {
     if (scrollViewRef.current) {
       if (Platform.OS !== "web") {
-        // Para dispositivos móveis - agora invertido
+        // Para dispositivos móveis
         setTimeout(() => {
-          // Calcular posição para rolar - de baixo para cima
-          const totalHeight = stages.length * 200 // Altura aproximada de todos os estágios (aumentada)
-          const position = totalHeight - (etapaAtualIndex + 1) * 200 // Posição a partir de baixo
+          // Calcular posição para rolar para a etapa atual
+          // Agora precisamos calcular a posição de baixo para cima
+          const totalHeight = stages.length * 200 // Altura aproximada de todas as bolhas
+          const bubbleHeight = 200 // Altura aproximada de uma bolha
+          const reversedIndex = stages.length - 1 - etapaAtualIndex
+          const position = totalHeight - reversedIndex * bubbleHeight - bubbleHeight
 
           scrollViewRef.current?.scrollTo({ y: position, animated: true })
         }, 300)
@@ -353,8 +395,8 @@ const Home = () => {
         // Para web
         setTimeout(() => {
           const elements = document.querySelectorAll(".stage-bubble")
-          if (elements && elements[stages.length - 1 - etapaAtualIndex]) {
-            elements[stages.length - 1 - etapaAtualIndex].scrollIntoView({
+          if (elements && elements[etapaAtualIndex]) {
+            elements[etapaAtualIndex].scrollIntoView({
               behavior: "smooth",
               block: "center",
             })
@@ -474,9 +516,10 @@ const Home = () => {
     }
   }, [authUser, isTokenLoaded]) // Removemos trilhas e hasLoadedTrails das dependências
 
+  const selectedTrail = trilhas && trilhas.length > 0 ? trilhas[trilhaAtualIndex] : null
 
   return (
-    <View className="flex-1">
+    <SafeAreaView style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
       {(trailsLoading || isSyncing) && (
@@ -513,10 +556,24 @@ const Home = () => {
         </View>
       )}
 
+      <DuolingoHeader
+        nome={nome}
+        scrollY={scrollY}
+        currentTrailId={selectedTrail?.id} // Adicionar o ID da trilha selecionada
+      />
 
-      <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
-
-      <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
+      {/* Trail selector - now with higher z-index to stay above content */}
+      <View
+        className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-30 border-t-2 border-tertiary"
+        style={{
+          elevation: 20,
+          zIndex: 50,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+        }}
+      >
         <TouchableOpacity
           onPress={handlePreviousTrilha}
           className="bg-tertiary p-2 rounded-md"
@@ -532,22 +589,22 @@ const Home = () => {
           <View className="flex-row justify-center items-center mt-1">
             {trilhas && trilhas.length > 0
               ? trilhas.map((_, index) => (
-                <TouchableOpacity
-                  key={`indicator-${index}`}
-                  onPress={() => {
-                    if (index < trilhaAtualIndex) {
-                      handlePreviousTrilha()
-                    } else if (index > trilhaAtualIndex) {
-                      handleNextTrilha()
-                    }
-                  }}
-                  className="mx-1"
-                >
-                  <View
-                    className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
-                  />
-                </TouchableOpacity>
-              ))
+                  <TouchableOpacity
+                    key={`indicator-${index}`}
+                    onPress={() => {
+                      if (index < trilhaAtualIndex) {
+                        handlePreviousTrilha()
+                      } else if (index > trilhaAtualIndex) {
+                        handleNextTrilha()
+                      }
+                    }}
+                    className="mx-1"
+                  >
+                    <View
+                      className={`rounded-full ${trilhaAtualIndex === index ? "bg-white w-3 h-3" : "bg-tertiary w-2 h-2"}`}
+                    />
+                  </TouchableOpacity>
+                ))
               : null}
           </View>
         </View>
@@ -561,7 +618,7 @@ const Home = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Conteúdo principal com trilha de aprendizado - agora com animação de slide */}
+      {/* Main content with learning path - now with animation */}
       <Animated.View
         style={{
           flex: 1,
@@ -574,16 +631,17 @@ const Home = () => {
           className="flex-1"
           contentContainerStyle={{
             alignItems: "center",
-            paddingHorizontal: 16,
-            paddingBottom: 96,
-            paddingTop: 60, // Added padding to create space at the top
+            paddingBottom: TAB_HEIGHT + TRAIL_SELECTOR_HEIGHT + 20,
+            flexGrow: 1,
           }}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
-          scrollEventThrottle={16} // Standard value for smooth animation
-          decelerationRate="normal" // Smoother deceleration
+          scrollEventThrottle={16}
+          decelerationRate="normal"
+          // Adicione estas propriedades para iniciar o scroll na parte inferior
+          contentOffset={{ x: 0, y: 10000 }} // Um valor grande para garantir que comece no final
+          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         >
-          <View style={{ height: 60 }} /> {/* Increased padding to create more space between header and content */}
           <LearningPathTrack
             etapas={stages}
             currentEtapaIndex={etapaAtualIndex}
@@ -592,11 +650,9 @@ const Home = () => {
             backgroundImage={getTrailBackgroundImage(trilhaAtualIndex)}
             trailId={currentTrilha?.id || ""}
           />
-
-          <View style={{ height: 100 }} />
         </ScrollView>
       </Animated.View>
-    </View>
+    </SafeAreaView>
   )
 }
 

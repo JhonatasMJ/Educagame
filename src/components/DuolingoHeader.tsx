@@ -1,11 +1,11 @@
 "use client"
 
-import { View, Text, TouchableOpacity, Animated } from "react-native"
+import React,{ View, Text, TouchableOpacity, Animated } from "react-native"
 import { Menu, Trophy, Target, Flame } from "lucide-react-native"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import Regras from "./Regras"
-import React from "react"
+import { getDatabase, ref, get } from "firebase/database"
 
 interface DuolingoHeaderProps {
   nome: string
@@ -14,12 +14,13 @@ interface DuolingoHeaderProps {
     titulo: string
     descricao: string
   } | null
+  currentTrailId?: string // ID da trilha atual sendo visualizada
 }
 
 interface User {
   id?: string
   name?: string
-  points: number // Alterado de result para points
+  points: number
   avatarSource?: string
   hours: number
   consecutiveDays: number
@@ -27,15 +28,68 @@ interface User {
   totalConsecutiveDays: number
 }
 
-const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps) => {
-  const { userData, authUser, getAllUsers } = useAuth()
+interface TrailProgress {
+  id: string
+  phases: {
+    [key: string]: {
+      consecutiveCorrect: number
+      highestConsecutiveCorrect: number
+      currentPhaseId: string
+      currentQuestionIndex: number
+      totalPoints: number
+    }
+  }
+}
+
+const DuolingoHeader = ({ nome, scrollY, selectedQuestion, currentTrailId }: DuolingoHeaderProps) => {
+  const { userData, authUser } = useAuth()
   const [showRulesModal, setShowRulesModal] = useState(false)
+  const [trailConsecutiveCorrect, setTrailConsecutiveCorrect] = useState(0)
+
+  // Buscar os acertos consecutivos da trilha atual
+  useEffect(() => {
+    const fetchTrailConsecutiveCorrect = async () => {
+      if (!authUser || !currentTrailId) return
+
+      try {
+        const db = getDatabase()
+        const userProgressRef = ref(db, `userProgress/${authUser.uid}/trails`)
+
+        const snapshot = await get(userProgressRef)
+        if (snapshot.exists()) {
+          const trails = snapshot.val()
+
+          // Procurar a trilha atual nos dados
+          if (Array.isArray(trails)) {
+            // Se for um array, procurar pelo ID
+            const currentTrail = trails.find((trail: any) => trail.id === currentTrailId)
+            if (currentTrail && currentTrail.phases && currentTrail.phases[0]) {
+              setTrailConsecutiveCorrect(currentTrail.phases[0].consecutiveCorrect || 0)
+            }
+          } else if (typeof trails === "object") {
+            // Se for um objeto, procurar pela chave
+            const trailKeys = Object.keys(trails)
+            for (const key of trailKeys) {
+              if (trails[key].id === currentTrailId && trails[key].phases && trails[key].phases[0]) {
+                setTrailConsecutiveCorrect(trails[key].phases[0].consecutiveCorrect || 0)
+                break
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar acertos consecutivos da trilha:", error)
+      }
+    }
+
+    fetchTrailConsecutiveCorrect()
+  }, [authUser, currentTrailId])
 
   const userDetailsData: User = {
     points: userData?.points || 0,
     hours: 120,
     consecutiveDays: userData?.consecutiveDays || 0,
-    consecutiveCorrect: userData?.consecutiveCorrect || 0,
+    consecutiveCorrect: trailConsecutiveCorrect, // Usar o valor específico da trilha
     totalConsecutiveDays: userData?.totalConsecutiveDays || 0,
     id: "",
     name: "",
@@ -117,7 +171,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
 
       {/* Linha de estatísticas - sempre visível e não se move */}
       <View className="flex-row justify-between items-center">
-        {/* XP / Pontos */}
+        {/* XP / Pontos - Global */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
             <Trophy size={20} color="#FFD700" />
@@ -125,7 +179,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
           </View>
         </TouchableOpacity>
 
-        {/* Streak */}
+        {/* Streak - Global */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
             <Target size={20} color="#5609e4" />
@@ -133,11 +187,11 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion }: DuolingoHeaderProps
           </View>
         </TouchableOpacity>
 
-        {/* Acertos consecutivos */}
+        {/* Acertos consecutivos - Específico da trilha */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
             <Flame size={20} color="#051747" />
-            <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveCorrect}</Text>
+            <Text className="text-white font-bold ml-1">{trailConsecutiveCorrect}</Text>
           </View>
         </TouchableOpacity>
       </View>

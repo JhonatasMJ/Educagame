@@ -1,13 +1,14 @@
 "use client"
 
-import React from "react"
-import { useState } from "react"
+import  React from "react"
+import { useState, useEffect } from "react"
 import { View, ImageBackground, StyleSheet, type ImageSourcePropType, Text } from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
 import type { IconLibrary } from "../services/IconRenderer"
 import { useGameProgress } from "../context/GameProgressContext"
 import { calculatePhaseProgress } from "../services/userProgressService"
+import { logSync, LogLevel } from "../services/syncLogger"
 
 // Tipos atualizados para refletir a nova estrutura
 interface StageInfo {
@@ -50,7 +51,7 @@ const TRACK_WIDTH = 8
 const TRACK_BORDER_RADIUS = 4
 const ETAPA_SPACING = 4
 
-// Modifique a função principal do componente para adicionar mais verificações de segurança
+// Componente principal
 const LearningPathTrack = ({
   etapas,
   currentEtapaIndex,
@@ -62,88 +63,105 @@ const LearningPathTrack = ({
   // Obter o contexto de progresso do jogo
   const { getTrailProgress, getPhaseProgress } = useGameProgress()
 
-  // Buscar o progresso do usuário para esta trilha
-  const trailProgress = trailId ? getTrailProgress(trailId) : null
+  // Estado para armazenar o progresso processado
+  const [processedEtapas, setProcessedEtapas] = useState<EtapaInfo[]>([])
 
-  // Garantir que etapas seja sempre um array antes de usar map
-  const etapasArray = Array.isArray(etapas) ? etapas : []
+  // Buscar o progresso do usuário para esta trilha e processar as etapas
+  useEffect(() => {
+    // Garantir que etapas seja sempre um array antes de usar map
+    const etapasArray = Array.isArray(etapas) ? etapas : []
 
-  // Processar as etapas com o progresso do usuário
-  const processedEtapas: EtapaInfo[] = etapasArray.map((etapa) => {
-    if (!etapa || typeof etapa !== "object") {
-      // Retornar um objeto padrão si etapa não for válido
-      return {
-        id: `default-${Math.random().toString(36).substring(2, 9)}`,
-        titulo: "Etapa sem título",
-        descricao: "Descrição da etapa não disponível",
-        concluida: false,
-        icon: "crown",
-        iconLibrary: "lucide",
-        stages: [],
-        progress: 0,
+    // Buscar o progresso da trilha pelo ID
+    const trailProgress = trailId ? getTrailProgress(trailId) : null
+
+    logSync(
+      LogLevel.INFO,
+      `Processando etapas para trilha ${trailId}, progresso encontrado: ${trailProgress ? "Sim" : "Não"}`,
+    )
+
+    // Processar as etapas com o progresso do usuário
+    const processed = etapasArray.map((etapa) => {
+      if (!etapa || typeof etapa !== "object") {
+        // Retornar um objeto padrão se etapa não for válido
+        return {
+          id: `default-${Math.random().toString(36).substring(2, 9)}`,
+          titulo: "Etapa sem título",
+          descricao: "Descrição da etapa não disponível",
+          concluida: false,
+          icon: "crown",
+          iconLibrary: "lucide",
+          stages: [],
+          progress: 0,
+        }
       }
-    }
 
-    // Buscar o progresso do usuário para esta etapa
-    const phaseProgress = etapa.id ? getPhaseProgress(etapa.id) : null
+      // Buscar o progresso do usuário para esta etapa
+      const phaseProgress = etapa.id ? getPhaseProgress(etapa.id) : null
 
-    // Determinar si a etapa está concluída com base no progresso do usuário
-    const concluida = phaseProgress ? phaseProgress.completed : false
+      if (phaseProgress) {
+        logSync(LogLevel.INFO, `Encontrado progresso para fase ${etapa.id}: completed=${phaseProgress.completed}`)
+      }
 
-    // Calcular o progresso da etapa com base nas questões respondidas
-    const progress = phaseProgress ? calculatePhaseProgress(phaseProgress) : 0
+      // Determinar se a etapa está concluída com base no progresso do usuário
+      const concluida = phaseProgress ? phaseProgress.completed : false
 
-    // Garantir que stages seja um array
-    const stages = etapa.stages ? (Array.isArray(etapa.stages) ? etapa.stages : []) : []
+      // Calcular o progresso da etapa com base nas questões respondidas
+      const progress = phaseProgress ? calculatePhaseProgress(phaseProgress) : 0
 
-    return {
-      id: etapa.id || `id-${Math.random().toString(36).substring(2, 9)}`,
-      titulo: etapa.titulo || "Sem título",
-      descricao: etapa.descricao || "Descrição da etapa não disponível",
-      concluida: concluida,
-      icon: etapa.icon || "crown",
-      iconLibrary: etapa.iconLibrary || "lucide",
-      stages: stages,
-      progress: progress,
-    }
-  })
+      // Garantir que stages seja um array
+      const stages = etapa.stages ? (Array.isArray(etapa.stages) ? etapa.stages : []) : []
+
+      return {
+        id: etapa.id || `id-${Math.random().toString(36).substring(2, 9)}`,
+        titulo: etapa.titulo || "Sem título",
+        descricao: etapa.descricao || "Descrição da etapa não disponível",
+        concluida: concluida,
+        icon: etapa.icon || "crown",
+        iconLibrary: etapa.iconLibrary || "lucide",
+        stages: stages,
+        progress: progress,
+      }
+    })
+
+    setProcessedEtapas(processed)
+  }, [etapas, trailId, getTrailProgress, getPhaseProgress])
 
   // Cálculos para layout - Proteger contra arrays vazios
   const nextEtapaIndex = processedEtapas.length > 0 ? processedEtapas.findIndex((etapa) => !etapa.concluida) : -1
 
-  // Si no encontrar ninguna etapa no concluída, usar 0 o -1 si el array está vacío
+  // Se não encontrar nenhuma etapa não concluída, usar 0 ou -1 se o array estiver vazio
   const safeNextEtapaIndex = nextEtapaIndex === -1 ? (processedEtapas.length > 0 ? 0 : -1) : nextEtapaIndex
 
   const totalContentHeight = processedEtapas.length * ETAPA_HEIGHT
   const topPadding = Math.max(0, containerHeight - totalContentHeight - BOTTOM_SPACE_ADJUSTMENT)
 
-  // Função para verificar si una etapa está bloqueada
+  // Função para verificar se uma etapa está bloqueada
   const isEtapaBlocked = (index: number) => {
-    // Verificar si el índice es válido
+    // Verificar se o índice é válido
     if (index < 0 || index >= processedEtapas.length) return true
 
-    // Una etapa está bloqueada si:
-    // 1. No está completa
-    // 2. No es la próxima disponible (la primera no completa)
-    // 3. No es la etapa actual
+    // Uma etapa está bloqueada se:
+    // 1. Não está completa
+    // 2. Não é a próxima disponível (a primeira não completa)
+    // 3. Não é a etapa atual
     return !processedEtapas[index].concluida && index !== safeNextEtapaIndex && index !== currentEtapaIndex
   }
 
-  // Função para manejar el clic en una etapa
+  // Função para lidar com o clique em uma etapa
   const handleEtapaPress = (index: number) => {
-    // Verificar si el índice es válido
+    // Verificar se o índice é válido
     if (index < 0 || index >= processedEtapas.length) return
 
-    // Solo permite la navegación si la etapa no está bloqueada
+    // Só permite navegação se a etapa não estiver bloqueada
     if (!isEtapaBlocked(index)) {
       onEtapaPress(index)
     }
-    // Si está bloqueada, no hace nada (o podría mostrar un mensaje)
+    // Se estiver bloqueada, não faz nada (ou poderia mostrar uma mensagem)
   }
 
-  // Renderiza el contenido principal con el fondo apropiado
+  // Renderiza o conteúdo principal com o fundo apropriado
   return (
-    <BackgroundContainer backgroundImage={backgroundImage} topPadding={topPadding}>
+    <BackgroundContainer backgroundImage={backgroundImage} >
       <TrackContent
         etapas={processedEtapas}
         currentEtapaIndex={currentEtapaIndex}
@@ -156,27 +174,25 @@ const LearningPathTrack = ({
   )
 }
 
-// Componente para el container de fondo
+// Componente para o container de fundo
 const BackgroundContainer = ({
   backgroundImage,
-  topPadding,
   children,
 }: {
   backgroundImage?: ImageSourcePropType
-  topPadding: number
   children: React.ReactNode
 }) => {
-  // Estado para controlar errores de carga de imagen
+  // Estado para controlar erros de carga de imagem
   const [imageError, setImageError] = useState(false)
 
-  // Verifica si la imagen de fondo es un SVG
+  // Verifica se a imagem de fundo é um SVG
   const isSvgImage = typeof backgroundImage === "string" && (backgroundImage as string).endsWith(".svg")
 
-  // Si no hay imagen o ocurre error, use un fondo estándar
+  // Se não há imagem ou ocorre erro, use um fundo padrão
   if (!backgroundImage || imageError) {
     return (
-      <View className="items-center bg-gray-100" style={[styles.container, { paddingTop: topPadding }]}>
-        {/* Ícono de fondo estándar cuando no hay imagen o ocurre error */}
+      <View className="items-center bg-gray-100" style={[styles.container]}>
+        {/* Ícone de fundo padrão quando não há imagem ou ocorre erro */}
         <View style={styles.fallbackBackground}>
           <Text style={{ fontSize: 40, color: "#ccc" }}>🏞️</Text>
         </View>
@@ -187,7 +203,7 @@ const BackgroundContainer = ({
 
   if (isSvgImage) {
     return (
-      <View className="items-center" style={[styles.container, { paddingTop: topPadding }]}>
+      <View className="items-center" style={[styles.container]}>
         <SvgUri uri={backgroundImage as string} style={styles.svgBackground} onError={() => setImageError(true)} />
         {children}
       </View>
@@ -197,7 +213,7 @@ const BackgroundContainer = ({
   return (
     <ImageBackground
       source={backgroundImage}
-      style={[styles.container, { paddingTop: topPadding }]}
+      style={[styles.container]}
       imageStyle={styles.imageBackground}
       className="items-center"
       onError={() => setImageError(true)}
@@ -207,7 +223,7 @@ const BackgroundContainer = ({
   )
 }
 
-// Modifique o componente TrackContent para adicionar mais verificações de segurança
+// Componente para o conteúdo da trilha
 const TrackContent = ({
   etapas,
   currentEtapaIndex,
@@ -237,19 +253,10 @@ const TrackContent = ({
   const completedEtapasPercentage = Math.max((completedCount / etapas.length) * 100, 10)
 
   return (
-    <>
+    <View style={{ width: "100%" }}>
       {/* Trilha de fundo */}
-      <TrackLine className="bg-tertiary/80" height="100%" zIndex={1} />
 
-      {/* Trilha de progresso */}
-      <TrackLine
-        className="bg-secondary"
-        height={`${completedEtapasPercentage}%`}
-        zIndex={2}
-        style={styles.progressTrack}
-      />
-
-      {/* Etapas em ordem reversa */}
+      {/* Etapas em ordem normal (de cima para baixo) */}
       <EtapasList
         etapas={etapas}
         currentEtapaIndex={currentEtapaIndex}
@@ -258,24 +265,12 @@ const TrackContent = ({
         isEtapaBlocked={isEtapaBlocked}
         trailId={trailId}
       />
-    </>
+    </View>
   )
 }
 
-// Componente para la línea de la trilha
-const TrackLine = ({
-  className,
-  height,
-  zIndex,
-  style,
-}: {
-  className: string
-  height: string
-  zIndex: number
-  style?: any
-}) => <View className={className} style={[styles.trackLine, { height, zIndex }, style]} />
 
-// Componente para la lista de etapas
+// Componente para a lista de etapas
 const EtapasList = ({
   etapas,
   currentEtapaIndex,
@@ -296,33 +291,27 @@ const EtapasList = ({
     return null
   }
 
-  // Inverte as etapas para renderizar de baixo para cima
-  const reversedEtapas = [...etapas].reverse()
-
   return (
     <>
-      {reversedEtapas.map((etapa, index) => {
+      {etapas.map((etapa, index) => {
         // Verificar se etapa é um objeto válido
         if (!etapa || typeof etapa !== "object") return null
 
-        // Calcula o índice original (antes da inversão)
-        const originalIndex = etapas.length - 1 - index
-
         // Verifica se esta é a próxima etapa a ser concluída
-        const isNextEtapa = originalIndex === nextEtapaIndex
+        const isNextEtapa = index === nextEtapaIndex
 
         // Verifica se a etapa está bloqueada
-        const isLocked = isEtapaBlocked(originalIndex)
+        const isLocked = isEtapaBlocked(index)
 
         return (
-          <View key={originalIndex} className="items-center z-10">
+          <View key={index} className="items-center z-10 mb-8">
             <LessonBubble
-              number={originalIndex + 1} // Número de la etapa (1-based)
-              isActive={currentEtapaIndex === originalIndex}
+              number={index + 1} // Número da etapa (1-based)
+              isActive={currentEtapaIndex === index}
               isCompleted={etapa.concluida}
               isNext={isNextEtapa}
               isLocked={isLocked}
-              onPress={() => onEtapaPress(originalIndex)}
+              onPress={() => onEtapaPress(index)}
               title={etapa.titulo || "Sem título"}
               icon={etapa.icon}
               iconLibrary={etapa.iconLibrary as IconLibrary}
@@ -349,10 +338,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "100%",
     height: "100%",
-    opacity: 0.3,
   },
   imageBackground: {
-    opacity: 0.3,
   },
   trackLine: {
     position: "absolute",
@@ -368,7 +355,6 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    opacity: 0.3,
   },
 })
 

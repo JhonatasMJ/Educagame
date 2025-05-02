@@ -15,6 +15,8 @@ interface AuthContextData {
   loading: boolean
   error: string | null
   jwtToken: string | null // Novo campo para o token JWT
+  justLoggedIn: boolean // Novo estado para indicar login recente
+  setJustLoggedIn: (value: boolean) => void // Função para atualizar o estado
   refreshUserData: () => Promise<void>
   getAllUsers: () => Promise<User[]>
   logout: () => Promise<void>
@@ -56,6 +58,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false)
   const [jwtToken, setJwtToken] = useState<string | null>(null) // Novo estado para o token JWT
   const [isTokenLoaded, setIsTokenLoaded] = useState(false)
+  const [justLoggedIn, setJustLoggedIn] = useState(false) // Novo estado
   const router = useRouter()
 
   // Adicione um efeito para carregar o token JWT do AsyncStorage
@@ -350,6 +353,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     error,
     jwtToken, // Adicione o token JWT ao contexto
+    justLoggedIn, // Adicione o novo estado
+    setJustLoggedIn, // Adicione a função
     refreshUserData,
     getAllUsers,
     logout,

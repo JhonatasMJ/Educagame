@@ -42,16 +42,477 @@ interface UserProgress {
 }
 
 /**
+ * FUNÇÃO AUXILIAR: Verifica se o objeto possui uma estrutura de dados válida
+ * para evitar erros de serialização e inconsistências
+ */
+const isValidProgressObject = (obj: any): boolean => {
+  if (!obj || typeof obj !== "object") return false
+
+  // Verificar campos obrigatórios
+  if (typeof obj.totalPoints !== "number") return false
+  if (typeof obj.consecutiveCorrect !== "number") return false
+  if (typeof obj.highestConsecutiveCorrect !== "number") return false
+
+  // Verificar o campo trails
+  if (!obj.trails) return false
+
+  return true
+}
+
+/**
+ * FUNÇÃO AUXILIAR: Limpa propriedades estranhas de um objeto antes da serialização
+ * para evitar erros e inconsistências
+ */
+const cleanObjectForSerialization = (obj: any): any => {
+  if (!obj || typeof obj !== "object") return obj
+
+  // Se for um array, limpar cada elemento
+  if (Array.isArray(obj)) {
+    return obj.map((item) => cleanObjectForSerialization(item)).filter(Boolean)
+  }
+
+  // Se for um objeto regular, limpar propriedades
+  const cleanObj: any = {}
+
+  Object.keys(obj).forEach((key) => {
+    // Ignorar propriedades não-enumeráveis e funções
+    const value = obj[key]
+    if (typeof value !== "function" && key !== "__proto__") {
+      if (typeof value === "object" && value !== null) {
+        cleanObj[key] = cleanObjectForSerialization(value)
+      } else {
+        cleanObj[key] = value
+      }
+    }
+  })
+
+  return cleanObj
+}
+
+// VARIÁVEIS GLOBAIS: Controle de sincronização
+let isSyncingBlocked = false
+let isContentSyncNeeded = false
+let lastContentSyncTime = 0
+
+// FUNÇÃO: Bloquear sincronização
+export const blockSyncing = () => {
+  isSyncingBlocked = true
+  logSync(LogLevel.WARNING, "⛔ SINCRONIZAÇÃO BLOQUEADA - Nenhuma sincronização será executada")
+
+  // Desbloquear após 30 segundos para evitar bloqueio permanente
+  setTimeout(() => {
+    isSyncingBlocked = false
+    logSync(LogLevel.INFO, "✅ SINCRONIZAÇÃO DESBLOQUEADA - Sincronizações permitidas novamente")
+  }, 30000)
+}
+
+// FUNÇÃO: Verificar se a sincronização está bloqueada
+export const isSyncingBlockedNow = () => {
+  return isSyncingBlocked
+}
+
+// FUNÇÃO: Marcar que uma sincronização de conteúdo é necessária
+export const markContentSyncNeeded = () => {
+  isContentSyncNeeded = true
+  logSync(LogLevel.INFO, "🔄 Sincronização de conteúdo marcada como necessária")
+}
+
+// FUNÇÃO: Sincronizar apenas conteúdo novo
+export const syncNewContent = async (userId: string): Promise<UserProgress | null> => {
+  // Se a última sincronização foi há menos de 5 minutos, não sincronizar novamente
+  const now = Date.now()
+  if (now - lastContentSyncTime < 5 * 60 * 1000) {
+    logSync(LogLevel.INFO, "Sincronização de conteúdo ignorada - última sincronização muito recente")
+    return null
+  }
+
+  // Se a sincronização estiver bloqueada, não fazer nada
+  if (isSyncingBlocked) {
+    logSync(LogLevel.WARNING, "⛔ Sincronização de conteúdo bloqueada - tentando novamente mais tarde")
+    return null
+  }
+
+  logSync(LogLevel.INFO, "🔄 Iniciando sincronização de NOVO CONTEÚDO para o usuário: " + userId)
+
+  try {
+    // 1. Obter o progresso atual do usuário
+    const currentProgress = await getUserProgressFromFirebase(userId)
+    if (!currentProgress) {
+      logSync(LogLevel.WARNING, "Nenhum progresso encontrado para sincronizar conteúdo")
+      return null
+    }
+
+    // 2. Fazer backup do progresso atual
+    try {
+      await AsyncStorage.setItem(`userProgress_content_backup_${userId}`, JSON.stringify(currentProgress))
+      logSync(LogLevel.INFO, "Backup do progresso atual salvo antes da sincronização de conteúdo")
+    } catch (backupError) {
+      logSync(LogLevel.ERROR, "Erro ao salvar backup do progresso:", backupError)
+    }
+
+    // 3. Buscar todas as trilhas disponíveis
+    let availableTrails: any[] = []
+    try {
+      const trailsResponse = await getTrails()
+      if (trailsResponse?.data) {
+        availableTrails = Array.isArray(trailsResponse.data)
+          ? trailsResponse.data
+          : Object.values(trailsResponse.data || {})
+      }
+      logSync(LogLevel.INFO, `Trilhas disponíveis carregadas: ${availableTrails.length}`)
+    } catch (trailsError) {
+      logSync(LogLevel.ERROR, "Erro ao buscar trilhas disponíveis:", trailsError)
+      return currentProgress
+    }
+
+    // 4. Sincronizar APENAS novas trilhas e questões
+    const updatedProgress = await syncOnlyNewContent(currentProgress, availableTrails)
+
+    // 5. Salvar o progresso atualizado
+    await saveUserProgressToFirebase(userId, updatedProgress)
+
+    // 6. Atualizar timestamp da última sincronização
+    lastContentSyncTime = now
+    isContentSyncNeeded = false
+
+    logSync(LogLevel.INFO, "✅ Sincronização de novo conteúdo concluída com sucesso")
+
+    return updatedProgress
+  } catch (error) {
+    logSync(LogLevel.ERROR, "Erro ao sincronizar novo conteúdo:", error)
+    return null
+  }
+}
+
+// FUNÇÃO: Sincronizar apenas novo conteúdo sem afetar o progresso existente
+const syncOnlyNewContent = async (currentProgress: UserProgress, availableTrails: any[]): Promise<UserProgress> => {
+  logSync(LogLevel.INFO, "Iniciando sincronização apenas de novo conteúdo")
+
+  // Criar uma cópia do progresso atual
+  const updatedProgress = JSON.parse(JSON.stringify(currentProgress)) as UserProgress
+
+  // Garantir que trails seja um array
+  if (!Array.isArray(updatedProgress.trails)) {
+    updatedProgress.trails = []
+  }
+
+  // 1. Verificar novas trilhas
+  for (const availableTrail of availableTrails) {
+    if (!availableTrail?.id) continue
+
+    // Verificar se a trilha já existe no progresso
+    const existingTrailIndex = updatedProgress.trails.findIndex((t) => t?.id === availableTrail.id)
+
+    if (existingTrailIndex === -1) {
+      // Trilha nova - adicionar ao progresso
+      logSync(LogLevel.INFO, `Nova trilha encontrada: ${availableTrail.id} - adicionando ao progresso`)
+
+      const newTrail: TrailProgress = {
+        id: availableTrail.id,
+        phases: [],
+      }
+
+      // Adicionar todas as fases da nova trilha
+      const availablePhases = Array.isArray(availableTrail.etapas)
+        ? availableTrail.etapas
+        : Object.values(availableTrail.etapas || {})
+
+      for (const phase of availablePhases) {
+        if (!phase?.id) continue
+
+        const newPhase: PhaseProgress = {
+          id: phase.id,
+          started: false,
+          completed: false,
+          questionsProgress: [],
+          timeSpent: 0,
+        }
+
+        // Adicionar todas as questões da fase
+        const availableStages = Array.isArray(phase.stages) ? phase.stages : Object.values(phase.stages || {})
+
+        for (const stage of availableStages) {
+          if (!stage?.questions) continue
+
+          const questions = Array.isArray(stage.questions) ? stage.questions : Object.values(stage.questions || {})
+
+          for (const question of questions) {
+            if (!question?.id) continue
+
+            newPhase.questionsProgress.push({
+              id: question.id,
+              answered: false,
+              correct: false,
+            })
+          }
+        }
+
+        newTrail.phases.push(newPhase)
+      }
+
+      updatedProgress.trails.push(newTrail)
+    } else {
+      // Trilha existente - verificar novas fases
+      const existingTrail = updatedProgress.trails[existingTrailIndex]
+
+      // Garantir que phases seja um array
+      if (!Array.isArray(existingTrail.phases)) {
+        existingTrail.phases = []
+      }
+
+      const availablePhases = Array.isArray(availableTrail.etapas)
+        ? availableTrail.etapas
+        : Object.values(availableTrail.etapas || {})
+
+      for (const phase of availablePhases) {
+        if (!phase?.id) continue
+
+        // Verificar se a fase já existe
+        const existingPhaseIndex = existingTrail.phases.findIndex((p) => p?.id === phase.id)
+
+        if (existingPhaseIndex === -1) {
+          // Fase nova - adicionar ao progresso
+          logSync(
+            LogLevel.INFO,
+            `Nova fase encontrada: ${phase.id} na trilha ${availableTrail.id} - adicionando ao progresso`,
+          )
+
+          const newPhase: PhaseProgress = {
+            id: phase.id,
+            started: false,
+            completed: false,
+            questionsProgress: [],
+            timeSpent: 0,
+          }
+
+          // Adicionar todas as questões da fase
+          const availableStages = Array.isArray(phase.stages) ? phase.stages : Object.values(phase.stages || {})
+
+          for (const stage of availableStages) {
+            if (!stage?.questions) continue
+
+            const questions = Array.isArray(stage.questions) ? stage.questions : Object.values(stage.questions || {})
+
+            for (const question of questions) {
+              if (!question?.id) continue
+
+              newPhase.questionsProgress.push({
+                id: question.id,
+                answered: false,
+                correct: false,
+              })
+            }
+          }
+
+          existingTrail.phases.push(newPhase)
+        } else {
+          // Fase existente - verificar novas questões
+          const existingPhase = existingTrail.phases[existingPhaseIndex]
+
+          // Garantir que questionsProgress seja um array
+          if (!Array.isArray(existingPhase.questionsProgress)) {
+            existingPhase.questionsProgress = []
+          }
+
+          // Obter todas as questões disponíveis para esta fase
+          const availableStages = Array.isArray(phase.stages) ? phase.stages : Object.values(phase.stages || {})
+
+          const allAvailableQuestions: any[] = []
+
+          for (const stage of availableStages) {
+            if (!stage?.questions) continue
+
+            const questions = Array.isArray(stage.questions) ? stage.questions : Object.values(stage.questions || {})
+
+            allAvailableQuestions.push(...questions)
+          }
+
+          // Adicionar apenas questões novas
+          for (const question of allAvailableQuestions) {
+            if (!question?.id) continue
+
+            const existingQuestion = existingPhase.questionsProgress.find((q) => q?.id === question.id)
+
+            if (!existingQuestion) {
+              // Questão nova - adicionar ao progresso
+              logSync(
+                LogLevel.INFO,
+                `Nova questão encontrada: ${question.id} na fase ${phase.id} - adicionando ao progresso`,
+              )
+
+              existingPhase.questionsProgress.push({
+                id: question.id,
+                answered: false,
+                correct: false,
+              })
+            }
+          }
+        }
+      }
+    }
+  }
+
+  logSync(LogLevel.INFO, `Sincronização de novo conteúdo concluída: ${updatedProgress.trails.length} trilhas no total`)
+  return updatedProgress
+}
+
+/**
+ * NOVA FUNÇÃO: Inicializa o progresso para um novo usuário
+ * Garante que todas as estruturas estejam corretamente configuradas
+ */
+export const initializeNewUserProgress = async (userId: string): Promise<UserProgress | null> => {
+  try {
+    logSync(LogLevel.INFO, `Inicializando progresso para NOVO USUÁRIO: ${userId}`)
+
+    // Bloquear outras sincronizações durante a inicialização
+    blockSyncing()
+
+    // 1. Buscar todas as trilhas disponíveis
+    let availableTrails: any[] = []
+    try {
+      const trailsResponse = await getTrails()
+      if (trailsResponse?.data) {
+        availableTrails = Array.isArray(trailsResponse.data)
+          ? trailsResponse.data
+          : Object.values(trailsResponse.data || {})
+      }
+      logSync(LogLevel.INFO, `Trilhas disponíveis carregadas: ${availableTrails.length}`)
+    } catch (trailsError) {
+      logSync(LogLevel.ERROR, "Erro ao buscar trilhas disponíveis:", trailsError)
+      return null
+    }
+
+    // 2. Criar um progresso inicial completo
+    const initialProgress: UserProgress = {
+      totalPoints: 0,
+      consecutiveCorrect: 0,
+      highestConsecutiveCorrect: 0,
+      trails: [],
+      lastSyncTimestamp: Date.now(),
+    }
+
+    // 3. Adicionar todas as trilhas disponíveis com estrutura completa
+    for (const availableTrail of availableTrails) {
+      if (!availableTrail?.id) continue
+
+      const newTrail: TrailProgress = {
+        id: availableTrail.id,
+        phases: [],
+        currentPhaseId: null,
+        currentQuestionIndex: 0,
+        totalPoints: 0,
+      }
+
+      // Adicionar todas as fases da trilha
+      const availablePhases = Array.isArray(availableTrail.etapas)
+        ? availableTrail.etapas
+        : Object.values(availableTrail.etapas || {})
+
+      for (const phase of availablePhases) {
+        if (!phase?.id) continue
+
+        const newPhase: PhaseProgress = {
+          id: phase.id,
+          started: false,
+          completed: false,
+          questionsProgress: [],
+          timeSpent: 0,
+        }
+
+        // Adicionar todas as questões da fase
+        const availableStages = Array.isArray(phase.stages) ? phase.stages : Object.values(phase.stages || {})
+
+        for (const stage of availableStages) {
+          if (!stage?.questions) continue
+
+          const questions = Array.isArray(stage.questions) ? stage.questions : Object.values(stage.questions || {})
+
+          for (const question of questions) {
+            if (!question?.id) continue
+
+            newPhase.questionsProgress.push({
+              id: question.id,
+              answered: false,
+              correct: false,
+            })
+          }
+        }
+
+        newTrail.phases.push(newPhase)
+      }
+
+      initialProgress.trails.push(newTrail)
+    }
+
+    // 4. Salvar o progresso inicial
+    await saveUserProgressToFirebase(userId, initialProgress)
+    logSync(LogLevel.INFO, "Progresso inicial para novo usuário criado com sucesso")
+
+    // 5. Também salvar na API
+    try {
+      for (const trail of initialProgress.trails) {
+        if (!trail?.id) continue
+        await updateUserProgress(userId, trail.id, {
+          phases: trail.phases,
+          totalPoints: initialProgress.totalPoints,
+          consecutiveCorrect: initialProgress.consecutiveCorrect,
+          highestConsecutiveCorrect: initialProgress.highestConsecutiveCorrect,
+        })
+      }
+      logSync(LogLevel.INFO, "Progresso inicial do usuário atualizado na API com sucesso")
+    } catch (apiError) {
+      logSync(LogLevel.ERROR, "Erro ao atualizar progresso inicial na API:", apiError)
+    }
+
+    return initialProgress
+  } catch (error) {
+    logSync(LogLevel.ERROR, "Erro ao inicializar progresso para novo usuário:", error)
+    return null
+  }
+}
+
+/**
  * Sincroniza o progresso do usuário com as trilhas disponíveis
  * Preserva o progresso existente e adiciona novas trilhas/etapas/questões
  */
 export const syncUserProgress = async (
   userId: string,
   forceCreate = false,
-  preserveCompletion = true,
+  preserveCompletion = true, // Garantir que este parâmetro seja true por padrão
 ): Promise<UserProgress | null> => {
   try {
+    // VERIFICAÇÃO CRÍTICA: Se a sincronização estiver bloqueada, retornar o progresso atual sem modificações
+    if (isSyncingBlocked) {
+      logSync(LogLevel.WARNING, "⛔ Tentativa de sincronização bloqueada - Retornando progresso atual sem modificações")
+      return await getUserProgressFromFirebase(userId)
+    }
+
     logSync(LogLevel.INFO, `Iniciando sincronização de progresso para o usuário: ${userId}`)
+    logSync(LogLevel.INFO, `Parâmetros: forceCreate=${forceCreate}, preserveCompletion=${preserveCompletion}`)
+
+    // Verificar se é um novo usuário
+    const isNewUser = await AsyncStorage.getItem(`new_user_${userId}`)
+    if (isNewUser === "true" && forceCreate) {
+      logSync(LogLevel.INFO, "Novo usuário detectado - usando inicialização especial")
+      return await initializeNewUserProgress(userId)
+    }
+
+    // IMPORTANTE: Fazer backup do progresso atual antes de qualquer modificação
+    const currentProgress = await getUserProgressFromFirebase(userId)
+    if (currentProgress) {
+      try {
+        await AsyncStorage.setItem(`userProgress_backup_${userId}`, JSON.stringify(currentProgress))
+        logSync(LogLevel.INFO, "Backup do progresso atual salvo com sucesso")
+      } catch (backupError) {
+        logSync(LogLevel.ERROR, "Erro ao salvar backup do progresso:", backupError)
+      }
+    }
+
+    // Se forceCreate for false e já existir progresso, não fazer nada
+    if (!forceCreate && currentProgress) {
+      logSync(LogLevel.INFO, "Progresso existente encontrado e forceCreate=false, mantendo dados existentes")
+      return currentProgress
+    }
 
     // 1. Buscar todas as trilhas disponíveis primeiro
     let availableTrails: any[] = []
@@ -63,11 +524,6 @@ export const syncUserProgress = async (
           : Object.values(trailsResponse.data || {})
       }
       logSync(LogLevel.INFO, `Trilhas disponíveis carregadas: ${availableTrails.length}`)
-
-      // Log detalhado das trilhas disponíveis
-      availableTrails.forEach((trail) => {
-        logSync(LogLevel.INFO, `Trilha disponível: ${trail.id}, Nome: ${trail.nome || "N/A"}`)
-      })
     } catch (trailsError) {
       logSync(LogLevel.ERROR, "Erro ao buscar trilhas disponíveis:", trailsError)
     }
@@ -135,7 +591,8 @@ export const syncUserProgress = async (
     }
 
     // 5. Sincronizar trilhas - MODIFICADO para preservar dados existentes
-    const updatedProgress = mergeProgressWithTrails(userProgress, availableTrails, preserveCompletion)
+    // IMPORTANTE: Forçar preserveCompletion para true para garantir que o progresso seja mantido
+    const updatedProgress = mergeProgressWithTrails(userProgress, availableTrails, true)
 
     // Verificar se houve alterações no progresso
     const hasChanges = JSON.stringify(updatedProgress) !== JSON.stringify(originalProgress)
@@ -167,23 +624,12 @@ export const syncUserProgress = async (
     // Salvar uma cópia no AsyncStorage para backup
     try {
       await AsyncStorage.setItem(`userProgress_${userId}`, JSON.stringify(updatedProgress))
-      logSync(LogLevel.INFO, "Progresso salvo no AsyncStorage para backup")
+      logSync(LogLevel.DEBUG, "Progresso salvo no AsyncStorage")
     } catch (storageError) {
       logSync(LogLevel.ERROR, "Erro ao salvar progresso no AsyncStorage:", storageError)
     }
 
-    // NOVO: Verificação final para garantir que não haja duplicações
-    const finalProgress = await getUserProgressFromFirebase(userId)
-    if (finalProgress) {
-      const hasDuplicates = checkForDuplicateTrails(finalProgress)
-      if (hasDuplicates) {
-        logSync(LogLevel.WARNING, "Ainda existem duplicações após sincronização, corrigindo...")
-        const fixedProgress = fixDuplicateTrailsInArray(finalProgress)
-        await saveUserProgressToFirebase(userId, fixedProgress)
-        logSync(LogLevel.INFO, "Duplicações corrigidas com sucesso")
-      }
-    }
-
+    logSync(LogLevel.INFO, "Progresso do usuário sincronizado com sucesso")
     return updatedProgress
   } catch (error) {
     logSync(LogLevel.ERROR, "Erro ao sincronizar progresso do usuário:", error)
@@ -215,7 +661,6 @@ const checkForDuplicateTrails = (progress: UserProgress): boolean => {
   }
 
   // Verificar se há trilhas com índices numéricos e string ao mesmo tempo
-  const numericIndices = progress.trails.filter((_, index) => typeof index === "number")
   const stringIndices = Object.keys(progress.trails).filter((key) => isNaN(Number(key)) && key !== "length")
 
   if (stringIndices.length > 0) {
@@ -226,9 +671,7 @@ const checkForDuplicateTrails = (progress: UserProgress): boolean => {
   return hasDuplicates
 }
 
-// Modificar a função fixDuplicateTrailsInArray para garantir que não haja duplicações
-// Substituir a implementação atual da função fixDuplicateTrailsInArray com esta versão:
-
+// NOVA IMPLEMENTAÇÃO: Modificada para não criar duplicações
 const fixDuplicateTrailsInArray = (progress: UserProgress): UserProgress => {
   if (!progress) {
     return progress
@@ -236,8 +679,8 @@ const fixDuplicateTrailsInArray = (progress: UserProgress): UserProgress => {
 
   logSync(LogLevel.INFO, "Verificando e corrigindo duplicações no array trails...")
 
-  // Criar uma cópia do progresso
-  const fixedProgress = { ...progress }
+  // Criar uma cópia limpa do progresso para evitar problemas de serialização
+  const fixedProgress = cleanObjectForSerialization(progress)
 
   // Verificar se trails existe
   if (!fixedProgress.trails) {
@@ -264,7 +707,7 @@ const fixDuplicateTrailsInArray = (progress: UserProgress): UserProgress => {
   Object.keys(trailsObj).forEach((key) => {
     if (isNaN(Number(key)) && key !== "length") {
       const trail = trailsObj[key]
-      if (trail && (trail.id || key.startsWith("trilha_"))) {
+      if (trail && (trail.id || key)) {
         // Se não tiver ID, usar a chave como ID
         if (!trail.id) {
           trail.id = key
@@ -276,10 +719,18 @@ const fixDuplicateTrailsInArray = (progress: UserProgress): UserProgress => {
   })
 
   // 3. Verificar propriedades diretas no objeto progress que são trilhas
-  Object.keys(progress).forEach((key) => {
-    if (key.startsWith("trilha_") && key !== "trails") {
-      const directTrail = progress[key]
-      if (directTrail) {
+  Object.keys(fixedProgress).forEach((key) => {
+    if (
+      key !== "trails" &&
+      key !== "totalPoints" &&
+      key !== "consecutiveCorrect" &&
+      key !== "highestConsecutiveCorrect" &&
+      key !== "currentPhaseId" &&
+      key !== "currentQuestionIndex" &&
+      key !== "lastSyncTimestamp"
+    ) {
+      const directTrail = fixedProgress[key]
+      if (directTrail && typeof directTrail === "object") {
         // Garantir que tenha um ID
         if (!directTrail.id) {
           directTrail.id = key
@@ -419,16 +870,16 @@ const fixDuplicateTrailsInArray = (progress: UserProgress): UserProgress => {
     }
   }
 
-  // Criar um novo array de trilhas sem duplicações
-  const cleanTrails = Array.from(trailMap.values())
-
-  // IMPORTANTE: Criar um array completamente novo para evitar propriedades diretas
-  fixedProgress.trails = []
+  // IMPORTANTE: Criar um array completamente novo e limpo
+  const cleanTrails: TrailProgress[] = []
 
   // Adicionar cada trilha como um elemento do array
-  cleanTrails.forEach((trail) => {
-    fixedProgress.trails.push(trail)
+  trailMap.forEach((trail) => {
+    cleanTrails.push(trail)
   })
+
+  // Definir o novo array de trilhas (garantir que seja um array puro)
+  fixedProgress.trails = cleanTrails
 
   logSync(
     LogLevel.INFO,
@@ -436,6 +887,59 @@ const fixDuplicateTrailsInArray = (progress: UserProgress): UserProgress => {
   )
 
   return fixedProgress
+}
+
+/**
+ * NOVA FUNÇÃO: Limpa e normaliza a estrutura do array trails
+ * Garante que trails seja um array puro sem propriedades adicionais
+ */
+export const normalizeTrailsArray = async (userId: string): Promise<boolean> => {
+  try {
+    // VERIFICAÇÃO CRÍTICA: Se a sincronização estiver bloqueada, não fazer nada
+    if (isSyncingBlocked) {
+      logSync(LogLevel.WARNING, "⛔ Tentativa de normalização bloqueada")
+      return false
+    }
+
+    logSync(LogLevel.INFO, `Iniciando normalização do array trails para o usuário: ${userId}`)
+
+    // 1. Obter o progresso atual
+    const userProgress = await getUserProgressFromFirebase(userId)
+
+    if (!userProgress) {
+      logSync(LogLevel.WARNING, "Nenhum progresso encontrado para normalizar")
+      return false
+    }
+
+    // 2. Verificar se já está normalizado
+    if (!Array.isArray(userProgress.trails)) {
+      logSync(LogLevel.WARNING, "O campo trails não é um array, criando um novo")
+      userProgress.trails = []
+    }
+
+    // 3. Verificar se há propriedades não numéricas no array
+    const trailsObj = userProgress.trails as any
+    const nonNumericKeys = Object.keys(trailsObj).filter((key) => isNaN(Number(key)) && key !== "length")
+
+    if (nonNumericKeys.length === 0) {
+      logSync(LogLevel.INFO, "Array trails já está normalizado, nenhuma ação necessária")
+      return true
+    }
+
+    logSync(LogLevel.WARNING, `Encontradas ${nonNumericKeys.length} propriedades não numéricas no array trails`)
+
+    // 4. Aplicar a função de correção
+    const fixedProgress = fixDuplicateTrailsInArray(userProgress)
+
+    // 5. Salvar o progresso normalizado
+    await saveUserProgressToFirebase(userId, fixedProgress)
+
+    logSync(LogLevel.INFO, "Array trails normalizado com sucesso")
+    return true
+  } catch (error) {
+    logSync(LogLevel.ERROR, "Erro ao normalizar array trails:", error)
+    return false
+  }
 }
 
 /**
@@ -557,24 +1061,27 @@ const mergePhases = (userTrail: TrailProgress, availableTrail: any, preserveComp
           timeSpent: 0,
         }
         existingPhases.set(availablePhase.id, phase)
-      } else if (preserveCompletion) {
-        // CRITICAL: Preserve completion status
-        logSync(LogLevel.INFO, `Verificando fase ${phase.id}: completed=${phase.completed}`)
-        if (phase.completed) {
-          logSync(LogLevel.INFO, `Preservando status completed=true para fase ${phase.id}`)
-        }
-      }
+      } else {
+        // MODIFICADO: Sempre preservar o status existente, independente do parâmetro preserveCompletion
+        logSync(LogLevel.INFO, `Verificando fase ${phase.id}: started=${phase.started}, completed=${phase.completed}`)
 
-      // Merge questions
-      mergeQuestions(phase, availablePhase, preserveCompletion)
+        // IMPORTANTE: Preservar explicitamente os estados de started e completed
+        const wasStarted = phase.started
+        const wasCompleted = phase.completed
+        const timeSpent = phase.timeSpent || 0
 
-      // Re-check completion status after merging questions
-      if (preserveCompletion && phase.questionsProgress?.length > 0) {
-        const allQuestionsComplete = phase.questionsProgress.every((q) => q?.answered && q?.correct)
-        if (allQuestionsComplete) {
-          phase.completed = true
-          logSync(LogLevel.INFO, `Fase ${phase.id} marcada como completa pois todas as questões estão corretas`)
-        }
+        // Merge questions
+        mergeQuestions(phase, availablePhase, true)
+
+        // NOVO: Restaurar explicitamente os estados após a mesclagem
+        phase.started = wasStarted
+        phase.completed = wasCompleted
+        phase.timeSpent = timeSpent
+
+        logSync(
+          LogLevel.INFO,
+          `Estado preservado para fase ${phase.id}: started=${phase.started}, completed=${phase.completed}`,
+        )
       }
     }
 
@@ -616,7 +1123,7 @@ const mergeQuestions = (userPhase: PhaseProgress, availablePhase: any, preserveC
       ? availablePhase.stages
       : Object.values(availablePhase.stages || {})
 
-    const availableQuestions = availableStages.flatMap((stage) => {
+    const availableQuestions = availableStages.flatMap((stage: { questions: any }) => {
       if (!stage?.questions) return []
       return Array.isArray(stage.questions) ? stage.questions : Object.values(stage.questions || {})
     })
@@ -650,12 +1157,15 @@ const mergeQuestions = (userPhase: PhaseProgress, availablePhase: any, preserveC
           correct: false,
         }
         existingQuestions.set(availableQuestion.id, question)
-      } else if (preserveCompletion && question.answered) {
-        // CRITICAL: Preserve answer status
+      } else {
+        // MODIFICADO: Sempre preservar o status existente, independente do parâmetro preserveCompletion
         logSync(
           LogLevel.INFO,
           `Preservando status para questão ${question.id}: answered=${question.answered}, correct=${question.correct}`,
         )
+
+        // Não modificar o status da questão se já foi respondida
+        // O código já está correto aqui, apenas garantindo que não seja alterado
       }
     }
 
@@ -675,19 +1185,40 @@ const mergeQuestions = (userPhase: PhaseProgress, availablePhase: any, preserveC
   }
 }
 
-/**
- * Salva o progresso do usuário no Firebase
- */
-const saveUserProgressToFirebase = async (userId: string, progress: UserProgress): Promise<void> => {
+// Modifique a função saveUserProgressToFirebase para incluir uma verificação de segurança adicional
+export const saveUserProgressToFirebase = async (userId: string, progress: UserProgress): Promise<void> => {
   try {
+    // VERIFICAÇÃO CRÍTICA: Se a sincronização estiver bloqueada, não fazer nada
+    if (isSyncingBlocked) {
+      logSync(LogLevel.WARNING, "⛔ Tentativa de salvar progresso bloqueada")
+      return
+    }
+
     // NOVO: Verificar se o progresso é válido antes de salvar
     if (!progress) {
       logSync(LogLevel.ERROR, "Tentativa de salvar progresso inválido (null ou undefined)")
       return
     }
 
+    // NOVO: Verificar se o progresso tem uma estrutura válida
+    if (!isValidProgressObject(progress)) {
+      logSync(LogLevel.ERROR, "Estrutura de progresso inválida, aplicando correções...")
+
+      // Tentar corrigir o objeto
+      const fixedProgress = {
+        totalPoints: progress.totalPoints || 0,
+        consecutiveCorrect: progress.consecutiveCorrect || 0,
+        highestConsecutiveCorrect: progress.highestConsecutiveCorrect || 0,
+        trails: Array.isArray(progress.trails) ? progress.trails : [],
+        lastSyncTimestamp: Date.now(),
+      }
+
+      // Usar o objeto corrigido
+      progress = fixedProgress
+    }
+
     // NOVO: Criar uma cópia limpa do objeto para evitar problemas de serialização
-    const cleanProgress = JSON.parse(JSON.stringify(progress))
+    const cleanProgress = cleanObjectForSerialization(progress)
 
     // NOVO: Verificar se o array de trilhas é válido
     if (!Array.isArray(cleanProgress.trails)) {
@@ -695,74 +1226,36 @@ const saveUserProgressToFirebase = async (userId: string, progress: UserProgress
       logSync(LogLevel.WARNING, "Array de trilhas inválido, criando um novo array vazio")
     }
 
-    // NOVO: Verificar se o userId é válido
-    if (!userId) {
-      logSync(LogLevel.ERROR, "ID de usuário inválido ao tentar salvar progresso")
-      throw new Error("ID de usuário inválido")
+    // Verificar se trails é um array puro e convertê-lo se necessário
+    if (cleanProgress.trails && typeof cleanProgress.trails === "object") {
+      // Verificar se há propriedades não numéricas
+      const nonNumericKeys = Object.keys(cleanProgress.trails).filter((key) => isNaN(Number(key)) && key !== "length")
+
+      if (nonNumericKeys.length > 0) {
+        logSync(LogLevel.WARNING, "Convertendo objeto trails para array puro antes de salvar")
+
+        // Aplicar fixDuplicateTrailsInArray para garantir a correção
+        const fixedProgress = fixDuplicateTrailsInArray(cleanProgress)
+
+        // Usar o progresso corrigido
+        cleanProgress.trails = fixedProgress.trails
+      }
     }
 
-    logSync(LogLevel.INFO, `Tentando salvar progresso para o usuário: ${userId}`)
+    // NOVO: Verificar se o userId é válido
+    if (!userId) {
+      logSync(LogLevel.ERROR, "Tentativa de salvar progresso com userId inválido (null ou undefined)")
+      return
+    }
 
     const db = getDatabase()
     const userProgressRef = ref(db, `userProgress/${userId}`)
 
-    // NOVO: Usar try/catch específico para a operação de set
-    try {
-      await set(userProgressRef, cleanProgress)
-      logSync(LogLevel.INFO, "Progresso do usuário salvo no Firebase com sucesso")
-    } catch (setError) {
-      // Capturar detalhes específicos do erro de set
-      logSync(LogLevel.ERROR, "Erro específico ao executar set() no Firebase:", setError)
-
-      // NOVO: Tentar uma abordagem alternativa se a primeira falhar
-      logSync(LogLevel.INFO, "Tentando abordagem alternativa de salvamento...")
-
-      // Tentar salvar apenas os dados essenciais
-      const minimalProgress = {
-        totalPoints: cleanProgress.totalPoints || 0,
-        consecutiveCorrect: cleanProgress.consecutiveCorrect || 0,
-        highestConsecutiveCorrect: cleanProgress.highestConsecutiveCorrect || 0,
-        trails: cleanProgress.trails.map((trail) => ({
-          id: trail.id,
-          phases: Array.isArray(trail.phases)
-            ? trail.phases.map((phase) => ({
-                id: phase.id,
-                completed: phase.completed || false,
-                started: phase.started || false,
-                timeSpent: phase.timeSpent || 0,
-                questionsProgress: Array.isArray(phase.questionsProgress)
-                  ? phase.questionsProgress.map((q) => ({
-                      id: q.id,
-                      answered: q.answered || false,
-                      correct: q.correct || false,
-                    }))
-                  : [],
-              }))
-            : [],
-        })),
-      }
-
-      try {
-        await set(userProgressRef, minimalProgress)
-        logSync(LogLevel.INFO, "Progresso mínimo do usuário salvo com sucesso usando abordagem alternativa")
-      } catch (fallbackError) {
-        logSync(LogLevel.ERROR, "Falha também na abordagem alternativa:", fallbackError)
-        throw fallbackError
-      }
-    }
+    logSync(LogLevel.INFO, `Salvando progresso do usuário no Firebase para o usuário: ${userId}`)
+    await set(userProgressRef, cleanProgress)
+    logSync(LogLevel.INFO, "Progresso do usuário salvo no Firebase com sucesso")
   } catch (error) {
-    // Melhorar o log de erro para incluir mais detalhes
-    logSync(LogLevel.ERROR, "Erro ao salvar progresso do usuário no Firebase:")
-
-    // Tentar extrair mais informações do erro
-    if (error instanceof Error) {
-      logSync(LogLevel.ERROR, `Mensagem: ${error.message}`)
-      logSync(LogLevel.ERROR, `Stack: ${error.stack}`)
-    } else {
-      logSync(LogLevel.ERROR, `Erro não padrão: ${JSON.stringify(error)}`)
-    }
-
-    throw error
+    logSync(LogLevel.ERROR, "Erro ao salvar progresso do usuário no Firebase:", error)
   }
 }
 
@@ -777,19 +1270,14 @@ export const getUserProgressFromFirebase = async (userId: string): Promise<UserP
 
     if (snapshot.exists()) {
       const data = snapshot.val()
-
-      // NOVO: Verificar e corrigir duplicações antes de retornar
-      if (data && data.trails) {
-        const fixedData = fixDuplicateTrailsInArray(data)
-        return fixedData as UserProgress
-      }
-
+      logSync(LogLevel.INFO, `Progresso do usuário encontrado no Firebase para o usuário: ${userId}`)
       return data as UserProgress
+    } else {
+      logSync(LogLevel.INFO, `Nenhum progresso encontrado no Firebase para o usuário: ${userId}`)
+      return null
     }
-
-    return null
   } catch (error) {
-    logSync(LogLevel.ERROR, "Erro ao obter progresso do usuário do Firebase:", error)
+    logSync(LogLevel.ERROR, "Erro ao buscar progresso do usuário no Firebase:", error)
     return null
   }
 }
@@ -821,7 +1309,7 @@ export const isPhaseCompleted = (phase: PhaseProgress): boolean => {
   return phase.questionsProgress.every((q) => q?.answered && q?.correct)
 }
 
-/**\
+/**
  * Limpa completamente o progresso do usuário e recria com base nas trilhas disponíveis
  */
 export const resetUserProgress = async (userId: string): Promise<UserProgress | null> => {

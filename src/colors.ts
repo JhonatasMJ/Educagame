@@ -6,7 +6,7 @@
 // Main brand colors
 export const BRAND_COLORS = {
   /** Primary brand color - Used for primary buttons, accents, and highlights */
-  PRIMARY: "#F1592E",
+  PRIMARY: "#223AD2",
   /** Secondary brand color - Used for headers, secondary buttons */
   SECONDARY: "#F6A608",
   /** Tertiary brand color - Used for backgrounds, navigation elements */
@@ -78,7 +78,7 @@ export const FORM_COLORS = {
   /** Input border */
   INPUT_BORDER: UI_COLORS.INPUT_BORDER,
   /** Input border when focused */
-  INPUT_BORDER_FOCUS: "#F1592E",
+  INPUT_BORDER_FOCUS: "#223AD2",
   /** Input border when error */
   INPUT_BORDER_ERROR: STATE_COLORS.ERROR,
   /** Label text */

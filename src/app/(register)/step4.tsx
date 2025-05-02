@@ -13,7 +13,8 @@ import ProgressDots from "@/src/components/ProgressDots"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import ArrowBack from "@/src/components/ArrowBack"
 import { loginApi } from "@/src/services/apiService" // Importe o serviço de API
-import { syncUserProgress } from "@/src/services/userProgressService" // Importar o serviço de sincronização
+import { syncUserProgress, blockSyncing } from "@/src/services/userProgressService" // Importar o serviço de sincronização
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 const { height } = Dimensions.get("window")
 
@@ -116,6 +117,7 @@ const Step04 = () => {
           avatarSource,
           points: 0,
           createdAt: serverTimestamp(),
+          isNewUser: true, // Marcar como novo usuário
         })
         console.log("Dados do usuário salvos com sucesso")
       } catch (dbError) {
@@ -127,12 +129,23 @@ const Step04 = () => {
         })
       }
 
+      // Bloquear temporariamente outras sincronizações para evitar conflitos
+      blockSyncing()
+
       // 4. Inicializar o progresso do usuário com todas as trilhas disponíveis
       setIsSyncingProgress(true)
       try {
         console.log("Inicializando progresso do usuário...")
-        await syncUserProgress(user.uid)
+        // Forçar a criação de um progresso completamente novo
+        await syncUserProgress(user.uid, true, true)
         console.log("Progresso do usuário inicializado com sucesso")
+
+        // Salvar uma flag no localStorage para indicar que é um novo usuário
+        try {
+          await AsyncStorage.setItem(`new_user_${user.uid}`, "true")
+        } catch (storageError) {
+          console.error("Erro ao salvar flag de novo usuário:", storageError)
+        }
       } catch (syncError) {
         console.error("Erro ao inicializar progresso do usuário:", syncError)
         // Não interromper o fluxo se falhar a inicialização do progresso
@@ -160,7 +173,7 @@ const Step04 = () => {
       setTimeout(() => {
         console.log("Redirecionando para home")
         router.replace("/(tabs)/home")
-      }, 1500)
+      }, 2500) // Aumentar o tempo para garantir que tudo seja processado
     } catch (error: any) {
       console.error("Erro geral no processo de registro:", error)
       Toast.show({

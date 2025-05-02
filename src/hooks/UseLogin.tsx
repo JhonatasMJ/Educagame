@@ -20,7 +20,7 @@ export const useLogin = () => {
   const [savedPassword, setSavedPassword] = useState<string | null>(null)
   const [isSyncingProgress, setIsSyncingProgress] = useState(false)
   const router = useRouter()
-  const { refreshUserData, setShowLoadingTransition } = useAuth()
+  const { refreshUserData, setShowLoadingTransition, setJustLoggedIn } = useAuth() // Include setJustLoggedIn
 
   // Load saved credentials when hook initializes
   useEffect(() => {
@@ -44,14 +44,13 @@ export const useLogin = () => {
     loadSavedCredentials()
   }, [])
 
-  // Modificar a função verifyAndFixUserProgress para garantir que não haja duplicações
-  // Substituir a implementação atual da função verifyAndFixUserProgress com esta versão:
+  // Modifique a função verifyAndFixUserProgress para garantir a consolidação adequada dos dados
 
   const verifyAndFixUserProgress = async (userId: string): Promise<boolean> => {
     try {
       logSync(LogLevel.INFO, "Verificando e corrigindo estrutura do progresso do usuário...")
 
-      // 1. Obter o progresso atual
+      // 1. Obter o progresso atual do Firebase
       const db = getDatabase()
       const userProgressRef = ref(db, `userProgress/${userId}`)
       const snapshot = await get(userProgressRef)
@@ -61,54 +60,84 @@ export const useLogin = () => {
         return false
       }
 
+      // 2. Obter os dados do progresso
       const currentProgress = snapshot.val()
 
-      // 2. Verificar se há problemas na estrutura
-      let needsFix = false
+      // 3. Verificar se há duplicações ou propriedades diretas no objeto trails
+      let needsCorrection = false
 
       // Verificar se trails existe
       if (!currentProgress.trails) {
-        logSync(LogLevel.WARNING, "O campo trails não existe, correção necessária")
-        needsFix = true
         currentProgress.trails = []
-      }
+        needsCorrection = true
+      } else if (!Array.isArray(currentProgress.trails)) {
+        // Se não for um array, converter para array
+        currentProgress.trails = []
+        needsCorrection = true
+      } else {
+        // Verificar propriedades não numéricas no array trails
+        const nonNumericKeys = Object.keys(currentProgress.trails).filter(
+          (key) => isNaN(Number(key)) && key !== "length",
+        )
 
-      // Verificar se há propriedades diretas de trilhas
-      const directTrailKeys = Object.keys(currentProgress).filter(
-        (key) => key.startsWith("trilha_") && key !== "trails",
-      )
+        if (nonNumericKeys.length > 0) {
+          needsCorrection = true
+          logSync(LogLevel.WARNING, `Encontradas ${nonNumericKeys.length} propriedades não numéricas no array trails`)
+        }
 
-      if (directTrailKeys.length > 0) {
-        logSync(LogLevel.WARNING, `Encontradas ${directTrailKeys.length} propriedades diretas de trilhas`)
-        needsFix = true
-      }
+        // Verificar se há trilhas duplicadas por ID
+        const trailIds = new Set()
+        let duplicateFound = false
 
-      // Verificar se há trilhas com índice numérico e string ao mesmo tempo no array trails
-      if (currentProgress.trails) {
-        const trailsObj = currentProgress.trails
-        const stringIndices = Object.keys(trailsObj).filter((key) => isNaN(Number(key)) && key !== "length")
+        for (let i = 0; i < currentProgress.trails.length; i++) {
+          const trail = currentProgress.trails[i]
+          if (trail && trail.id) {
+            if (trailIds.has(trail.id)) {
+              duplicateFound = true
+              break
+            }
+            trailIds.add(trail.id)
+          }
+        }
 
-        if (stringIndices.length > 0) {
-          logSync(LogLevel.WARNING, `Encontrados ${stringIndices.length} índices de string no array trails`)
-          needsFix = true
+        if (duplicateFound) {
+          needsCorrection = true
+          logSync(LogLevel.WARNING, "Encontradas trilhas com IDs duplicados no array")
         }
       }
 
-      // 3. Se necessário, corrigir o progresso
-      if (needsFix) {
-        logSync(LogLevel.INFO, "Correção necessária, aplicando correções...")
+      // 4. Aplicar correção se necessário
+      if (needsCorrection) {
+        logSync(LogLevel.INFO, "Corrigindo estrutura do progresso...")
 
-        // Aplicar a função de correção
-        const fixedProgress = fixDuplicateTrailsInArray(currentProgress)
+        // Aplicar a função de correção forçada
+        await forceFixUserProgress(userId)
 
-        // Salvar o progresso corrigido
-        await set(userProgressRef, fixedProgress)
+        // Verificar novamente
+        const newSnapshot = await get(userProgressRef)
+        const fixedProgress = newSnapshot.val()
 
-        logSync(LogLevel.INFO, "Progresso corrigido com sucesso")
+        // Verificar se a correção foi bem-sucedida
+        if (fixedProgress && Array.isArray(fixedProgress.trails)) {
+          const nonNumericKeys = Object.keys(fixedProgress.trails).filter(
+            (key) => isNaN(Number(key)) && key !== "length",
+          )
+
+          if (nonNumericKeys.length === 0) {
+            logSync(LogLevel.INFO, "Correção aplicada com sucesso!")
+            return true
+          } else {
+            logSync(
+              LogLevel.WARNING,
+              "Correção não foi totalmente bem-sucedida, ainda existem propriedades não numéricas",
+            )
+          }
+        }
+      } else {
+        logSync(LogLevel.INFO, "Estrutura do progresso já está correta, nenhuma ação necessária")
         return true
       }
 
-      logSync(LogLevel.INFO, "Progresso já está correto, nenhuma correção necessária")
       return false
     } catch (error) {
       logSync(LogLevel.ERROR, "Erro ao verificar e corrigir progresso:", error)
@@ -116,7 +145,8 @@ export const useLogin = () => {
     }
   }
 
-  // Adicionar a função de correção direta para uso em situações críticas
+  // Modifique a função forceFixUserProgress para garantir uma limpeza mais completa
+
   const forceFixUserProgress = async (userId: string): Promise<boolean> => {
     try {
       logSync(LogLevel.INFO, "Iniciando correção forçada do progresso...")
@@ -140,7 +170,7 @@ export const useLogin = () => {
       if (currentProgress.trails) {
         // Trilhas com índices numéricos
         if (Array.isArray(currentProgress.trails)) {
-          currentProgress.trails.forEach((trail, index) => {
+          currentProgress.trails.forEach((trail: any, index: number) => {
             if (trail && trail.id) {
               logSync(LogLevel.INFO, `Encontrada trilha no array com índice ${index}: ${trail.id}`)
               allTrails.push({ ...trail })
@@ -166,9 +196,17 @@ export const useLogin = () => {
 
       // Verificar propriedades diretas que são trilhas
       Object.keys(currentProgress).forEach((key) => {
-        if (key.startsWith("trilha_") && key !== "trails") {
+        if (
+          key !== "trails" &&
+          key !== "totalPoints" &&
+          key !== "consecutiveCorrect" &&
+          key !== "highestConsecutiveCorrect" &&
+          key !== "currentPhaseId" &&
+          key !== "currentQuestionIndex" &&
+          key !== "lastSyncTimestamp"
+        ) {
           const directTrail = currentProgress[key]
-          if (directTrail) {
+          if (directTrail && typeof directTrail === "object") {
             // Garantir que tenha um ID
             if (!directTrail.id) {
               directTrail.id = key
@@ -218,14 +256,14 @@ export const useLogin = () => {
             const phaseMap = new Map()
 
             // Adicionar fases existentes
-            existingTrail.phases.forEach((phase) => {
+            existingTrail.phases.forEach((phase: any) => {
               if (phase?.id) {
                 phaseMap.set(phase.id, { ...phase })
               }
             })
 
             // Mesclar com novas fases
-            trail.phases.forEach((phase) => {
+            trail.phases.forEach((phase: any) => {
               if (!phase?.id) return
 
               const existingPhase = phaseMap.get(phase.id)
@@ -246,14 +284,14 @@ export const useLogin = () => {
                   const questionMap = new Map()
 
                   // Adicionar questões existentes
-                  existingPhase.questionsProgress.forEach((question) => {
+                  existingPhase.questionsProgress.forEach((question: any) => {
                     if (question?.id) {
                       questionMap.set(question.id, { ...question })
                     }
                   })
 
                   // Mesclar com novas questões
-                  phase.questionsProgress.forEach((question) => {
+                  phase.questionsProgress.forEach((question: any) => {
                     if (!question?.id) return
 
                     const existingQuestion = questionMap.get(question.id)
@@ -283,10 +321,8 @@ export const useLogin = () => {
         }
       })
 
-      // 5. Adicionar trilhas mescladas ao novo progresso
-      trailMap.forEach((trail) => {
-        cleanProgress.trails.push(trail)
-      })
+      // 5. Adicionar trilhas mescladas ao novo progresso como um array puro
+      cleanProgress.trails = Array.from(trailMap.values())
 
       // 6. Salvar o progresso limpo
       await set(userProgressRef, cleanProgress)
@@ -302,33 +338,8 @@ export const useLogin = () => {
     }
   }
 
-  // Modificar a função handleLogin para incluir a correção forçada
-  // Adicionar esta linha dentro do bloco try/catch da sincronização de progresso:
+  // Modifique a função handleLogin para aplicar verificações adicionais
 
-  const fixDuplicateTrailsInArray = (progress: any) => {
-    if (!progress || !progress.trails || !Array.isArray(progress.trails)) {
-      return progress
-    }
-
-    const uniqueTrails = new Map()
-
-    progress.trails = progress.trails.filter((trail) => {
-      if (!trail || !trail.id) {
-        return true // Keep trails without an ID
-      }
-
-      if (uniqueTrails.has(trail.id)) {
-        return false // Remove duplicate
-      } else {
-        uniqueTrails.set(trail.id, true)
-        return true // Keep unique trail
-      }
-    })
-
-    return progress
-  }
-
-  // Modifique a função handleLogin para incluir a verificação e correção do progresso
   const handleLogin = async (email: string, password: string, rememberMe: boolean) => {
     if (!email || !password) {
       Toast.show({
@@ -386,8 +397,13 @@ export const useLogin = () => {
         logSync(LogLevel.INFO, "Iniciando verificação e correção do progresso...")
 
         // Primeiro, verificar e corrigir a estrutura do progresso
-        await verifyAndFixUserProgress(user.uid)
-        await forceFixUserProgress(user.uid)
+        const verified = await verifyAndFixUserProgress(user.uid)
+
+        if (!verified) {
+          // Se a verificação automática falhar, aplicar correção forçada
+          logSync(LogLevel.WARNING, "Verificação automática falhou, aplicando correção forçada...")
+          await forceFixUserProgress(user.uid)
+        }
 
         // Depois, sincronizar com as trilhas disponíveis
         await syncUserProgress(user.uid, false, true)
@@ -407,6 +423,10 @@ export const useLogin = () => {
       } finally {
         setIsSyncingProgress(false)
       }
+
+      // Sinalizar que o login foi concluído recentemente
+      // Importe o useAuth e use setJustLoggedIn
+      setJustLoggedIn(true)
 
       // Don't navigate here - let the auth state listener handle it
       logSync(LogLevel.INFO, "Login bem-sucedido, o listener de estado de autenticação tratará a navegação")

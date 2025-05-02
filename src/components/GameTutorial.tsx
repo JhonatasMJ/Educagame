@@ -244,7 +244,7 @@ const GameTutorial = ({ visible, onClose, gameType }: GameTutorialProps) => {
         >
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Info size={24} color="#F1592E" />
+              <Info size={24} color="#223AD2" />
               <Text style={styles.title}>{tutorialContent.title}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButtonIcon}>
@@ -277,7 +277,7 @@ const GameTutorial = ({ visible, onClose, gameType }: GameTutorialProps) => {
               },
             ]}
           >
-            <Hand size={40} color="#F1592E" />
+            <Hand size={40} color="#223AD2" />
           </Animated.View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>Entendi</Text>
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     bottom: 10,
     padding: 8,
     zIndex: 1,
-    backgroundColor: "#F1592E",
+    backgroundColor: "#223AD2",
     borderRadius: 8,
     elevation: 3,
     shadowOpacity: 0.25,
@@ -359,12 +359,12 @@ const styles = StyleSheet.create({
     padding: 12,
   
     borderLeftWidth: 4,
-    borderLeftColor: "#F1592E",
+    borderLeftColor: "#223AD2",
   },
   stepNumber: {
     width: 24,
     height: 24,
-    backgroundColor: "#F1592E",
+    backgroundColor: "#223AD2",
     borderRadius: 12,
     color: "white",
     textAlign: "center",

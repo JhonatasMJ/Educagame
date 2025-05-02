@@ -34,8 +34,8 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   selectedCharacter: {
-    borderColor: "#F1592E",
-    backgroundColor: "#F1592E",
+    borderColor: "#223AD2",
+    backgroundColor: "#223AD2",
     borderWidth: 5,
   },
 });
