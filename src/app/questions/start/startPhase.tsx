@@ -2,7 +2,7 @@
 
 import React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Text, View, SafeAreaView, Image, ScrollView, Animated, Dimensions, StatusBar } from "react-native"
+import { Text, View, SafeAreaView, Image, ScrollView, Animated, Dimensions, StatusBar, Platform } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
 import { Video, ResizeMode, type AVPlaybackStatus } from "expo-av"
 import YoutubeIframe from "react-native-youtube-iframe"
@@ -10,6 +10,16 @@ import { useLocalSearchParams, useRouter } from "expo-router"
 import { ArrowRight, CheckCircle, Clock, Info, Star } from "lucide-react-native"
 import ArrowBack from "@/src/components/ArrowBack"
 import { MOBILE_WIDTH } from "@/PlataformWrapper"
+
+// Import WebView conditionally to avoid errors on web
+let WebView: any = null
+if (Platform.OS !== "web") {
+  try {
+    WebView = require("react-native-webview").default
+  } catch (e) {
+    console.log("WebView import failed:", e)
+  }
+}
 
 interface StartPhaseProps {
   title?: string
@@ -19,6 +29,16 @@ interface StartPhaseProps {
   video?: string
   additionalFeature?: React.ReactNode
   nextStep?: string
+}
+
+// Helper function to extract Vimeo ID from URL
+const extractVimeoId = (url: string): string | null => {
+  // Match patterns like:
+  // https://player.vimeo.com/video/1234567
+  // https://vimeo.com/1234567
+  const regex = /(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/i
+  const match = url.match(regex)
+  return match ? match[1] : null
 }
 
 // In the component parameter list, add a parameter for the tips
@@ -35,7 +55,9 @@ const StartPhase = ({
   const [videoStatus, setVideoStatus] = useState<AVPlaybackStatus | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isYoutubeVideo, setIsYoutubeVideo] = useState(false)
+  const [isVimeoVideo, setIsVimeoVideo] = useState(false)
   const [youtubeId, setYoutubeId] = useState<string | null>(null)
+  const [vimeoId, setVimeoId] = useState<string | null>(null)
   const router = useRouter()
 
   // Use props or params
@@ -83,6 +105,35 @@ const StartPhase = ({
     }
   }, [tips_str])
 
+  // Determine video type
+  useEffect(() => {
+    if (video) {
+      if (video.includes("youtube.com") || video.includes("youtu.be")) {
+        setIsYoutubeVideo(true)
+        setIsVimeoVideo(false)
+
+        // Extract YouTube ID
+        let id = null
+        if (video.includes("v=")) {
+          id = video.split("v=")[1]?.split("&")[0] || ""
+        } else if (video.includes("youtu.be/")) {
+          id = video.split("youtu.be/")[1]?.split("?")[0] || ""
+        }
+        setYoutubeId(id)
+      } else if (video.includes("vimeo.com")) {
+        setIsYoutubeVideo(false)
+        setIsVimeoVideo(true)
+
+        // Extract Vimeo ID
+        const id = extractVimeoId(video)
+        setVimeoId(id)
+      } else {
+        setIsYoutubeVideo(false)
+        setIsVimeoVideo(false)
+      }
+    }
+  }, [video])
+
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0]
   const slideAnim = useState(new Animated.Value(50))[0]
@@ -111,7 +162,67 @@ const StartPhase = ({
     ]).start()
   }, [])
 
-  // Modifique a função para lidar com o botão de continuar
+  // Create Vimeo embed URL with parameters
+  const getVimeoEmbedUrl = (id: string) => {
+    // Start with the base URL
+    let embedUrl = `https://player.vimeo.com/video/${id}`
+
+    // Add common parameters for better mobile experience
+    embedUrl += "?autoplay=0&muted=0&playsinline=1&badge=0&autopause=0"
+
+    return embedUrl
+  }
+
+  // Render Vimeo video based on platform
+  const renderVimeoVideo = () => {
+    if (!vimeoId) return null
+
+    const vimeoUrl = getVimeoEmbedUrl(vimeoId)
+
+    if (Platform.OS === "web") {
+      // For web platform, use iframe directly
+      return (
+        <View className="w-full h-52 rounded-xl overflow-hidden">
+          <iframe
+            src={vimeoUrl}
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            style={{ borderRadius: "12px" }}
+          />
+        </View>
+      )
+    } else if (WebView) {
+      // For native platforms with WebView available
+      return (
+        <View className="w-full h-52 rounded-xl overflow-hidden">
+          <WebView
+            source={{ uri: vimeoUrl }}
+            style={{ width: "100%", height: "100%" }}
+            allowsFullscreenVideo={true}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            scalesPageToFit={true}
+            onError={(e: any) => console.log("Vimeo WebView error:", e)}
+            onLoad={() => console.log("Vimeo WebView loaded")}
+          />
+        </View>
+      )
+    } else {
+      // Fallback when WebView is not available
+      return (
+        <View className="w-full h-52 rounded-xl bg-gray-200 items-center justify-center">
+          <Text className="text-gray-600">
+            Vídeo do Vimeo não suportado nesta plataforma. Acesse: vimeo.com/video/{vimeoId}
+          </Text>
+        </View>
+      )
+    }
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-primary">
       <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608" translucent={false} />
@@ -186,16 +297,18 @@ const StartPhase = ({
               )}
 
               {video && (
-                <View className="w-full mb-5 rounded-xl overflow-hidden shadow-lg bg-red-500">
-                  {video.includes("youtube.com") ? (
+                <View className="w-full mb-5 rounded-xl overflow-hidden shadow-lg">
+                  {isYoutubeVideo && youtubeId ? (
                     <YoutubeIframe
                       height={208}
-                      videoId={video.split("v=")[1]?.split("&")[0] || ""}
+                      videoId={youtubeId}
                       width={MOBILE_WIDTH - 48}
-                      play={true}
+                      play={false}
                       onChangeState={(state) => console.log("YouTube player state:", state)}
                       onError={(e) => console.log("YouTube player error:", e)}
                     />
+                  ) : isVimeoVideo ? (
+                    renderVimeoVideo()
                   ) : (
                     <Video
                       source={{ uri: video }}
