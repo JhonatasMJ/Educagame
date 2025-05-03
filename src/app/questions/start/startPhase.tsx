@@ -4,22 +4,24 @@ import React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Text, View, SafeAreaView, Image, ScrollView, Animated, Dimensions, StatusBar, Platform } from "react-native"
 import CustomButton from "@/src/components/CustomButton"
-import { Video, ResizeMode, type AVPlaybackStatus } from "expo-av"
+import { Video, ResizeMode } from "expo-av"
 import YoutubeIframe from "react-native-youtube-iframe"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { ArrowRight, CheckCircle, Clock, Info, Star } from "lucide-react-native"
+import {
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  Info,
+  Star,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+} from "lucide-react-native"
 import ArrowBack from "@/src/components/ArrowBack"
 import { MOBILE_WIDTH } from "@/PlataformWrapper"
-
-// Import WebView conditionally to avoid errors on web
-let WebView: any = null
-if (Platform.OS !== "web") {
-  try {
-    WebView = require("react-native-webview").default
-  } catch (e) {
-    console.log("WebView import failed:", e)
-  }
-}
 
 interface StartPhaseProps {
   title?: string
@@ -33,15 +35,29 @@ interface StartPhaseProps {
 
 // Helper function to extract Vimeo ID from URL
 const extractVimeoId = (url: string): string | null => {
-  // Match patterns like:
-  // https://player.vimeo.com/video/1234567
-  // https://vimeo.com/1234567
   const regex = /(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/i
   const match = url.match(regex)
   return match ? match[1] : null
 }
 
-// In the component parameter list, add a parameter for the tips
+// Helper function to add or update parameters in a URL
+const updateUrlParameters = (url: string, params: Record<string, string | number | boolean>): string => {
+  const urlObj = new URL(url)
+  Object.entries(params).forEach(([key, value]) => {
+    urlObj.searchParams.set(key, String(value))
+  })
+  return urlObj.toString()
+}
+
+// Declare Vimeo Player type
+declare global {
+  interface Window {
+    Vimeo?: {
+      Player: any
+    }
+  }
+}
+
 const StartPhase = ({
   title: propTitle,
   subTitle,
@@ -52,12 +68,18 @@ const StartPhase = ({
 }: StartPhaseProps) => {
   const params = useLocalSearchParams()
   const videoRef = useRef<Video>(null)
-  const [videoStatus, setVideoStatus] = useState<AVPlaybackStatus | null>(null)
+  const vimeoIframeRef = useRef<HTMLIFrameElement>(null)
+  const videoContainerRef = useRef<HTMLDivElement>(null)
+  const [vimeoPlayer, setVimeoPlayer] = useState<any>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [isYoutubeVideo, setIsYoutubeVideo] = useState(false)
   const [isVimeoVideo, setIsVimeoVideo] = useState(false)
   const [youtubeId, setYoutubeId] = useState<string | null>(null)
   const [vimeoId, setVimeoId] = useState<string | null>(null)
+  const [vimeoFullUrl, setVimeoFullUrl] = useState<string | null>(null)
+  const [showCustomControls, setShowCustomControls] = useState(false)
   const router = useRouter()
 
   // Use props or params
@@ -123,16 +145,202 @@ const StartPhase = ({
       } else if (video.includes("vimeo.com")) {
         setIsYoutubeVideo(false)
         setIsVimeoVideo(true)
+        setShowCustomControls(true)
 
-        // Extract Vimeo ID
+        // Extract the ID for fallback purposes
         const id = extractVimeoId(video)
         setVimeoId(id)
+
+        // For Vimeo, modify the URL to simplify the player interface
+        if (video) {
+          // Add parameters to simplify the player interface
+          const simplifiedUrl = updateUrlParameters(video, {
+            autoplay: 1,
+            muted: 0,
+            playsinline: 1,
+            controls: 0, // Hide native controls
+            title: 0,
+            byline: 0,
+            portrait: 0,
+            badge: 0,
+            autopause: 0,
+            dnt: 1,
+            background: 0,
+            transparent: 0,
+            color: "ffffff",
+          })
+          setVimeoFullUrl(simplifiedUrl)
+        }
       } else {
         setIsYoutubeVideo(false)
         setIsVimeoVideo(false)
       }
     }
   }, [video])
+
+  // Initialize Vimeo Player API
+  useEffect(() => {
+    if (Platform.OS === "web" && isVimeoVideo && vimeoIframeRef.current) {
+      // Load Vimeo Player API script if not already loaded
+      if (!window.Vimeo) {
+        const script = document.createElement("script")
+        script.src = "https://player.vimeo.com/api/player.js"
+        script.async = true
+        script.onload = initVimeoPlayer
+        document.body.appendChild(script)
+      } else {
+        initVimeoPlayer()
+      }
+    }
+
+    return () => {
+      // Cleanup Vimeo player
+      if (vimeoPlayer) {
+        vimeoPlayer.destroy?.()
+      }
+    }
+  }, [isVimeoVideo, vimeoIframeRef.current])
+
+  // Listen for fullscreen change events
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const handleFullscreenChange = () => {
+        const isDocumentFullscreen =
+          document.fullscreenElement ||
+          (document as any).webkitFullscreenElement ||
+          (document as any).mozFullScreenElement ||
+          (document as any).msFullscreenElement
+
+        setIsFullscreen(!!isDocumentFullscreen)
+      }
+
+      document.addEventListener("fullscreenchange", handleFullscreenChange)
+      document.addEventListener("webkitfullscreenchange", handleFullscreenChange)
+      document.addEventListener("mozfullscreenchange", handleFullscreenChange)
+      document.addEventListener("MSFullscreenChange", handleFullscreenChange)
+
+      return () => {
+        document.removeEventListener("fullscreenchange", handleFullscreenChange)
+        document.removeEventListener("webkitfullscreenchange", handleFullscreenChange)
+        document.removeEventListener("mozfullscreenchange", handleFullscreenChange)
+        document.removeEventListener("MSFullscreenChange", handleFullscreenChange)
+      }
+    }
+  }, [])
+
+  // Initialize Vimeo Player
+  const initVimeoPlayer = () => {
+    if (window.Vimeo && vimeoIframeRef.current) {
+      try {
+        const player = new window.Vimeo.Player(vimeoIframeRef.current)
+        setVimeoPlayer(player)
+
+        // Set initial state
+        player.getVolume().then((volume: number) => {
+          setIsMuted(volume === 0)
+        })
+
+        // Listen for play/pause events
+        player.on("play", () => setIsPlaying(true))
+        player.on("pause", () => setIsPlaying(false))
+        player.on("ended", () => setIsPlaying(false))
+
+        // Start playing
+        player
+          .play()
+          .then(() => {
+            setIsPlaying(true)
+          })
+          .catch((error: any) => {
+            console.error("Error playing video:", error)
+          })
+      } catch (error) {
+        console.error("Error initializing Vimeo player:", error)
+      }
+    }
+  }
+
+  // Handle play/pause
+  const togglePlayPause = () => {
+    if (vimeoPlayer) {
+      if (isPlaying) {
+        vimeoPlayer
+          .pause()
+          .then(() => {
+            setIsPlaying(false)
+          })
+          .catch((error: any) => {
+            console.error("Error pausing video:", error)
+          })
+      } else {
+        vimeoPlayer
+          .play()
+          .then(() => {
+            setIsPlaying(true)
+          })
+          .catch((error: any) => {
+            console.error("Error playing video:", error)
+          })
+      }
+    }
+  }
+
+  // Handle mute/unmute
+  const toggleMute = () => {
+    if (vimeoPlayer) {
+      if (isMuted) {
+        vimeoPlayer
+          .setVolume(1)
+          .then(() => {
+            setIsMuted(false)
+          })
+          .catch((error: any) => {
+            console.error("Error unmuting video:", error)
+          })
+      } else {
+        vimeoPlayer
+          .setVolume(0)
+          .then(() => {
+            setIsMuted(true)
+          })
+          .catch((error: any) => {
+            console.error("Error muting video:", error)
+          })
+      }
+    }
+  }
+
+  // Handle fullscreen
+  const toggleFullscreen = () => {
+    if (Platform.OS !== "web") return
+
+    if (!isFullscreen) {
+      // Enter fullscreen
+      const container = videoContainerRef.current
+      if (!container) return
+
+      if (container.requestFullscreen) {
+        container.requestFullscreen()
+      } else if ((container as any).webkitRequestFullscreen) {
+        /* Safari */
+        ;(container as any).webkitRequestFullscreen()
+      } else if ((container as any).msRequestFullscreen) {
+        /* IE11 */
+        ;(container as any).msRequestFullscreen()
+      }
+    } else {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      } else if ((document as any).webkitExitFullscreen) {
+        /* Safari */
+        ;(document as any).webkitExitFullscreen()
+      } else if ((document as any).msExitFullscreen) {
+        /* IE11 */
+        ;(document as any).msExitFullscreen()
+      }
+    }
+  }
 
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0]
@@ -162,67 +370,126 @@ const StartPhase = ({
     ]).start()
   }, [])
 
-  // Create Vimeo embed URL with parameters
-  const getVimeoEmbedUrl = (id: string) => {
-    // Start with the base URL
-    let embedUrl = `https://player.vimeo.com/video/${id}`
-
-    // Add common parameters for better mobile experience
-    embedUrl += "?autoplay=0&muted=0&playsinline=1&badge=0&autopause=0"
-
-    return embedUrl
-  }
-
   // Render Vimeo video based on platform
   const renderVimeoVideo = () => {
-    if (!vimeoId) return null
-
-    const vimeoUrl = getVimeoEmbedUrl(vimeoId)
+    if (!vimeoFullUrl) return null
 
     if (Platform.OS === "web") {
-      // For web platform, use iframe directly
+      // For web platform, use the exact HTML structure provided by Vimeo
       return (
-        <View className="w-full h-52 rounded-xl overflow-hidden">
-          <iframe
-            src={vimeoUrl}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            style={{ borderRadius: "12px" }}
-          />
-        </View>
-      )
-    } else if (WebView) {
-      // For native platforms with WebView available
-      return (
-        <View className="w-full h-52 rounded-xl overflow-hidden">
-          <WebView
-            source={{ uri: vimeoUrl }}
-            style={{ width: "100%", height: "100%" }}
-            allowsFullscreenVideo={true}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            startInLoadingState={true}
-            scalesPageToFit={true}
-            onError={(e: any) => console.log("Vimeo WebView error:", e)}
-            onLoad={() => console.log("Vimeo WebView loaded")}
-          />
+        <View className="w-full overflow-hidden">
+          <div
+            ref={videoContainerRef}
+            style={{
+              padding: "56.25% 0 0 0",
+              position: "relative",
+              borderRadius: "12px",
+              overflow: "hidden",
+            }}
+            className={isFullscreen ? "fullscreen-container" : ""}
+          >
+            <iframe
+              ref={vimeoIframeRef}
+              src={vimeoFullUrl}
+              frameBorder="0"
+              allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                borderRadius: "12px",
+              }}
+              title={title || "Vimeo Video"}
+            />
+
+            {/* Custom controls overlay - always visible */}
+            {showCustomControls && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: "10px",
+                  background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderBottomLeftRadius: "12px",
+                  borderBottomRightRadius: "12px",
+                  zIndex: 10, // Ensure controls are above the iframe
+                }}
+              >
+                {/* Play/Pause button */}
+                <button
+                  onClick={togglePlayPause}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "white",
+                    cursor: "pointer",
+                    padding: "8px",
+                  }}
+                >
+                  {isPlaying ? <Pause color="#fff" size={24} /> : <Play color="#fff" size={24} />}
+                </button>
+
+                {/* Volume button */}
+                <button
+                  onClick={toggleMute}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "white",
+                    cursor: "pointer",
+                    padding: "8px",
+                  }}
+                >
+                  {isMuted ? <VolumeX color="#fff" size={24} /> : <Volume2 color="#fff" size={24} />}
+                </button>
+
+                {/* Fullscreen button */}
+                <button
+                  onClick={toggleFullscreen}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "white",
+                    cursor: "pointer",
+                    padding: "8px",
+                  }}
+                >
+                  {isFullscreen ? <Minimize color="#fff" size={24} /> : <Maximize color="#fff" size={24} />}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Add CSS for fullscreen mode */}
+          <style  >{`
+            .fullscreen-container {
+              border-radius: 0 !important;
+            }
+            .fullscreen-container iframe {
+              border-radius: 0 !important;
+            }
+          `}</style>
         </View>
       )
     } else {
-      // Fallback when WebView is not available
+      // For native platforms, use a fallback message with the video ID
       return (
         <View className="w-full h-52 rounded-xl bg-gray-200 items-center justify-center">
-          <Text className="text-gray-600">
-            Vídeo do Vimeo não suportado nesta plataforma. Acesse: vimeo.com/video/{vimeoId}
+          <Text className="text-gray-600 text-center px-4">
+            Vídeo do Vimeo não disponível nesta visualização. Por favor, acesse no navegador.
           </Text>
+          {vimeoId && <Text className="text-blue-500 mt-2">ID do vídeo: {vimeoId}</Text>}
         </View>
       )
     }
   }
-
   return (
     <SafeAreaView className="flex-1 bg-primary">
       <StatusBar barStyle={"dark-content"} backgroundColor="#F6A608" translucent={false} />
