@@ -49,7 +49,7 @@ const ETAPA_HEIGHT = 200
 const BOTTOM_SPACE_ADJUSTMENT = 120
 const TRACK_WIDTH = 8
 const TRACK_BORDER_RADIUS = 4
-const ETAPA_SPACING = 4
+const ETAPA_SPACING = 150
 
 // Componente principal
 const LearningPathTrack = ({

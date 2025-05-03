@@ -1,12 +1,14 @@
 "use client"
 
-import  React from "react"
+import React from "react"
 import { createContext, useState, useEffect, useContext, type ReactNode } from "react"
 import { getDatabase, ref, get, update, set } from "firebase/database"
 import { signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth"
 import { auth } from "../services/firebaseConfig"
 import { useRouter } from "expo-router"
+import { useRequireAuth } from "../hooks/useRequireAuth"
 import { getAuthToken, removeAuthToken } from "../services/apiService"
+import { USE_SIMPLIFIED_ONBOARDING } from "@/config/appConfig"
 
 // Adicione o token JWT à interface AuthContextData
 interface AuthContextData {
@@ -15,8 +17,10 @@ interface AuthContextData {
   loading: boolean
   error: string | null
   jwtToken: string | null // Novo campo para o token JWT
-  justLoggedIn: boolean // Novo estado para indicar login recente
-  setJustLoggedIn: (value: boolean) => void // Função para atualizar o estado
+  justLoggedIn: boolean // Estado para indicar login recente
+  justRegistered: boolean // Novo estado para indicar cadastro recente
+  setJustLoggedIn: (value: boolean) => void
+  setJustRegistered: (value: boolean) => void // Nova função para atualizar o estado
   refreshUserData: () => Promise<void>
   getAllUsers: () => Promise<User[]>
   logout: () => Promise<void>
@@ -58,7 +62,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false)
   const [jwtToken, setJwtToken] = useState<string | null>(null) // Novo estado para o token JWT
   const [isTokenLoaded, setIsTokenLoaded] = useState(false)
-  const [justLoggedIn, setJustLoggedIn] = useState(false) // Novo estado
+  const [justLoggedIn, setJustLoggedIn] = useState(false) // Estado para login recente
+  const [justRegistered, setJustRegistered] = useState(false) // Novo estado para cadastro recente
   const router = useRouter()
 
   // Adicione um efeito para carregar o token JWT do AsyncStorage
@@ -178,6 +183,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 lastLogin: new Date().toISOString().split("T")[0],
                 consecutiveDays: 1,
                 totalConsecutiveDays: 1,
+                createdAt: new Date().toISOString(), // Adicionar data de criação
               }
 
               // Apenas inicializar dados básicos do usuário, não o progresso
@@ -188,6 +194,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (newSnapshot.exists()) {
                 const newUserData = newSnapshot.val()
                 setUserData({ id: user.uid, ...newUserData })
+                setJustRegistered(true)
               } else {
                 setUserData(null)
               }
@@ -301,9 +308,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserData(null)
       setError(null)
       setJwtToken(null) // Limpar o token JWT do estado
-
-      // Navigate to login after logout
-      router.replace("/login")
+      setJustLoggedIn(false) // Resetar o estado de login recente
+      setJustRegistered(false) // Resetar o estado de cadastro recente
+      USE_SIMPLIFIED_ONBOARDING ? router.replace("/quick-start") : router.replace("/login")
     } catch (err) {
       setError("Erro ao fazer logout.")
       console.error(err)
@@ -346,15 +353,17 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Atualize o contextValue para incluir o token JWT
+  // Atualize o contextValue para incluir os novos estados e funções
   const contextValue: AuthContextData = {
     authUser,
     userData,
     loading,
     error,
-    jwtToken, // Adicione o token JWT ao contexto
-    justLoggedIn, // Adicione o novo estado
-    setJustLoggedIn, // Adicione a função
+    jwtToken,
+    justLoggedIn,
+    justRegistered,
+    setJustLoggedIn,
+    setJustRegistered,
     refreshUserData,
     getAllUsers,
     logout,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React,{ useEffect, useState } from "react"
 import {
   View,
   Text,
@@ -31,7 +31,9 @@ import Toast from "react-native-toast-message"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import { useEditMode } from "@/src/context/EditableContext"
 import UnsavedChangesModal from "@/src/components/UnsavedChangesModal"
-import React from "react"
+import { BRAND_COLORS, TEXT_COLORS } from "@/src/colors"
+import { SIMPLIFIED_ONBOARDING_CONFIG } from "@/config/appConfig"
+const { height, width } = Dimensions.get("window")
 const Drawer = createDrawerNavigator()
 
 const avatarComponents = {
@@ -52,6 +54,7 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   const [senha, setSenha] = useState("")
   const [avatarSource, setAvatarSource] = useState("avatar1")
   const [showAvatarModal, setShowAvatarModal] = useState(false)
+  const [usedQuickRegistration, setUsedQuickRegistration] = useState(false)
 
   // Get edit mode context
   const {
@@ -64,8 +67,7 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   } = useEditMode()
 
   // For protected routes
-
-  useRequireAuth({ requireAuth: true, showToast: true })
+  const { isAuthenticated, isLoading } = useRequireAuth()
 
   // Update the edit mode context when local edit state changes
   useEffect(() => {
@@ -103,6 +105,11 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
 
   useEffect(() => {
     if (userData) {
+      // Verificar se o usuário usou o cadastro rápido (email contém o domínio específico)
+      if (userData.email && userData.email.includes(SIMPLIFIED_ONBOARDING_CONFIG.AUTO_EMAIL_DOMAIN)) {
+        setUsedQuickRegistration(true)
+      }
+
       setNome(userData.nome || "")
       setSobrenome(userData.sobrenome || "")
       setCelular(userData.phone || "")
@@ -225,9 +232,17 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                   </Text>
                 </View>
               </View>
+              {usedQuickRegistration && (
+                <View style={styles.quickRegisterNotice}>
+                  <Text style={styles.quickRegisterNoticeText}>
+                    Complete seu perfil adicionando seu email e outras informações para melhorar sua experiência.
+                  </Text>
+                </View>
+              )}
               <TouchableOpacity
-                className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${editar ? "bg-primary" : "bg-secondary"
-                  }`}
+                className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${
+                  editar ? "bg-primary" : "bg-secondary"
+                }`}
                 onPress={() => {
                   handleEdit()
                   setEditar(!editar)
@@ -289,8 +304,9 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                     {Object.entries(avatarComponents).map(([key, AvatarComp]) => (
                       <TouchableOpacity
                         key={key}
-                        className={`p-3 rounded-xl border-2 relative ${avatarSource === key ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent bg-zinc-700"
-                          }`}
+                        className={`p-3 rounded-xl border-2 relative ${
+                          avatarSource === key ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent bg-zinc-700"
+                        }`}
                         onPress={() => handleAvatarChange(key)}
                       >
                         <AvatarComp width={85} height={85} style={{ borderRadius: 45 }} />
@@ -408,6 +424,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
+  },
+  quickRegisterNotice: {
+    backgroundColor: "rgba(246, 166, 8, 0.1)",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: BRAND_COLORS.SECONDARY,
+    width: '100%'
+  },
+  quickRegisterNoticeText: {
+    color: TEXT_COLORS.BRANCO,
+    fontSize: 14,
   },
 })
 

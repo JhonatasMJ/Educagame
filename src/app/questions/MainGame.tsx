@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import {
   View,
   Text,
@@ -31,7 +31,9 @@ import TrueOrFalse from "./trueORfalse/trueORfalse"
 import MultipleChoice from "./multipleChoice/multipleChoice"
 import Ordering from "./ordering/ordering"
 import Matching from "./matching/matching"
-import React from "react"
+import { useAuth } from "@/src/context/AuthContext"
+import { getDatabase, ref, get, set } from "firebase/database"
+import { logSync, LogLevel } from "@/src/services/syncLogger"
 
 // Define a generic question interface
 interface BaseQuestion {
@@ -197,7 +199,8 @@ const MainGame = () => {
   // Hooks de contexto
   const { startPhase, answerQuestion, completePhase } = useGameProgress()
   const { isTutorialDismissed, dismissTutorial } = useTutorialMode()
-  const { trails: trilhas, isLoading: trailsLoading, error: trailsError } = useTrails()
+  const { trails: trilhas, isLoading: trailsLoading, error: trailsError, fetchTrails } = useTrails()
+  const { authUser, justRegistered, setJustRegistered } = useAuth()
 
   // Estados
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -217,6 +220,9 @@ const MainGame = () => {
   const [currentRetryIndex, setCurrentRetryIndex] = useState(0)
   const [showExitConfirmation, setShowExitConfirmation] = useState(false)
   const [gameKey, setGameKey] = useState(0)
+  const [dataLoaded, setDataLoaded] = useState(false)
+  const [isNewUser, setIsNewUser] = useState(false)
+  const [userProgressInitialized, setUserProgressInitialized] = useState(false)
 
   // Refs
   const helpButtonPulse = useRef(new Animated.Value(0)).current
@@ -225,6 +231,7 @@ const MainGame = () => {
   const slideAnim = useRef(new Animated.Value(50)).current
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const shouldShowTutorial = useRef(false)
+  const initializedRef = useRef(false)
 
   // Valores derivados usando useMemo para evitar recálculos desnecessários
   const currentQuestion = useMemo(() => questions[currentQuestionIndex], [questions, currentQuestionIndex])
@@ -275,6 +282,66 @@ const MainGame = () => {
 
   // Debug log
   console.log("MainGame rendered, phaseId:", phaseId, "trailId:", trailId, "stageId:", stageId)
+
+  // Função para verificar se o usuário é novo e inicializar o progresso se necessário
+  const checkAndInitializeUserProgress = async () => {
+    if (!authUser) return false
+
+    try {
+      logSync(LogLevel.INFO, "Verificando se o usuário é novo e inicializando progresso se necessário...")
+
+      const db = getDatabase()
+      const userProgressRef = ref(db, `userProgress/${authUser.uid}`)
+      const snapshot = await get(userProgressRef)
+
+      // Se não existir progresso ou se o usuário foi recém-registrado, inicializar
+      if (!snapshot.exists() || justRegistered) {
+        logSync(LogLevel.INFO, "Usuário novo ou recém-registrado detectado, inicializando progresso...")
+        setIsNewUser(true)
+
+        // Estrutura básica de progresso
+        const basicProgress = {
+          totalPoints: 0,
+          consecutiveCorrect: 0,
+          highestConsecutiveCorrect: 0,
+          lastSyncTimestamp: Date.now(),
+          trails: [
+            {
+              id: trailId,
+              currentPhaseId: phaseId,
+              phases: [
+                {
+                  id: phaseId,
+                  started: true,
+                  completed: false,
+                  timeSpent: 0,
+                  questionsProgress: [],
+                },
+              ],
+            },
+          ],
+        }
+
+        // Salvar progresso básico
+        await set(userProgressRef, basicProgress)
+        logSync(LogLevel.INFO, "Progresso básico inicializado com sucesso")
+
+        // Resetar o sinalizador de usuário recém-registrado
+        if (justRegistered) {
+          setJustRegistered(false)
+        }
+
+        return true
+      }
+
+      return false
+    } catch (error) {
+      logSync(LogLevel.ERROR, "Erro ao verificar/inicializar progresso do usuário:", error)
+      return false
+    } finally {
+      setUserProgressInitialized(true)
+    }
+  }
 
   // Function to handle help button press
   const handleHelpPress = () => {
@@ -328,6 +395,14 @@ const MainGame = () => {
 
     return () => clearTimeout(timer)
   }, [])
+
+  // Efeito para verificar e inicializar o progresso do usuário
+  useEffect(() => {
+    if (authUser && isInitialized && !userProgressInitialized && !initializedRef.current) {
+      initializedRef.current = true
+      checkAndInitializeUserProgress()
+    }
+  }, [authUser, isInitialized, userProgressInitialized])
 
   // Efeito para encontrar questões
   useEffect(() => {
@@ -454,6 +529,7 @@ const MainGame = () => {
 
       console.log("Questões processadas:", typedQuestions)
       setQuestions(typedQuestions)
+      setDataLoaded(true)
 
       // Start tracking progress for this phase
       startPhase(trailId, phaseId)
@@ -488,13 +564,13 @@ const MainGame = () => {
         setShowTutorial(true)
       }
     }, 500)
-  }, [phaseId, trailId, stageId, trilhas, isInitialized])
+  }, [phaseId, trailId, stageId, trilhas, isInitialized, userProgressInitialized])
 
   // Efeito para atualizar shouldShowTutorial
   useEffect(() => {
     shouldShowTutorial.current =
       isInitialized && currentQuestion !== undefined && !isTutorialDismissed(currentQuestion?.type)
-  }, [currentQuestion?.type, isTutorialDismissed, isInitialized])
+  }, [isTutorialDismissed, isInitialized, currentQuestion])
 
   // Efeito para mostrar tutorial quando shouldShowTutorial mudar
   useEffect(() => {
@@ -504,7 +580,7 @@ const MainGame = () => {
         setShowTutorial(true)
       }, 500)
     }
-  }, [shouldShowTutorial.current, currentQuestion?.type])
+  }, [shouldShowTutorial.current])
 
   // Background timer implementation
   useEffect(() => {
@@ -605,13 +681,54 @@ const MainGame = () => {
   }
 
   // Função para atualizar o status de conclusão do stage atual
-  const updateStageCompletion = () => {
-    // Aqui você implementaria a lógica para marcar o stage como concluído
-    // Por enquanto, apenas simulamos isso com um console.log
-    console.log(`Stage ${stageId} completed in phase ${phaseId}!`)
+  const updateStageCompletion = async () => {
+    if (!authUser) return
 
-    // No futuro, isso seria feito através de uma API
-    // Por exemplo: api.updateStageStatus(phaseId, stageId, { completed: true })
+    try {
+      logSync(LogLevel.INFO, `Atualizando status de conclusão do stage ${stageId} na fase ${phaseId}`)
+
+      const db = getDatabase()
+      const userProgressRef = ref(db, `userProgress/${authUser.uid}`)
+      const snapshot = await get(userProgressRef)
+
+      if (snapshot.exists()) {
+        const userProgress = snapshot.val()
+
+        // Garantir que a estrutura existe
+        if (!userProgress.trails) {
+          userProgress.trails = []
+        }
+
+        // Encontrar a trilha
+        let trail = userProgress.trails.find((t: any) => t.id === trailId)
+        if (!trail) {
+          trail = { id: trailId, phases: [] }
+          userProgress.trails.push(trail)
+        }
+
+        // Garantir que phases é um array
+        if (!trail.phases) {
+          trail.phases = []
+        }
+
+        // Encontrar a fase
+        let phase = trail.phases.find((p: any) => p.id === phaseId)
+        if (!phase) {
+          phase = { id: phaseId, started: true, completed: false, timeSpent: 0, questionsProgress: [] }
+          trail.phases.push(phase)
+        }
+
+        // Atualizar status da fase
+        phase.completed = true
+        phase.timeSpent = (phase.timeSpent || 0) + totalTime
+
+        // Salvar progresso atualizado
+        await set(userProgressRef, userProgress)
+        logSync(LogLevel.INFO, "Status de conclusão atualizado com sucesso")
+      }
+    } catch (error) {
+      logSync(LogLevel.ERROR, "Erro ao atualizar status de conclusão:", error)
+    }
   }
 
   // Substitua a função handleLoadingComplete por esta versão atualizada
@@ -768,7 +885,9 @@ const MainGame = () => {
           </View>
         )
     }
-  }  // Renderização condicional para estados de carregamento e erro
+  }
+
+  // Renderização condicional para estados de carregamento e erro
   if (trailsLoading || !trilhas || trilhas.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white justify-center items-center">
@@ -791,6 +910,16 @@ const MainGame = () => {
         <TouchableOpacity className="mt-4 bg-blue-500 px-4 py-2 rounded-md" onPress={() => router.back()}>
           <Text className="text-white">Voltar</Text>
         </TouchableOpacity>
+      </SafeAreaView>
+    )
+  }
+
+  if (!userProgressInitialized) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text className="text-gray-700 text-lg font-medium mt-4">Inicializando progresso do usuário...</Text>
+        <Text className="text-gray-500 text-sm mt-2">Aguarde um momento</Text>
       </SafeAreaView>
     )
   }
@@ -867,6 +996,14 @@ const MainGame = () => {
             <AlertTriangle size={16} color="#D97706" />
             <Text className="text-amber-800 font-medium ml-2">
               Revisando questões incorretas ({progress.current}/{progress.total})
+            </Text>
+          </View>
+        )}
+
+        {isNewUser && (
+          <View className="flex-row items-center bg-blue-100 px-3 py-2 rounded-md mx-4 mt-4 border border-blue-300">
+            <Text className="text-blue-800 font-medium ml-2">
+              Bem-vindo! Complete esta etapa para começar sua jornada de aprendizado.
             </Text>
           </View>
         )}

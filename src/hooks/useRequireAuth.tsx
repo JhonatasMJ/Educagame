@@ -4,17 +4,20 @@ import { useEffect, useRef } from "react"
 import { useRouter } from "expo-router"
 import { useAuth } from "../context/AuthContext"
 import Toast from "react-native-toast-message"
+import { USE_SIMPLIFIED_ONBOARDING } from "@/config/appConfig"
 
 interface UseRequireAuthOptions {
   requireAuth?: boolean
   redirectTo?: string
   showToast?: boolean
+  message?: string
 }
 
 export const useRequireAuth = ({
   requireAuth = true,
-  redirectTo = "/login",
+  redirectTo = USE_SIMPLIFIED_ONBOARDING ? "/quick-start" : "/login",
   showToast = true,
+  message = "Você não está autenticado. Redirecionando para a tela de login...",
 }: UseRequireAuthOptions = {}) => {
   const { userData, authUser, refreshUserData, loading } = useAuth()
   const router = useRouter()
@@ -59,7 +62,7 @@ export const useRequireAuth = ({
           Toast.show({
             type: "error",
             text1: "Erro de autenticação ⚠️",
-            text2: "Você não está autenticado. Redirecionando para a tela de login...",
+            text2: message,
             visibilityTime: 3000,
           })
         }

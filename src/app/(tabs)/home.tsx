@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -16,12 +16,13 @@ import {
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import { useTrails } from "@/src/hooks/useTrails"
+import React from "react"
 
 const { width, height } = Dimensions.get("window")
 
@@ -65,7 +66,16 @@ const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
-  const { userData, authUser, refreshUserData, isTokenLoaded, justLoggedIn, setJustLoggedIn } = useAuth()
+  const {
+    userData,
+    authUser,
+    refreshUserData,
+    isTokenLoaded,
+    justLoggedIn,
+    justRegistered,
+    setJustLoggedIn,
+    setJustRegistered,
+  } = useAuth()
   const { getPhaseCompletionPercentage, syncProgress, isSyncing } = useGameProgress()
   const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
@@ -73,12 +83,18 @@ const Home = () => {
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
 
-  const [isRefreshing, setIsRefreshing] = useState(false) // Novo estado para controlar o refresh
+  const [isRefreshing, setIsRefreshing] = useState(false) // Estado para controlar o refresh
+  const [needsMultipleRefresh, setNeedsMultipleRefresh] = useState(false)
+  const [refreshCount, setRefreshCount] = useState(0)
+  const [refreshMessage, setRefreshMessage] = useState("")
 
-  // Adicione este useEffect para detectar o login recente e forçar um refresh
+  // Usar useLocalSearchParams para acessar os parâmetros da rota
+  const params = useLocalSearchParams()
+
+  // Efeito para detectar login recente ou cadastro recente e forçar refresh
   useEffect(() => {
-    if (justLoggedIn && authUser && !isRefreshing) {
-      console.log("Login recente detectado, forçando refresh da home...")
+    if ((justLoggedIn || justRegistered) && authUser && !isRefreshing) {
+      console.log(`${justLoggedIn ? "Login" : "Cadastro"} recente detectado, forçando refresh da home...`)
       setIsRefreshing(true)
 
       // Função para realizar o refresh completo
@@ -93,20 +109,84 @@ const Home = () => {
           // 3. Atualizar dados do usuário
           await refreshUserData()
 
-          console.log("Refresh completo realizado com sucesso após login")
+          console.log(`Refresh completo realizado com sucesso após ${justLoggedIn ? "login" : "cadastro"}`)
         } catch (error) {
-          console.error("Erro ao realizar refresh após login:", error)
+          console.error(`Erro ao realizar refresh após ${justLoggedIn ? "login" : "cadastro"}:`, error)
         } finally {
           // Resetar os estados
           setIsRefreshing(false)
-          setJustLoggedIn(false) // Importante: resetar o sinalizador
+          setJustLoggedIn(false)
+          setJustRegistered(false)
         }
       }
 
       performFullRefresh()
     }
-  }, [justLoggedIn, authUser, isRefreshing])
+  }, [justLoggedIn, justRegistered, authUser, isRefreshing])
 
+  // Efeito para processar múltiplos refreshes após o cadastro
+  useEffect(() => {
+    // Verificar se há parâmetros de refresh na URL usando useLocalSearchParams
+    const needsRefresh = params.needsMultipleRefresh === "true"
+    const count = Number.parseInt((params.refreshCount as string) || "0")
+
+    if (needsRefresh && count > 0 && !needsMultipleRefresh) {
+      console.log(`Iniciando processo de múltiplos refreshes (${count} restantes)`)
+      setNeedsMultipleRefresh(true)
+      setRefreshCount(count)
+      setRefreshMessage(`Consolidando dados (${count} refreshes restantes)...`)
+    }
+  }, [params.needsMultipleRefresh, params.refreshCount])
+
+  // Efeito para executar os refreshes em sequência
+  useEffect(() => {
+    if (needsMultipleRefresh && refreshCount > 0) {
+      // Mostrar mensagem de refresh
+      setRefreshMessage(`Consolidando dados (${refreshCount} refreshes restantes)...`)
+
+      // Executar o refresh atual
+      const performRefresh = async () => {
+        try {
+          console.log(`Executando refresh ${4 - refreshCount} de 3...`)
+
+          // 1. Sincronizar progresso do usuário
+          await syncProgress()
+
+          // 2. Recarregar trilhas
+          await fetchTrails()
+
+          // 3. Atualizar dados do usuário
+          await refreshUserData()
+
+          console.log(`Refresh ${4 - refreshCount} concluído com sucesso`)
+
+          // Aguardar um tempo antes do próximo refresh
+          setTimeout(() => {
+            if (refreshCount > 1) {
+              // Ainda há mais refreshes para fazer
+              setRefreshCount(refreshCount - 1)
+            } else {
+              // Último refresh concluído
+              setNeedsMultipleRefresh(false)
+              setRefreshCount(0)
+              setRefreshMessage("")
+
+              // Remover parâmetros da URL
+              router.setParams({})
+
+              console.log("Processo de múltiplos refreshes concluído com sucesso")
+            }
+          }, 2000) // 2 segundos entre cada refresh
+        } catch (error) {
+          console.error(`Erro durante o refresh ${4 - refreshCount}:`, error)
+          // Mesmo com erro, continuar para o próximo refresh
+          setRefreshCount(refreshCount - 1)
+        }
+      }
+
+      performRefresh()
+    }
+  }, [needsMultipleRefresh, refreshCount])
 
   // Calculate the bottom tab height - typically around 72px plus any safe area
   const TAB_HEIGHT = 72 + (Platform.OS === "ios" ? 34 : 0)
@@ -522,13 +602,20 @@ const Home = () => {
     <SafeAreaView style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
-      {(trailsLoading || isSyncing) && (
+      {(trailsLoading || isSyncing || needsMultipleRefresh) && (
         <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4">
-              {isSyncing ? "Sincronizando progresso..." : "Carregando trilhas..."}
+              {needsMultipleRefresh
+                ? refreshMessage
+                : isSyncing
+                  ? "Sincronizando progresso..."
+                  : "Carregando trilhas..."}
             </Text>
             <ActivityIndicator size="large" color="#F6A608" />
+            {needsMultipleRefresh && (
+              <Text className="text-sm text-gray-500 mt-2 text-center">Isso pode levar alguns instantes...</Text>
+            )}
           </View>
         </View>
       )}

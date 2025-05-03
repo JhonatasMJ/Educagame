@@ -31,7 +31,7 @@ export const UI_COLORS = {
 
 // Text colors
 export const TEXT_COLORS = {
-  /** Primary text color */
+/** Primary text color */
   PRIMARY: "#000000",
   /** Secondary text color */
   SECONDARY: "#4B5563",
@@ -41,6 +41,8 @@ export const TEXT_COLORS = {
   GRAY: "#6B7280",
   /** Error text color */
   ERROR: "#FF0000",
+  /** Branco */
+  BRANCO: "#FFFFFF",
 }
 
 // State colors

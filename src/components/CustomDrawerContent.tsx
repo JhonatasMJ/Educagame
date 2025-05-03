@@ -55,8 +55,7 @@ export const CustomDrawerContent = (props: any) => {
         />  */}
         <DrawerItem
           label="Sair da Conta"
-          icon={({ color, size }) => <MaterialIcons name="logout" size={size} color={color} />}
-          onPress={async () => {
+          icon={({ color, size }: { color: string; size: number }) => <MaterialIcons name="logout" size={size} color={color} />}          onPress={async () => {
             try {
               // Primeiro faz logout no Firebase
               await logout()

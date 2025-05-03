@@ -1,5 +1,5 @@
 import { getDatabase, ref, set, get } from "firebase/database"
-import { initializeUserProgress } from "./userProgressService"
+import { initializeNewUserProgress } from "./userProgressService"
 
 /**
  * Inicializa os dados de um novo usuário no Firebase
@@ -38,7 +38,7 @@ export const initializeUserData = async (userId: string, userData: any): Promise
     // 4. Se não existir, criar progresso inicial
     if (!progressSnapshot.exists()) {
       console.log("Criando progresso inicial do usuário...")
-      await initializeUserProgress(userId)
+      await initializeNewUserProgress(userId)
     }
 
     return true
