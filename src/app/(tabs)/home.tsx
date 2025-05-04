@@ -12,11 +12,10 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
-  SafeAreaView,
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
-import { router, useLocalSearchParams } from "expo-router"
+import { router } from "expo-router"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
@@ -66,132 +65,13 @@ const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
-  const {
-    userData,
-    authUser,
-    refreshUserData,
-    isTokenLoaded,
-    justLoggedIn,
-    justRegistered,
-    setJustLoggedIn,
-    setJustRegistered,
-  } = useAuth()
+  const { userData, authUser, refreshUserData, isTokenLoaded } = useAuth()
   const { getPhaseCompletionPercentage, syncProgress, isSyncing } = useGameProgress()
   const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
-
-  const [isRefreshing, setIsRefreshing] = useState(false) // Estado para controlar o refresh
-  const [needsMultipleRefresh, setNeedsMultipleRefresh] = useState(false)
-  const [refreshCount, setRefreshCount] = useState(0)
-  const [refreshMessage, setRefreshMessage] = useState("")
-
-  // Usar useLocalSearchParams para acessar os parâmetros da rota
-  const params = useLocalSearchParams()
-
-  // Efeito para detectar login recente ou cadastro recente e forçar refresh
-  useEffect(() => {
-    if ((justLoggedIn || justRegistered) && authUser && !isRefreshing) {
-      console.log(`${justLoggedIn ? "Login" : "Cadastro"} recente detectado, forçando refresh da home...`)
-      setIsRefreshing(true)
-
-      // Função para realizar o refresh completo
-      const performFullRefresh = async () => {
-        try {
-          // 1. Sincronizar progresso do usuário
-          await syncProgress()
-
-          // 2. Recarregar trilhas
-          await fetchTrails() // Passar true para forçar atualização
-
-          // 3. Atualizar dados do usuário
-          await refreshUserData()
-
-          console.log(`Refresh completo realizado com sucesso após ${justLoggedIn ? "login" : "cadastro"}`)
-        } catch (error) {
-          console.error(`Erro ao realizar refresh após ${justLoggedIn ? "login" : "cadastro"}:`, error)
-        } finally {
-          // Resetar os estados
-          setIsRefreshing(false)
-          setJustLoggedIn(false)
-          setJustRegistered(false)
-        }
-      }
-
-      performFullRefresh()
-    }
-  }, [justLoggedIn, justRegistered, authUser, isRefreshing])
-
-  // Efeito para processar múltiplos refreshes após o cadastro
-  useEffect(() => {
-    // Verificar se há parâmetros de refresh na URL usando useLocalSearchParams
-    const needsRefresh = params.needsMultipleRefresh === "true"
-    const count = Number.parseInt((params.refreshCount as string) || "0")
-
-    if (needsRefresh && count > 0 && !needsMultipleRefresh) {
-      console.log(`Iniciando processo de múltiplos refreshes (${count} restantes)`)
-      setNeedsMultipleRefresh(true)
-      setRefreshCount(count)
-      setRefreshMessage(`Consolidando dados (${count} refreshes restantes)...`)
-    }
-  }, [params.needsMultipleRefresh, params.refreshCount])
-
-  // Efeito para executar os refreshes em sequência
-  useEffect(() => {
-    if (needsMultipleRefresh && refreshCount > 0) {
-      // Mostrar mensagem de refresh
-      setRefreshMessage(`Consolidando dados (${refreshCount} refreshes restantes)...`)
-
-      // Executar o refresh atual
-      const performRefresh = async () => {
-        try {
-          console.log(`Executando refresh ${4 - refreshCount} de 3...`)
-
-          // 1. Sincronizar progresso do usuário
-          await syncProgress()
-
-          // 2. Recarregar trilhas
-          await fetchTrails()
-
-          // 3. Atualizar dados do usuário
-          await refreshUserData()
-
-          console.log(`Refresh ${4 - refreshCount} concluído com sucesso`)
-
-          // Aguardar um tempo antes do próximo refresh
-          setTimeout(() => {
-            if (refreshCount > 1) {
-              // Ainda há mais refreshes para fazer
-              setRefreshCount(refreshCount - 1)
-            } else {
-              // Último refresh concluído
-              setNeedsMultipleRefresh(false)
-              setRefreshCount(0)
-              setRefreshMessage("")
-
-              // Remover parâmetros da URL
-              router.setParams({})
-
-              console.log("Processo de múltiplos refreshes concluído com sucesso")
-            }
-          }, 2000) // 2 segundos entre cada refresh
-        } catch (error) {
-          console.error(`Erro durante o refresh ${4 - refreshCount}:`, error)
-          // Mesmo com erro, continuar para o próximo refresh
-          setRefreshCount(refreshCount - 1)
-        }
-      }
-
-      performRefresh()
-    }
-  }, [needsMultipleRefresh, refreshCount])
-
-  // Calculate the bottom tab height - typically around 72px plus any safe area
-  const TAB_HEIGHT = 72 + (Platform.OS === "ios" ? 34 : 0)
-  // Calculate the trail selector height
-  const TRAIL_SELECTOR_HEIGHT = 80
 
   const trailBackgroundImages = [
     require("@/assets/images/fundo.png"),
@@ -460,14 +340,11 @@ const Home = () => {
   useEffect(() => {
     if (scrollViewRef.current) {
       if (Platform.OS !== "web") {
-        // Para dispositivos móveis
+        // Para dispositivos móveis - agora invertido
         setTimeout(() => {
-          // Calcular posição para rolar para a etapa atual
-          // Agora precisamos calcular a posição de baixo para cima
-          const totalHeight = stages.length * 200 // Altura aproximada de todas as bolhas
-          const bubbleHeight = 200 // Altura aproximada de uma bolha
-          const reversedIndex = stages.length - 1 - etapaAtualIndex
-          const position = totalHeight - reversedIndex * bubbleHeight - bubbleHeight
+          // Calcular posição para rolar - de baixo para cima
+          const totalHeight = stages.length * 200 // Altura aproximada de todos os estágios (aumentada)
+          const position = totalHeight - (etapaAtualIndex + 1) * 200 // Posição a partir de baixo
 
           scrollViewRef.current?.scrollTo({ y: position, animated: true })
         }, 300)
@@ -475,8 +352,8 @@ const Home = () => {
         // Para web
         setTimeout(() => {
           const elements = document.querySelectorAll(".stage-bubble")
-          if (elements && elements[etapaAtualIndex]) {
-            elements[etapaAtualIndex].scrollIntoView({
+          if (elements && elements[stages.length - 1 - etapaAtualIndex]) {
+            elements[stages.length - 1 - etapaAtualIndex].scrollIntoView({
               behavior: "smooth",
               block: "center",
             })
@@ -596,26 +473,20 @@ const Home = () => {
     }
   }, [authUser, isTokenLoaded]) // Removemos trilhas e hasLoadedTrails das dependências
 
-  const selectedTrail = trilhas && trilhas.length > 0 ? trilhas[trilhaAtualIndex] : null
+  const TAB_HEIGHT = 50
+  const TRAIL_SELECTOR_HEIGHT = 80
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View className="flex-1">
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
-      {(trailsLoading || isSyncing || needsMultipleRefresh) && (
+      {(trailsLoading || isSyncing) && (
         <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4">
-              {needsMultipleRefresh
-                ? refreshMessage
-                : isSyncing
-                  ? "Sincronizando progresso..."
-                  : "Carregando trilhas..."}
+              {isSyncing ? "Sincronizando progresso..." : "Carregando trilhas..."}
             </Text>
             <ActivityIndicator size="large" color="#F6A608" />
-            {needsMultipleRefresh && (
-              <Text className="text-sm text-gray-500 mt-2 text-center">Isso pode levar alguns instantes...</Text>
-            )}
           </View>
         </View>
       )}
@@ -643,24 +514,9 @@ const Home = () => {
         </View>
       )}
 
-      <DuolingoHeader
-        nome={nome}
-        scrollY={scrollY}
-        currentTrailId={selectedTrail?.id} // Adicionar o ID da trilha selecionada
-      />
+      <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
 
-      {/* Trail selector - now with higher z-index to stay above content */}
-      <View
-        className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-30 border-t-2 border-tertiary"
-        style={{
-          elevation: 20,
-          zIndex: 50,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-        }}
-      >
+      <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
         <TouchableOpacity
           onPress={handlePreviousTrilha}
           className="bg-tertiary p-2 rounded-md"
@@ -705,7 +561,7 @@ const Home = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Main content with learning path - now with animation */}
+      {/* Conteúdo principal com trilha de aprendizado - agora com animação de slide */}
       <Animated.View
         style={{
           flex: 1,
@@ -719,6 +575,7 @@ const Home = () => {
           contentContainerStyle={{
             alignItems: "center",
             paddingBottom: TAB_HEIGHT + TRAIL_SELECTOR_HEIGHT + 20,
+            // Remover paddingTop se houver
             flexGrow: 1,
           }}
           showsVerticalScrollIndicator={false}
@@ -729,17 +586,20 @@ const Home = () => {
           contentOffset={{ x: 0, y: 10000 }} // Um valor grande para garantir que comece no final
           maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         >
+          <View style={{ height: 60 }} /> {/* Increased padding to create more space between header and content */}
           <LearningPathTrack
             etapas={stages}
             currentEtapaIndex={etapaAtualIndex}
             onEtapaPress={handleStagePress}
             containerHeight={containerHeight}
-            backgroundImage={getTrailBackgroundImage(trilhaAtualIndex)}
+            backgroundUrl={currentTrilha?.backgroundSvg || ""} // Usar backgroundSvg da trilha atual
+            backgroundImage={getTrailBackgroundImage(trilhaAtualIndex)} // Manter como fallback
             trailId={currentTrilha?.id || ""}
           />
+          <View style={{ height: 100 }} />
         </ScrollView>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   )
 }
 

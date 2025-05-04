@@ -1,8 +1,16 @@
 "use client"
 
-import  React from "react"
-import { useState, useEffect } from "react"
-import { View, ImageBackground, StyleSheet, type ImageSourcePropType, Text } from "react-native"
+import React from "react"
+import { useState, useEffect, useMemo } from "react"
+import {
+  View,
+  ImageBackground,
+  StyleSheet,
+  type ImageSourcePropType,
+  Text,
+  ActivityIndicator,
+  Platform,
+} from "react-native"
 import { SvgUri } from "react-native-svg"
 import LessonBubble from "./LessonBubble"
 import type { IconLibrary } from "../services/IconRenderer"
@@ -35,12 +43,14 @@ interface EtapaInfo {
   progress: number
 }
 
+// Modificar a interface LearningPathTrackProps para aceitar uma URL de imagem de fundo
 interface LearningPathTrackProps {
   etapas: any[] // Dados brutos das etapas da trilha
   currentEtapaIndex: number
   onEtapaPress: (index: number) => void
   containerHeight: number
-  backgroundImage?: ImageSourcePropType
+  backgroundImage?: ImageSourcePropType | string // Modificado para aceitar string (URL)
+  backgroundUrl?: string // Nova propriedade para URL de imagem de fundo
   trailId: string // Agora é obrigatório para buscar o progresso do usuário
 }
 
@@ -51,13 +61,30 @@ const TRACK_WIDTH = 8
 const TRACK_BORDER_RADIUS = 4
 const ETAPA_SPACING = 150
 
-// Componente principal
+// Função auxiliar para processar URLs do Firebase Storage
+const processFirebaseUrl = (url: string): string => {
+  // Verificar se é uma URL do Firebase Storage
+  if (url && url.includes("firebasestorage.googleapis.com")) {
+    // Verificar se já tem o parâmetro alt=media
+    if (!url.includes("alt=media")) {
+      // Adicionar o parâmetro alt=media
+      return url + (url.includes("?") ? "&" : "?") + "alt=media"
+    }
+  }
+  return url
+}
+
+// Define __DEV__ if it's not already defined (e.g., in a testing environment)
+declare const __DEV__: boolean
+
+// Atualizar o componente principal para usar a nova propriedade
 const LearningPathTrack = ({
   etapas,
   currentEtapaIndex,
   onEtapaPress,
   containerHeight,
   backgroundImage,
+  backgroundUrl,
   trailId,
 }: LearningPathTrackProps) => {
   // Obter o contexto de progresso do jogo
@@ -65,6 +92,14 @@ const LearningPathTrack = ({
 
   // Estado para armazenar o progresso processado
   const [processedEtapas, setProcessedEtapas] = useState<EtapaInfo[]>([])
+
+  // Estado para debug de carregamento de imagem
+  const [imageDebug, setImageDebug] = useState({
+    loading: false,
+    error: false,
+    url: "",
+    errorMessage: "",
+  })
 
   // Buscar o progresso do usuário para esta trilha e processar as etapas
   useEffect(() => {
@@ -159,9 +194,45 @@ const LearningPathTrack = ({
     // Se estiver bloqueada, não faz nada (ou poderia mostrar uma mensagem)
   }
 
+  // Processar a URL de fundo
+  const processedBackgroundUrl = useMemo(() => {
+    // Priorizar backgroundUrl sobre backgroundImage se ambos forem fornecidos
+    const urlToProcess = backgroundUrl || (typeof backgroundImage === "string" ? backgroundImage : "")
+
+    if (urlToProcess) {
+      // Registrar para debug
+      setImageDebug((prev) => ({ ...prev, url: urlToProcess, loading: true }))
+
+      // Processar URL do Firebase
+      return processFirebaseUrl(urlToProcess)
+    }
+    return ""
+  }, [backgroundUrl, backgroundImage])
+
   // Renderiza o conteúdo principal com o fundo apropriado
   return (
-    <BackgroundContainer backgroundImage={backgroundImage} >
+    <BackgroundContainer
+      backgroundImage={backgroundImage}
+      backgroundUrl={processedBackgroundUrl}
+      onImageLoad={() => setImageDebug((prev) => ({ ...prev, loading: false, error: false }))}
+      onImageError={(error) =>
+        setImageDebug((prev) => ({
+          ...prev,
+          loading: false,
+          error: true,
+          errorMessage: error?.toString() || "Erro desconhecido",
+        }))
+      }
+    >
+      {/* Adicionar indicador de debug apenas em desenvolvimento */}
+      {typeof __DEV__ !== "undefined" && __DEV__ && imageDebug.error && (
+        <View style={styles.debugContainer}>
+          <Text style={styles.debugText}>Erro ao carregar imagem:</Text>
+          <Text style={styles.debugUrl}>{imageDebug.url}</Text>
+          <Text style={styles.debugError}>{imageDebug.errorMessage}</Text>
+        </View>
+      )}
+
       <TrackContent
         etapas={processedEtapas}
         currentEtapaIndex={currentEtapaIndex}
@@ -174,49 +245,137 @@ const LearningPathTrack = ({
   )
 }
 
-// Componente para o container de fundo
+// Atualizar o componente BackgroundContainer para suportar URLs
 const BackgroundContainer = ({
   backgroundImage,
+  backgroundUrl,
   children,
+  onImageLoad,
+  onImageError,
 }: {
-  backgroundImage?: ImageSourcePropType
+  backgroundImage?: ImageSourcePropType | string
+  backgroundUrl?: string
   children: React.ReactNode
+  onImageLoad?: () => void
+  onImageError?: (error?: Error) => void
 }) => {
   // Estado para controlar erros de carga de imagem
   const [imageError, setImageError] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Verifica se a imagem de fundo é um SVG
-  const isSvgImage = typeof backgroundImage === "string" && (backgroundImage as string).endsWith(".svg")
+  // Determinar a URL da imagem de fundo
+  const imageUrl = backgroundUrl || (typeof backgroundImage === "string" ? backgroundImage : undefined)
+
+  // Verificar se temos uma URL de imagem
+  const hasRemoteImage = !!imageUrl
+
+  // Verificar se a imagem é um SVG
+  const isSvgImage = imageUrl && (imageUrl.endsWith(".svg") || imageUrl.includes("svg"))
+
+  // Verificar se é uma URL do Firebase Storage
+  const isFirebaseUrl = imageUrl && imageUrl.includes("firebasestorage.googleapis.com")
+
+  // Função para lidar com erros de carregamento
+  const handleImageError = (error?: Error) => {
+    console.error("Erro ao carregar imagem de fundo:", imageUrl, error)
+    setImageError(true)
+    setIsLoading(false)
+    if (onImageError) onImageError(error)
+  }
+
+  // Função para lidar com o carregamento bem-sucedido
+  const handleImageLoad = () => {
+    setIsLoading(false)
+    if (onImageLoad) onImageLoad()
+  }
+
+  // Efeito para iniciar o carregamento
+  useEffect(() => {
+    if (imageUrl) {
+      setIsLoading(true)
+      setImageError(false)
+
+      // Para URLs não-SVG, podemos pré-carregar a imagem
+      if (!isSvgImage && typeof Platform !== "undefined" && Platform.OS === "web") {
+        const img = document.createElement("img")
+        img.addEventListener("load", handleImageLoad)
+        img.addEventListener("error", () => handleImageError(new Error("Falha ao carregar imagem")))
+        img.src = imageUrl
+      }
+    }
+  }, [imageUrl, isSvgImage])
 
   // Se não há imagem ou ocorre erro, use um fundo padrão
-  if (!backgroundImage || imageError) {
+  if ((!backgroundImage && !hasRemoteImage) || imageError) {
     return (
-      <View className="items-center bg-gray-100" style={[styles.container]}>
+      <View className="items-center bg-gray-100" style={styles.container}>
         {/* Ícone de fundo padrão quando não há imagem ou ocorre erro */}
         <View style={styles.fallbackBackground}>
           <Text style={{ fontSize: 40, color: "#ccc" }}>🏞️</Text>
+          {typeof __DEV__ !== "undefined" && __DEV__ && imageError && imageUrl && (
+            <Text style={{ fontSize: 12, color: "#999", textAlign: "center", marginTop: 10 }}>
+              Erro ao carregar: {imageUrl}
+            </Text>
+          )}
         </View>
         {children}
       </View>
     )
   }
 
-  if (isSvgImage) {
+  // Mostrar indicador de carregamento
+  if (isLoading) {
     return (
-      <View className="items-center" style={[styles.container]}>
-        <SvgUri uri={backgroundImage as string} style={styles.svgBackground} onError={() => setImageError(true)} />
+      <View className="items-center bg-gray-100" style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#F6A608" />
+          <Text style={{ marginTop: 10, color: "#666" }}>Carregando imagem...</Text>
+        </View>
         {children}
       </View>
     )
   }
 
+  // Se for uma URL de SVG
+  if (isSvgImage && imageUrl) {
+    return (
+      <View className="items-center" style={styles.container}>
+        <SvgUri
+          uri={imageUrl}
+          style={styles.svgBackground}
+          onError={() => handleImageError()}
+          onLoad={handleImageLoad}
+        />
+        {children}
+      </View>
+    )
+  }
+
+  // Se for uma URL remota (não SVG)
+  if (hasRemoteImage && imageUrl) {
+    return (
+      <ImageBackground
+        source={{ uri: imageUrl }}
+        style={styles.container}
+        imageStyle={styles.imageBackground}
+        className="items-center"
+        onError={() => handleImageError()}
+        onLoad={handleImageLoad}
+      >
+        {children}
+      </ImageBackground>
+    )
+  }
+
+  // Caso contrário, é uma imagem local
   return (
     <ImageBackground
-      source={backgroundImage}
-      style={[styles.container]}
+      source={backgroundImage as ImageSourcePropType}
+      style={styles.container}
       imageStyle={styles.imageBackground}
       className="items-center"
-      onError={() => setImageError(true)}
+      onError={() => handleImageError()}
+      onLoad={handleImageLoad}
     >
       {children}
     </ImageBackground>
@@ -268,7 +427,6 @@ const TrackContent = ({
     </View>
   )
 }
-
 
 // Componente para a lista de etapas
 const EtapasList = ({
@@ -333,13 +491,18 @@ const EtapasList = ({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+    height: "100%",
   },
   svgBackground: {
     position: "absolute",
     width: "100%",
     height: "100%",
+    top: 0,
+    left: 0,
   },
   imageBackground: {
+    opacity: 1,
+    resizeMode: "cover",
   },
   trackLine: {
     position: "absolute",
@@ -355,6 +518,36 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingContainer: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  debugContainer: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    right: 10,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    padding: 10,
+    borderRadius: 5,
+    zIndex: 1000,
+  },
+  debugText: {
+    color: "red",
+    fontWeight: "bold",
+  },
+  debugUrl: {
+    color: "blue",
+    fontSize: 12,
+    marginVertical: 5,
+  },
+  debugError: {
+    color: "red",
+    fontSize: 12,
   },
 })
 
