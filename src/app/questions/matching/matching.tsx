@@ -1,15 +1,17 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { View, Text, TouchableOpacity, Image, ScrollView, Animated, Easing, StyleSheet } from "react-native"
 import type { QuestionType } from "../../(tabs)/home"
 import Svg, { Line } from "react-native-svg"
+import React from "react"
 
 // Definição das interfaces para os itens das colunas
 interface ColumnItem {
   id: string
   text?: string
   image?: string | any
+  imageUrl?: string
 }
 
 // Interface para a questão de relacionar colunas
@@ -205,20 +207,36 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
 
   // Renderizar o conteúdo de um item (texto ou imagem)
   const renderItemContent = (item: ColumnItem) => {
-    if (item.image) {
+    // Primeiro, verificar se há uma imageUrl (do Firebase)
+    if (item.imageUrl) {
+      return (
+        <View className="w-full justify-center items-center">
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{ width: 120, height: 120, borderRadius: 8 }}
+            resizeMode="contain"
+          />
+          {item.text && <Text className="text-center text-gray-800 font-medium mt-2 px-2">{item.text}</Text>}
+        </View>
+      )
+    }
+    // Depois, verificar se há uma image (local ou objeto)
+    else if (item.image) {
       // Se for um objeto (require), use diretamente
       if (typeof item.image === "object") {
         return (
-          <View className="w-full h-full justify-center items-center">
+          <View className="w-full justify-center items-center">
             <Image source={item.image} style={styles.itemImage} resizeMode="contain" />
+            {item.text && <Text className="text-center text-gray-800 font-medium mt-2 px-2">{item.text}</Text>}
           </View>
         )
       }
 
       // Se for uma string (URI), use como URI
       return (
-        <View className="w-full h-full justify-center items-center">
+        <View className="w-full justify-center items-center">
           <Image source={{ uri: item.image as string }} style={styles.itemImage} resizeMode="contain" />
+          {item.text && <Text className="text-center text-gray-800 font-medium mt-2 px-2">{item.text}</Text>}
         </View>
       )
     }
@@ -296,7 +314,7 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
           }}
         >
           <TouchableOpacity
-            className={`rounded-xl p-4 min-h-[50px] justify-center items-center ${itemStyle}`}
+            className={`rounded-xl p-4 min-h-[120px] justify-center items-center ${itemStyle}`}
             style={{ width: 150, maxWidth: 150 }}
             onPress={() => handleItemPress(item.id, "left")}
             disabled={submitted || isMatched}
@@ -344,7 +362,7 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
           }}
         >
           <TouchableOpacity
-            className={`rounded-xl p-4 min-h-[50px] justify-center items-center ${itemStyle}`}
+            className={`rounded-xl p-4 min-h-[120px] justify-center items-center ${itemStyle}`}
             style={{ width: 150, maxWidth: 150 }}
             onPress={() => handleItemPress(item.id, "right")}
             disabled={submitted || isMatched}
@@ -358,7 +376,7 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
   }
 
   return (
-    <ScrollView ref={scrollViewRef} className="flex-1 p-4" showsVerticalScrollIndicator={true}>
+    <ScrollView ref={scrollViewRef} className="flex-1 p-4" showsVerticalScrollIndicator={false}>
       {/* Descrição da questão */}
       {question.description && (
         <View className="mb-5">
@@ -415,7 +433,7 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
 const styles = StyleSheet.create({
   itemImage: {
     width: 120,
-    height: 80,
+    height: 120,
     borderRadius: 8,
   },
 })
