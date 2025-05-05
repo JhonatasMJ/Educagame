@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ import Matching from "./matching/matching"
 import { useAuth } from "@/src/context/AuthContext"
 import { getDatabase, ref, get, set } from "firebase/database"
 import { logSync, LogLevel } from "@/src/services/syncLogger"
+import React from "react"
 
 // Define a generic question interface
 interface BaseQuestion {
@@ -42,6 +43,16 @@ interface BaseQuestion {
   description: string
   image?: string
   explanation?: string
+  correctExplanation?: {
+    title?: string
+    description?: string
+    imageUrl?: string
+  }
+  incorrectExplanation?: {
+    title?: string
+    description?: string
+    imageUrl?: string
+  }
 }
 
 interface TrueOrFalseQuestion extends BaseQuestion {
@@ -1014,10 +1025,13 @@ const MainGame = () => {
 
       {/* Feedback Modal */}
       <FeedbackModal
+      
         visible={showFeedback}
         isCorrect={isCorrect}
         onContinue={handleContinue}
         description={feedbackExplanation}
+        correctExplanation={currentQuestion?.correctExplanation}
+        incorrectExplanation={currentQuestion?.incorrectExplanation}
       />
 
       {/* Loading Transition */}

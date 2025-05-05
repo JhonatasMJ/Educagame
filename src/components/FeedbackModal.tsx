@@ -1,7 +1,14 @@
-import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions } from "react-native"
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions, Image } from "react-native"
 import { Check, X } from "lucide-react-native"
-import React from "react"
 import { MOBILE_WIDTH } from "@/PlataformWrapper"
+import React from "react"
+
+// Interface for explanation data
+interface ExplanationData {
+  title?: string
+  description?: string
+  imageUrl?: string
+}
 
 interface FeedbackModalProps {
   visible: boolean
@@ -10,6 +17,9 @@ interface FeedbackModalProps {
   description?: string
   buttonText?: string
   onContinue: () => void
+  // New props for custom explanations
+  correctExplanation?: ExplanationData
+  incorrectExplanation?: ExplanationData
 }
 
 const FeedbackModal = ({
@@ -19,32 +29,43 @@ const FeedbackModal = ({
   description,
   buttonText = "CONTINUAR",
   onContinue,
+  correctExplanation,
+  incorrectExplanation,
 }: FeedbackModalProps) => {
+  const { width } = Dimensions.get("window")
+
+  // Determine which explanation to use
+  const customExplanation = isCorrect ? correctExplanation : incorrectExplanation
+
+  // Check if we should use custom explanation
+  const useCustomExplanation =
+    customExplanation && (customExplanation.title || customExplanation.description || customExplanation.imageUrl)
+
   // Default values based on isCorrect
   const defaultTitle = isCorrect ? "Parabéns!" : "Incorreto"
   const defaultDescription = isCorrect ? "Você está On!" : "Que pena! Você está em Off!"
 
-  // Use provided values or defaults
-  const displayTitle = title || defaultTitle
-  const displayDescription = description || defaultDescription
+  // Use custom explanation if available, otherwise use provided values or defaults
+  const displayTitle = useCustomExplanation ? customExplanation?.title : title || defaultTitle
 
-  const {width} = Dimensions.get("window")
+  const displayDescription = useCustomExplanation ? customExplanation?.description : description || defaultDescription
+
+  const displayImage = useCustomExplanation ? customExplanation?.imageUrl : undefined
 
   // Use styles from StyleSheet instead of Tailwind classes
   const styles = StyleSheet.create({
     iconContainer: {
-      width: 64,
-      height: 64,
+      width: 40,
+      height: 40,
       borderRadius: 32,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: isCorrect ? "#dcfce7" : "#fee2e2", // Explicit green-100 or red-100
     },
     titleText: {
       fontSize: 24,
       fontWeight: "bold",
       marginBottom: 8,
-      color: isCorrect ? "#15803d" : "#b91c1c", // Explicit green-700 or red-700
+      textAlign: "center",
     },
     button: {
       padding: 12,
@@ -52,6 +73,8 @@ const FeedbackModal = ({
       alignItems: "center",
       width: "100%",
       backgroundColor: isCorrect ? "#16a34a" : "#dc2626", // Explicit green-600 or red-600
+
+      marginBottom: 6,
     },
     buttonText: {
       color: "white",
@@ -65,11 +88,12 @@ const FeedbackModal = ({
       backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalContent: {
-      width: width < MOBILE_WIDTH ? '80%' : '100%',
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      width: width < MOBILE_WIDTH ? "80%" : "100%",
       maxWidth: 400,
       borderRadius: 14,
-      padding: 24,
-      backgroundColor: "white",
+      padding: 20,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.25,
@@ -77,39 +101,69 @@ const FeedbackModal = ({
       elevation: 5,
     },
     iconWrapper: {
+      position: 'absolute',
+      top: 15,
+      left: 15,
       alignItems: "center",
-      marginBottom: 16,
     },
     contentContainer: {
-      alignItems: "center",
-      marginBottom: 24,
+      alignItems: "flex-start",
+      justifyContent: "flex-start",
+      marginBottom: 16,
     },
     descriptionText: {
-      color: "#374151",
       fontSize: 16,
-      textAlign: "center",
+      textAlign: "left",
+    },
+    imageContainer: {
+      position: 'absolute',
+      marginBottom: 16,
+      borderRadius: 8,
+    },
+    image: {
+      width: "100%",
+      height: "100%",
     },
   })
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide" statusBarTranslucent={true}>
       <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          {/* Icon */}
-          <View style={styles.iconWrapper}>
-            <View style={styles.iconContainer}>
-              {isCorrect ? (
-                <Check width={32} height={32} color="#16A34A" />
-              ) : (
-                <X width={32} height={32} color="#DC2626" />
-              )}
+        <View style={[styles.modalContent, { backgroundColor: isCorrect ? "#A4D1CF" : "#444343", height: isCorrect ? 265 : 280 }]}>
+          {/* Image (if available) */}
+          {displayImage && (
+            <View style={[styles.imageContainer, {
+              right: isCorrect ? -20 : -15,
+              top: isCorrect ? -90 : -85,
+              width: isCorrect ? 220 : 200,
+              height: isCorrect ? 280 : 280,
+            }]}>
+              <Image source={{ uri: displayImage }} style={styles.image} resizeMode="contain" />
             </View>
+          )}
+
+          <View style={styles.iconWrapper}>
+            <TouchableOpacity onPress={onContinue} style={[styles.iconContainer, {
+
+              backgroundColor: isCorrect ? "#1D2362" : "#fee2e2", // Explicit green-100 or red-100
+            }]}>
+              {isCorrect ? (
+                <Check width={25} height={25} color="#16A34A" />
+              ) : (
+                <X width={25} height={25} color="#DC2626" />
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Content */}
-          <View style={styles.contentContainer}>
-            <Text style={styles.titleText}>{displayTitle}</Text>
-            <Text style={styles.descriptionText}>{displayDescription}</Text>
+          <View style={[styles.contentContainer, {
+            marginTop: isCorrect ? 40 : 50,
+            paddingRight: isCorrect ? 110 : 125,
+          }]}>
+            <Text style={[styles.titleText, { color: isCorrect ? "#223AD2" : "#fff" }]}>{displayTitle}</Text>
+            <Text style={[styles.descriptionText, {
+              color: isCorrect ? "#1D2362" : "#fff"
+            }]}>{displayDescription}</Text>
           </View>
 
           {/* Button */}
@@ -123,4 +177,3 @@ const FeedbackModal = ({
 }
 
 export default FeedbackModal
-

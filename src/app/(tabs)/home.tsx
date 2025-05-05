@@ -73,23 +73,7 @@ const Home = () => {
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
 
-  const trailBackgroundImages = [
-    require("@/assets/images/fundo.png"),
-    require("@/assets/images/fundo.png"),
-    require("@/assets/images/fundo.png"),
-    require("@/assets/images/fundo.png"),
-    require("@/assets/images/fundo.png"),
-  ]
 
-  // Define a fallback image in case we run out of images in the array
-  const fallbackImage = require("@/assets/images/fundo.png")
-
-  const getTrailBackgroundImage = (index: number) => {
-    if (index >= 0 && index < trailBackgroundImages.length) {
-      return trailBackgroundImages[index]
-    }
-    return fallbackImage
-  }
 
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
@@ -515,7 +499,7 @@ const Home = () => {
       )}
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
-
+      {/* Navegador de trilha */}
       <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
         <TouchableOpacity
           onPress={handlePreviousTrilha}
@@ -573,9 +557,6 @@ const Home = () => {
           ref={scrollViewRef}
           className="flex-1"
           contentContainerStyle={{
-            alignItems: "center",
-            paddingBottom: TAB_HEIGHT + TRAIL_SELECTOR_HEIGHT + 20,
-            // Remover paddingTop se houver
             flexGrow: 1,
           }}
           showsVerticalScrollIndicator={false}
@@ -593,7 +574,7 @@ const Home = () => {
             onEtapaPress={handleStagePress}
             containerHeight={containerHeight}
             backgroundUrl={currentTrilha?.backgroundSvg || ""} // Usar backgroundSvg da trilha atual
-            backgroundImage={getTrailBackgroundImage(trilhaAtualIndex)} // Manter como fallback
+         
             trailId={currentTrilha?.id || ""}
           />
           <View style={{ height: 100 }} />

@@ -167,8 +167,6 @@ const LearningPathTrack = ({
   // Se não encontrar nenhuma etapa não concluída, usar 0 ou -1 se o array estiver vazio
   const safeNextEtapaIndex = nextEtapaIndex === -1 ? (processedEtapas.length > 0 ? 0 : -1) : nextEtapaIndex
 
-  const totalContentHeight = processedEtapas.length * ETAPA_HEIGHT
-  const topPadding = Math.max(0, containerHeight - totalContentHeight - BOTTOM_SPACE_ADJUSTMENT)
 
   // Função para verificar se uma etapa está bloqueada
   const isEtapaBlocked = (index: number) => {
@@ -271,9 +269,6 @@ const BackgroundContainer = ({
 
   // Verificar se a imagem é um SVG
   const isSvgImage = imageUrl && (imageUrl.endsWith(".svg") || imageUrl.includes("svg"))
-
-  // Verificar se é uma URL do Firebase Storage
-  const isFirebaseUrl = imageUrl && imageUrl.includes("firebasestorage.googleapis.com")
 
   // Função para lidar com erros de carregamento
   const handleImageError = (error?: Error) => {
@@ -407,10 +402,6 @@ const TrackContent = ({
     )
   }
 
-  // Calcula a altura da trilha de progresso
-  const completedCount = etapas.filter((e) => e.concluida).length
-  const completedEtapasPercentage = Math.max((completedCount / etapas.length) * 100, 10)
-
   return (
     <View style={{ width: "100%" }}>
       {/* Trilha de fundo */}
@@ -501,7 +492,6 @@ const styles = StyleSheet.create({
     left: 0,
   },
   imageBackground: {
-    opacity: 1,
     resizeMode: "cover",
   },
   trackLine: {
