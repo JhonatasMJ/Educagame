@@ -10,6 +10,7 @@ import React from "react"
 interface Option {
   id: string
   text: string
+  imageUrl?: string
 }
 
 // Interface para a questão de múltipla escolha
@@ -300,8 +301,34 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
     }
   }
 
+  const renderOptionContent = (option: Option) => {
+    // If the option has an imageUrl, render an image
+    if (option.imageUrl) {
+      return (
+        <View className="flex-1 items-center justify-center">
+          <Image source={{ uri: option.imageUrl }} className="w-24 h-24 rounded-md" resizeMode="contain" />
+          {option.text && (
+            <Text
+              className={`text-center mt-2 text-base font-medium ${getOptionTextColor(option.id)}`}
+              numberOfLines={2}
+            >
+              {option.text}
+            </Text>
+          )}
+        </View>
+      )
+    }
+
+    // Otherwise, render just the text
+    return (
+      <Text className={`flex-1 text-base font-medium ${getOptionTextColor(option.id)}`} style={{ flexShrink: 1 }}>
+        {option.text}
+      </Text>
+    )
+  }
+
   return (
-    <ScrollView showsVerticalScrollIndicator={true} className="flex-1 p-4">
+    <ScrollView showsVerticalScrollIndicator={false} className="flex-1 p-4">
       <View className="mb-5">
         {question.description && (
           <View className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -356,12 +383,7 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
                       {option.id.toUpperCase()}
                     </Text>
                   </View>
-                  <Text
-                    className={`flex-1 text-base font-medium ${getOptionTextColor(option.id)}`}
-                    style={{ flexShrink: 1 }}
-                  >
-                    {option.text}
-                  </Text>
+                  {renderOptionContent(option)}
                   {renderOptionIcon(option.id)}
                 </View>
               </TouchableOpacity>
@@ -374,4 +396,3 @@ const MultipleChoice = ({ question, onAnswer, questionNumber }: MultipleChoicePr
 }
 
 export default MultipleChoice
-

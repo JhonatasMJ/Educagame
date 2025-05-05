@@ -23,7 +23,7 @@ const IconRenderer: React.FC<IconProps> = ({ name, library = "lucide", size = 24
   if (imageUrl && isValidUrl(imageUrl)) {
     return (
       <View style={styles.imageContainer}>
-        <Image source={{ uri: imageUrl }} style={{ width: size * 1.5, height: size * 1.5 }} resizeMode="contain" />
+        <Image source={{ uri: imageUrl }} style={{ width: size * 3.7, height: size * 3.7 }} resizeMode="contain" />
       </View>
     )
   }
@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    borderRadius: 65,
   },
 })
 
