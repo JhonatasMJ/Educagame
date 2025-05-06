@@ -167,7 +167,6 @@ const LearningPathTrack = ({
   // Se não encontrar nenhuma etapa não concluída, usar 0 ou -1 se o array estiver vazio
   const safeNextEtapaIndex = nextEtapaIndex === -1 ? (processedEtapas.length > 0 ? 0 : -1) : nextEtapaIndex
 
-
   // Função para verificar se uma etapa está bloqueada
   const isEtapaBlocked = (index: number) => {
     // Verificar se o índice é válido
@@ -440,27 +439,33 @@ const EtapasList = ({
     return null
   }
 
+  // Reverse the etapas array to display from bottom to top
+  const reversedEtapas = [...etapas].reverse()
+
   return (
     <>
-      {etapas.map((etapa, index) => {
+      {reversedEtapas.map((etapa, reversedIndex) => {
+        // Calculate the original index from the reversed index
+        const originalIndex = etapas.length - 1 - reversedIndex
+
         // Verificar se etapa é um objeto válido
         if (!etapa || typeof etapa !== "object") return null
 
         // Verifica se esta é a próxima etapa a ser concluída
-        const isNextEtapa = index === nextEtapaIndex
+        const isNextEtapa = originalIndex === nextEtapaIndex
 
         // Verifica se a etapa está bloqueada
-        const isLocked = isEtapaBlocked(index)
+        const isLocked = isEtapaBlocked(originalIndex)
 
         return (
-          <View key={index} className="items-center z-10 mb-8">
+          <View key={originalIndex} className="items-center z-10 mb-8">
             <LessonBubble
-              number={index + 1} // Número da etapa (1-based)
-              isActive={currentEtapaIndex === index}
+              number={originalIndex + 1} // Número da etapa (1-based)
+              isActive={currentEtapaIndex === originalIndex}
               isCompleted={etapa.concluida}
               isNext={isNextEtapa}
               isLocked={isLocked}
-              onPress={() => onEtapaPress(index)}
+              onPress={() => onEtapaPress(originalIndex)}
               title={etapa.titulo || "Sem título"}
               icon={etapa.icon}
               iconLibrary={etapa.iconLibrary as IconLibrary}
@@ -470,7 +475,7 @@ const EtapasList = ({
             />
 
             {/* Espaço entre bolhas */}
-            {index < etapas.length - 1 && <View style={{ height: ETAPA_SPACING }} />}
+            {reversedIndex < reversedEtapas.length - 1 && <View style={{ height: ETAPA_SPACING }} />}
           </View>
         )
       })}
