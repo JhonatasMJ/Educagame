@@ -22,6 +22,7 @@ import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import { useTrails } from "@/src/hooks/useTrails"
 import React from "react"
+import { useLocalSearchParams } from 'expo-router';
 
 const { width, height } = Dimensions.get("window")
 
@@ -73,6 +74,12 @@ const Home = () => {
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
 
+  const params = useLocalSearchParams();
+  const needsMultipleRefresh = params.needsMultipleRefresh === "true";
+  const refreshCount = parseInt(params.refreshCount as string || "0", 10);
+  
+  // Referência para controlar os refreshes
+  const refreshCountRef = useRef(0);
 
 
   // Animated scroll value for header animation
@@ -133,10 +140,6 @@ const Home = () => {
   }, [userData])
 
   // Dados da trilha atual
-  // Update the currentTrilha assignment to handle the case when trilhas is empty
-  // Replace:
-  // const currentTrilha = trilhas[trilhaAtualIndex]
-  // With:
   const currentTrilha = trilhas && trilhas.length > 0 ? trilhas[trilhaAtualIndex] : null
 
   // Função para calcular o progresso de uma etapa com base nos stages concluídos
@@ -319,6 +322,30 @@ const Home = () => {
     const { height } = event.nativeEvent.layout
     setContainerHeight(height)
   }
+
+  useEffect(() => {
+    if (needsMultipleRefresh && refreshCount > 0 && refreshCountRef.current < refreshCount) {
+      const timer = setTimeout(async () => {
+        console.log(`Executando refresh ${refreshCountRef.current + 1} de ${refreshCount}`);
+        await refreshTrails();
+        refreshCountRef.current += 1;
+        
+        // Se ainda houver refreshes a fazer, atualizar a URL para o próximo refresh
+        if (refreshCountRef.current < refreshCount) {
+          router.setParams({
+            needsMultipleRefresh: "true",
+            refreshCount: refreshCount.toString(),
+            currentRefresh: refreshCountRef.current.toString()
+          });
+        } else {
+          // Limpar parâmetros quando terminar todos os refreshes
+          router.setParams({});
+        }
+      }, 2000); // Intervalo entre refreshes
+      
+      return () => clearTimeout(timer);
+    }
+  }, [needsMultipleRefresh, refreshCount, params.currentRefresh]);
 
   // Scroll para a etapa atual quando mudar
   useEffect(() => {
