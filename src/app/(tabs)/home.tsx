@@ -487,7 +487,7 @@ const Home = () => {
   const TRAIL_SELECTOR_HEIGHT = 80
 
   return (
-    <View className="flex-1">
+    <View className="flex-1" style={{ backgroundColor: "transparent" }}>
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
       {(trailsLoading || isSyncing) && (
@@ -526,7 +526,7 @@ const Home = () => {
 
       <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
       {/* Navegador de trilha */}
-      <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-20 left-0 right-0 z-20 border-t-2 border-tertiary">
+      <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-16  left-0 right-0 z-20 border-t-2 border-tertiary">
         <TouchableOpacity
           onPress={handlePreviousTrilha}
           className="bg-tertiary p-2 rounded-md"
@@ -583,7 +583,8 @@ const Home = () => {
           ref={scrollViewRef}
           className="flex-1"
           contentContainerStyle={{
-            flexGrow: 1,
+            flexGrow: stages.length > 3 ? 1 : 0, // Only use flexGrow: 1 when there are enough stages
+            backgroundColor: "transparent", // Make background transparent
           }}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
@@ -593,7 +594,7 @@ const Home = () => {
           contentOffset={{ x: 0, y: 10000 }} // Um valor grande para garantir que comece no final
           maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         >
-          <View style={{ height: 60 }} /> {/* Increased padding to create more space between header and content */}
+    
           <LearningPathTrack
             etapas={stages}
             currentEtapaIndex={etapaAtualIndex}

@@ -59,7 +59,7 @@ const ETAPA_HEIGHT = 200
 const BOTTOM_SPACE_ADJUSTMENT = 120
 const TRACK_WIDTH = 8
 const TRACK_BORDER_RADIUS = 4
-const ETAPA_SPACING = 150
+const ETAPA_SPACING = 35
 
 // Função auxiliar para processar URLs do Firebase Storage
 const processFirebaseUrl = (url: string): string => {
@@ -302,7 +302,7 @@ const BackgroundContainer = ({
   // Se não há imagem ou ocorre erro, use um fundo padrão
   if ((!backgroundImage && !hasRemoteImage) || imageError) {
     return (
-      <View className="items-center bg-gray-100" style={styles.container}>
+      <View className="items-center" style={[styles.container, { backgroundColor: "transparent" }]}>
         {/* Ícone de fundo padrão quando não há imagem ou ocorre erro */}
         <View style={styles.fallbackBackground}>
           <Text style={{ fontSize: 40, color: "#ccc" }}>🏞️</Text>
@@ -320,7 +320,7 @@ const BackgroundContainer = ({
   // Mostrar indicador de carregamento
   if (isLoading) {
     return (
-      <View className="items-center bg-gray-100" style={styles.container}>
+      <View className="items-center" style={[styles.container, { backgroundColor: "transparent" }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#F6A608" />
           <Text style={{ marginTop: 10, color: "#666" }}>Carregando imagem...</Text>
@@ -475,7 +475,7 @@ const EtapasList = ({
             />
 
             {/* Espaço entre bolhas */}
-            {reversedIndex < reversedEtapas.length - 1 && <View style={{ height: ETAPA_SPACING }} />}
+            {reversedIndex < reversedEtapas.length - 1 && <View style={{  marginTop: ETAPA_SPACING, paddingTop: 40 }} />}
           </View>
         )
       })}
@@ -488,6 +488,7 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     height: "100%",
+    backgroundColor: "transparent",
   },
   svgBackground: {
     position: "absolute",
