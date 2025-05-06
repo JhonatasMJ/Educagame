@@ -5,6 +5,7 @@ import { View, Text, TouchableOpacity, FlatList, SafeAreaView, Animated, StatusB
 import { Feather } from "@expo/vector-icons"
 import { useAuth } from "@/src/context/AuthContext"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
+import { getDatabase, ref, get } from "firebase/database"
 
 // Importando os componentes de avatar
 import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
@@ -18,11 +19,13 @@ interface User {
   name: string
   points: number
   avatarSource: string
-  hours: number
-  consecutiveDays: number
-  consecutiveCorrect: number
-  totalConsecutiveDays: number
+  hours?: number
+  consecutiveDays?: number
+  consecutiveCorrect?: number
+  totalConsecutiveDays?: number
   position?: number
+  completedLessons?: number
+  minutesOnline?: number
 }
 
 // Mapeamento dos componentes de avatar
@@ -38,6 +41,12 @@ const RankingScreen = () => {
   const [users, setUsers] = useState<User[]>([])
   const [displayUsers, setDisplayUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [userStats, setUserStats] = useState({
+    completedLessons: 0,
+    perfectLessons: 0,
+    minutesOnline: 0,
+    points: 0,
+  })
 
   useRequireAuth({ requireAuth: true, showToast: true })
 
@@ -45,6 +54,80 @@ const RankingScreen = () => {
 
   // ID do usuário atual
   const currentUserId = authUser?.uid || ""
+
+  // Função para buscar estatísticas detalhadas do usuário
+  const fetchUserStats = async () => {
+    if (!authUser) return
+
+    try {
+      const db = getDatabase()
+
+      // Buscar progresso do usuário
+      const userProgressRef = ref(db, `userProgress/${authUser.uid}`)
+      const progressSnapshot = await get(userProgressRef)
+
+      let completedLessons = 0
+      let perfectLessons = 0
+      let timeSpent = 0 // em segundos
+
+      if (progressSnapshot.exists()) {
+        const progressData = progressSnapshot.val()
+
+        // Calcular lições concluídas e perfeitas
+        if (progressData.trails && Array.isArray(progressData.trails)) {
+          progressData.trails.forEach((trail: any) => {
+            if (trail.phases && Array.isArray(trail.phases)) {
+              trail.phases.forEach((phase: any) => {
+                if (phase.completed) {
+                  completedLessons++
+                }
+
+                // Verificar se a fase foi concluída sem erros
+                if (phase.questionsProgress && Array.isArray(phase.questionsProgress)) {
+                  const allCorrect = phase.questionsProgress.every((q: any) => q.correct)
+                  if (allCorrect && phase.questionsProgress.length > 0) {
+                    perfectLessons++
+                  }
+                }
+
+                // Somar tempo gasto
+                if (phase.timeSpent) {
+                  timeSpent += phase.timeSpent
+                }
+              })
+            }
+          })
+        }
+      }
+
+      // Converter segundos para minutos
+      const minutesOnline = Math.floor(timeSpent / 60)
+
+      // Buscar dados do usuário
+      const userRef = ref(db, `users/${authUser.uid}`)
+      const userSnapshot = await get(userRef)
+
+      let points = 0
+      let consecutiveDays = 0
+      let totalConsecutiveDays = 0
+
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.val()
+        points = userData.points || 0
+        consecutiveDays = userData.consecutiveDays || 0
+        totalConsecutiveDays = userData.totalConsecutiveDays || 0
+      }
+
+      setUserStats({
+        completedLessons,
+        perfectLessons,
+        minutesOnline,
+        points,
+      })
+    } catch (error) {
+      console.error("Erro ao buscar estatísticas do usuário:", error)
+    }
+  }
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -57,6 +140,8 @@ const RankingScreen = () => {
           name: user.nome || "Usuário",
           points: user.points || 0,
           avatarSource: user.avatarSource || "avatar1",
+          consecutiveDays: user.consecutiveDays || 0,
+          totalConsecutiveDays: user.totalConsecutiveDays || 0,
         }))
 
         formattedUsers.sort((a, b) => b.points - a.points)
@@ -67,8 +152,10 @@ const RankingScreen = () => {
         }))
 
         setUsers(usersWithPosition)
-
         reorganizeUsersForDisplay(usersWithPosition)
+
+        // Buscar estatísticas detalhadas do usuário atual
+        await fetchUserStats()
       } catch (error) {
         console.error("Erro ao buscar usuários:", error)
       } finally {
@@ -77,7 +164,7 @@ const RankingScreen = () => {
     }
 
     fetchUsers()
-  }, [])
+  }, [authUser])
 
   const reorganizeUsersForDisplay = (usersWithPosition: User[]) => {
     const currentUserIndex = usersWithPosition.findIndex((user) => user.id === currentUserId)
@@ -142,19 +229,20 @@ const RankingScreen = () => {
 
     return (
       <View
-        className={`flex-row items-center ${isCurrentUser ? "bg-secondary  mx-1" : "bg-white"
-          } rounded-lg mb-3.5 p-3.5 shadow-md`}
+        className={`flex-row items-center ${
+          isCurrentUser ? "bg-secondary  mx-1" : "bg-white"
+        } rounded-lg mb-3.5 p-3.5 shadow-md`}
         style={
           isCurrentUser
             ? {
-              transform: [{ scale: 1.05 }],
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 6,
-              elevation: 8,
-              zIndex: 10,
-            }
+                transform: [{ scale: 1.05 }],
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+                elevation: 8,
+                zIndex: 10,
+              }
             : {}
         }
       >
@@ -177,17 +265,6 @@ const RankingScreen = () => {
         </View>
       </View>
     )
-  }
-
-  const userDetailsData: User = {
-    points: userData?.points || 0,
-    hours: 120,
-    consecutiveDays: 25,
-    consecutiveCorrect: 10,
-    totalConsecutiveDays: 120,
-    id: "",
-    name: "",
-    avatarSource: "",
   }
 
   // Calculate the max height for the stats container
@@ -237,52 +314,50 @@ const RankingScreen = () => {
           <View className="mt-2.5 w-full">
             {/* Primeira linha do grid */}
             <View className="flex-row justify-between mb-2.5">
-              {/* Item 1 - Onocash */}
+              {/* Item 1 - Pontos */}
               <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
                 <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
                   <Feather name="award" size={20} color="#4A90E2" />
                 </View>
                 <View className="flex-row items-center flex-wrap">
-                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userDetailsData.points}</Text>
-                  <Text className="text-sm text-gray-500">Onocash</Text>
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userStats.points}</Text>
+                  <Text className="text-sm text-gray-500">Money</Text>
                 </View>
               </View>
 
-              {/* Item 2 - Horas */}
+              {/* Item 2 - Minutos Online */}
               <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
                 <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
                   <Feather name="clock" size={20} color="#4A90E2" />
                 </View>
                 <View className="flex-row items-center flex-wrap">
-                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userDetailsData.hours}</Text>
-                  <Text className="text-sm text-gray-500">horas</Text>
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userStats.minutesOnline}</Text>
+                  <Text className="text-sm text-gray-500">minutos</Text>
                 </View>
               </View>
             </View>
 
             {/* Segunda linha do grid */}
             <View className="flex-row justify-between">
-              {/* Item 3 - Dias seguidos */}
+              {/* Item 3 - Lições Concluídas */}
               <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
                 <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
-                  <Feather name="calendar" size={20} color="#4A90E2" />
+                  <Feather name="check-circle" size={20} color="#4A90E2" />
                 </View>
                 <View className="flex-row items-center flex-wrap">
-                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userDetailsData.consecutiveDays}</Text>
-                  <Text className="text-sm text-gray-500">dias seguidos</Text>
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userStats.completedLessons}</Text>
+                  <Text className="text-sm text-gray-500">lições concluídas</Text>
                 </View>
               </View>
 
-              {/* Item 4 - Total dias seguidos */}
+              {/* Item 4 - Lições Perfeitas */}
               <View className="flex-row items-center bg-white rounded-lg p-2.5 w-[49%] shadow">
                 <View className="w-7 h-7 rounded-full bg-[#F0F8FF] justify-center items-center mr-2">
-                  <Feather name="award" size={20} color="#4A90E2" />
+                  <Feather name="star" size={20} color="#4A90E2" />
                 </View>
                 <View className="flex-row items-center flex-wrap">
-                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">
-                    {userDetailsData.totalConsecutiveDays}
-                  </Text>
-                  <Text className="text-sm text-gray-500">dias seguidos</Text>
+                  <Text className="text-[15px] font-bold text-[#4A90E2] mr-1">{userStats.perfectLessons}</Text>
+                  <Text className="text-sm text-gray-500">sem erros</Text>
                 </View>
               </View>
             </View>

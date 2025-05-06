@@ -1011,14 +1011,6 @@ const MainGame = () => {
           </View>
         )}
 
-        {isNewUser && (
-          <View className="flex-row items-center bg-blue-100 px-3 py-2 rounded-md mx-4 mt-4 border border-blue-300">
-            <Text className="text-blue-800 font-medium ml-2">
-              Bem-vindo! Complete esta etapa para começar sua jornada de aprendizado.
-            </Text>
-          </View>
-        )}
-
         {/* Render the specific game component */}
         {renderGameComponent()}
       </Animated.View>

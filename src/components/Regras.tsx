@@ -184,13 +184,13 @@ const PointsTab = () => (
           <Award size={24} color="#FFD700" />
         </View>
         <View>
-          <Text className="text-lg font-bold text-gray-800">Onocash</Text>
+          <Text className="text-lg font-bold text-gray-800">Money</Text>
           <Text className="text-xs text-gray-500">Moeda do jogo</Text>
         </View>
       </View>
 
       <Text className="text-sm text-gray-600 mb-4 leading-5">
-        Onocash são os pontos que você acumula ao completar atividades e responder corretamente às questões.
+        Money são os pontos que você acumula ao completar atividades e responder corretamente às questões.
       </Text>
 
       <View className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
