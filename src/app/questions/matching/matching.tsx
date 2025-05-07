@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React,{ useState, useEffect, useRef } from "react"
 import { View, Text, TouchableOpacity, Image, ScrollView, Animated, Easing, StyleSheet } from "react-native"
 import type { QuestionType } from "../../(tabs)/home"
 import Svg, { Line } from "react-native-svg"
-import React from "react"
 
 // Definição das interfaces para os itens das colunas
 interface ColumnItem {
@@ -38,6 +37,10 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
   const [matches, setMatches] = useState<{ left: string; right: string }[]>([])
   const [submitted, setSubmitted] = useState(false)
 
+  // Estados para as colunas embaralhadas
+  const [shuffledLeftColumn, setShuffledLeftColumn] = useState<ColumnItem[]>([])
+  const [shuffledRightColumn, setShuffledRightColumn] = useState<ColumnItem[]>([])
+
   // Referências para as posições dos itens
   const leftItemPositions = useRef<{ [key: string]: { x: number; y: number; height: number } }>({})
   const rightItemPositions = useRef<{ [key: string]: { x: number; y: number; height: number } }>({})
@@ -59,7 +62,12 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
       setAnimatingItemId(null)
       leftItemPositions.current = {}
       rightItemPositions.current = {}
-      console.log("Question changed, resetting states")
+
+      // Embaralhar as colunas
+      setShuffledLeftColumn(shuffleArray(question.leftColumn))
+      setShuffledRightColumn(shuffleArray(question.rightColumn))
+
+      console.log("Question changed, resetting states and shuffling columns")
     }
   }, [question])
 
@@ -205,6 +213,16 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
     return question.correctMatches.some((match) => match.left === leftId && match.right === rightId)
   }
 
+  // Função para embaralhar um array (algoritmo Fisher-Yates)
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
+  }
+
   // Renderizar o conteúdo de um item (texto ou imagem)
   const renderItemContent = (item: ColumnItem) => {
     // Primeiro, verificar se há uma imageUrl (do Firebase)
@@ -281,7 +299,7 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
 
   // Renderizar os itens da coluna esquerda
   const renderLeftColumn = () => {
-    return question.leftColumn.map((item, index) => {
+    return shuffledLeftColumn.map((item, index) => {
       const isSelected = selectedItem?.id === item.id && selectedItem?.side === "left"
       const isMatched = matches.some((match) => match.left === item.id)
       const isAnimating = animatingItemId === item.id
@@ -329,7 +347,7 @@ const Matching = ({ question, onAnswer, questionNumber }: MatchingProps) => {
 
   // Renderizar os itens da coluna direita
   const renderRightColumn = () => {
-    return question.rightColumn.map((item, index) => {
+    return shuffledRightColumn.map((item, index) => {
       const isSelected = selectedItem?.id === item.id && selectedItem?.side === "right"
       const isMatched = matches.some((match) => match.right === item.id)
       const isAnimating = animatingItemId === item.id

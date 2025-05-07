@@ -15,7 +15,7 @@ interface LessonBubbleProps {
   isNext: boolean
   isLocked?: boolean
   onPress: () => void
-  title: string
+  title?: string
   icon?: string // Nome do ícone ou URL de imagem
   iconLibrary?: IconLibrary // Biblioteca de ícones (opcional)
   description?: string
@@ -143,7 +143,9 @@ const LessonBubble = ({
           <NumberIndicator number={number} size={NUMBER_SIZE} />
 
           {/* Título */}
-          <TitleCard title={title} />
+          {title && (
+            <TitleCard title={title} />
+          )}
         </View>
       </Animated.View>
     </Pressable>
@@ -238,14 +240,14 @@ const MainBubble = ({
     if (isCompleted) {
       bgColorClass = "bg-[#83AD11]"
     } else if (isActive || isNext) {
-      bgColorClass = "bg-purple-600"
+      bgColorClass = "bg-blue-600"
     }
 
     if (isActive) {
       if (isCompleted) {
         borderClass = "border-4 border-[#5A7A0C]"
       } else if (isNext) {
-        borderClass = "border-4 border-purple-800"
+        borderClass = "border-4 border-blue-800"
       } else {
         borderClass = "border-4 border-gray-700"
       }

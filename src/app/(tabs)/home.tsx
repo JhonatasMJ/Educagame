@@ -269,7 +269,7 @@ const Home = () => {
         if (!etapa || typeof etapa !== "object") {
           return {
             id: `default-${Math.random().toString(36).substring(2, 9)}`,
-            titulo: "Etapa sem título",
+            titulo: "",
             descricao: "Descrição da etapa não disponível",
             concluida: false,
             icon: "crown",
@@ -304,7 +304,7 @@ const Home = () => {
 
         return {
           id: etapa.id || `etapa-${Math.random().toString(36).substring(2, 9)}`,
-          titulo: etapa.titulo || "Etapa sem título",
+          titulo: etapa.titulo,
           descricao: etapa.descricao || "Descrição da etapa não disponível",
           concluida: concluida,
           icon: etapa.icon || "crown",

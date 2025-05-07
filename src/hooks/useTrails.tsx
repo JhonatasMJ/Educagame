@@ -67,7 +67,6 @@ export const useTrails = () => {
               if (!etapa || typeof etapa !== "object") {
                 return {
                   id: `generated-${Math.random().toString(36).substr(2, 9)}`,
-                  titulo: "Etapa sem título",
                   descricao: "Etapa sem descrição",
                   stages: [],
                 }
@@ -90,7 +89,6 @@ export const useTrails = () => {
               return {
                 ...etapa,
                 id: etapa.id || `etapa-${Math.random().toString(36).substr(2, 9)}`,
-                titulo: etapa.titulo || "Etapa sem título",
                 descricao: etapa.descricao || "Sem descrição",
                 stages: stages,
               }

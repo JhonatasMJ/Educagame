@@ -62,10 +62,10 @@ const FeedbackModal = ({
       alignItems: "center",
     },
     titleText: {
-      fontSize: 24,
+      fontSize: 22,
       fontWeight: "bold",
       marginBottom: 8,
-      textAlign: "center",
+      textAlign: "left",
     },
     button: {
       padding: 12,

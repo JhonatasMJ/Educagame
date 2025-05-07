@@ -34,7 +34,7 @@ interface StageInfo {
 // Interface para a Etapa (que contém stages)
 interface EtapaInfo {
   id: string
-  titulo: string
+  titulo?: string
   descricao?: string
   concluida: boolean
   icon?: string
@@ -120,7 +120,6 @@ const LearningPathTrack = ({
         // Retornar um objeto padrão se etapa não for válido
         return {
           id: `default-${Math.random().toString(36).substring(2, 9)}`,
-          titulo: "Etapa sem título",
           descricao: "Descrição da etapa não disponível",
           concluida: false,
           icon: "crown",
@@ -148,7 +147,7 @@ const LearningPathTrack = ({
 
       return {
         id: etapa.id || `id-${Math.random().toString(36).substring(2, 9)}`,
-        titulo: etapa.titulo || "Sem título",
+        titulo: etapa.titulo,
         descricao: etapa.descricao || "Descrição da etapa não disponível",
         concluida: concluida,
         icon: etapa.icon || "crown",
@@ -466,7 +465,7 @@ const EtapasList = ({
               isNext={isNextEtapa}
               isLocked={isLocked}
               onPress={() => onEtapaPress(originalIndex)}
-              title={etapa.titulo || "Sem título"}
+              title={etapa.titulo}
               icon={etapa.icon}
               iconLibrary={etapa.iconLibrary as IconLibrary}
               description={etapa.descricao}
