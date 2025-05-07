@@ -15,13 +15,13 @@ import {
 } from "react-native"
 import { ChevronLeft, ChevronRight } from "lucide-react-native"
 import { useAuth } from "@/src/context/AuthContext"
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import { useGameProgress } from "@/src/context/GameProgressContext"
 import DuolingoHeader from "@/src/components/DuolingoHeader"
 import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import { useTrails } from "@/src/hooks/useTrails"
-import { useLocalSearchParams } from "expo-router"
+import { logSync, LogLevel } from "@/src/services/syncLogger"
 import React from "react"
 
 const { width, height } = Dimensions.get("window")
@@ -66,20 +66,27 @@ const Home = () => {
   const [trilhaAtualIndex, setTrilhaAtualIndex] = useState(0)
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
-  const { userData, authUser, refreshUserData, isTokenLoaded } = useAuth()
+  const { userData, authUser, refreshUserData, isTokenLoaded, justRegistered, setJustRegistered } = useAuth()
   const { getPhaseCompletionPercentage, syncProgress, isSyncing } = useGameProgress()
   const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
   const [containerHeight, setContainerHeight] = useState(height - 200) // Altura inicial estimada
   const [hasLoadedTrails, setHasLoadedTrails] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
+  // Receber parâmetros da URL
   const params = useLocalSearchParams()
   const needsMultipleRefresh = params.needsMultipleRefresh === "true"
   const refreshCount = Number.parseInt((params.refreshCount as string) || "0", 10)
+  const refreshTimestamp = params.refreshTimestamp || Date.now().toString()
+  const forceFullRefresh = params.forceFullRefresh === "true"
 
   // Referência para controlar os refreshes
   const refreshCountRef = useRef(0)
+  const lastRefreshTimeRef = useRef<number>(0)
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const initialLoadCompleteRef = useRef(false)
 
   // Animated scroll value for header animation
   const scrollY = useRef(new Animated.Value(0)).current
@@ -101,31 +108,71 @@ const Home = () => {
   // In the Home component, add the following after the other useState declarations:
   const { trails: trilhas, isLoading: trailsLoading, error: trailsError, fetchTrails } = useTrails()
 
-  // Adicione um mecanismo de throttle para o refreshTrails
+  // Adicione um estado para controlar o refresh inicial
+  const [initialRefreshDone, setInitialRefreshDone] = useState(false)
 
-  async function refreshTrails() {
-    console.log("clicou no refresh")
+  // Função para atualizar trilhas com feedback visual
+  async function refreshTrails(forceUpdate = false) {
+    console.log("Iniciando refresh de trilhas", forceUpdate ? "(forçado)" : "")
+    logSync(LogLevel.INFO, `Iniciando refresh de trilhas ${forceUpdate ? "(forçado)" : ""}`)
 
     // Evitar múltiplos cliques em sequência
-    if (trailsLoading || isSyncing) {
+    if (trailsLoading || isSyncing || isRefreshing) {
       console.log("Já está carregando, ignorando requisição")
       return
     }
 
-    await fetchTrails() // Passar true para forçar atualização
+    try {
+      // Mostrar indicador de carregamento
+      setIsRefreshing(true)
 
-    // Também sincronizar o progresso do usuário quando atualizar as trilhas
-    if (authUser) {
-      await syncProgress()
+      // Atualizar timestamp do último refresh
+      lastRefreshTimeRef.current = Date.now()
+
+      // Mostrar alerta para debug (remover em produção)
+      if (Platform.OS === "web") {
+        console.log("Iniciando refresh das trilhas...")
+      }
+
+      // Buscar trilhas
+      await fetchTrails()
+
+      // Sincronizar progresso do usuário
+      if (authUser) {
+        await syncProgress()
+      }
+
+      // Atualizar dados do usuário
+      await refreshUserData()
+
+      // Registrar timestamp final
+      const timeElapsed = Date.now() - lastRefreshTimeRef.current
+      logSync(LogLevel.INFO, `Refresh completo em ${timeElapsed}ms`)
+      console.log(`Refresh completo em ${timeElapsed}ms`)
+
+      // Incrementar contador de refreshes
+      refreshCountRef.current += 1
+
+      // Mostrar alerta para debug (remover em produção)
+      if (Platform.OS === "web") {
+        console.log("Refresh concluído com sucesso!")
+      }
+    } catch (error) {
+      logSync(LogLevel.ERROR, "Erro ao atualizar trilhas:", error)
+      console.error("Erro ao atualizar trilhas:", error)
+
+      // Mostrar alerta para debug (remover em produção)
+      if (Platform.OS === "web") {
+        console.error("Erro ao atualizar trilhas:", error)
+      }
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
   // Estatísticas do usuário para o cabeçalho
   const [userStats, setUserStats] = useState({
     points: userData?.points || 0,
-    streak: 7,
-    gems: 45,
-    lives: 5,
   })
 
   // Atualizar pontos quando userData mudar
@@ -299,7 +346,7 @@ const Home = () => {
         title: currentStage.title,
         description: currentStage.description || "",
         image: currentStage.image || "",
-        video: (currentStage as StageInfo).video || "", // Type assertion to StageInfo
+        video: (currentStage as StageInfo).video || "",
         tempo_estimado: currentStage.tempo_estimado || "10-15 minutos",
         pontos_chave: JSON.stringify(currentStage.pontos_chave || []),
       },
@@ -314,6 +361,7 @@ const Home = () => {
       }))
     }
   }
+
   // Medir a altura do container para posicionar os estágios corretamente
   const onContainerLayout = (event: {
     nativeEvent: { layout: { height: number } }
@@ -322,29 +370,81 @@ const Home = () => {
     setContainerHeight(height)
   }
 
+  // SISTEMA DE MÚLTIPLOS REFRESHES
   useEffect(() => {
-    if (needsMultipleRefresh && refreshCount > 0 && refreshCountRef.current < refreshCount) {
-      const timer = setTimeout(async () => {
-        console.log(`Executando refresh ${refreshCountRef.current + 1} de ${refreshCount}`)
-        await refreshTrails()
-        refreshCountRef.current += 1
-
-        // Se ainda houver refreshes a fazer, atualizar a URL para o próximo refresh
-        if (refreshCountRef.current < refreshCount) {
-          router.setParams({
-            needsMultipleRefresh: "true",
-            refreshCount: refreshCount.toString(),
-            currentRefresh: refreshCountRef.current.toString(),
-          })
-        } else {
-          // Limpar parâmetros quando terminar todos os refreshes
-          router.setParams({})
-        }
-      }, 2000) // Intervalo entre refreshes
-
-      return () => clearTimeout(timer)
+    // Limpar qualquer timer existente
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current)
+      refreshTimerRef.current = null
     }
-  }, [needsMultipleRefresh, refreshCount, params.currentRefresh])
+
+    // Verificar se precisamos fazer múltiplos refreshes
+    if (needsMultipleRefresh && refreshCount > 0) {
+      const performRefresh = async (currentRefresh: number) => {
+        if (currentRefresh > refreshCount) {
+          // Todos os refreshes concluídos
+          logSync(LogLevel.INFO, `Sequência de ${refreshCount} refreshes concluída com sucesso`)
+          console.log(`Sequência de ${refreshCount} refreshes concluída com sucesso`)
+
+          // Limpar parâmetros
+          router.setParams({})
+          return
+        }
+
+        // Log para debug
+        logSync(LogLevel.INFO, `Executando refresh ${currentRefresh} de ${refreshCount}`)
+        console.log(`Executando refresh ${currentRefresh} de ${refreshCount}`)
+
+        try {
+          // Executar refresh com força
+          await refreshTrails(true)
+
+          // Agendar próximo refresh após delay
+          const delay = 2000 + currentRefresh * 500 // Aumenta o delay a cada refresh
+          refreshTimerRef.current = setTimeout(() => performRefresh(currentRefresh + 1), delay)
+        } catch (error) {
+          logSync(LogLevel.ERROR, `Erro no refresh ${currentRefresh}:`, error)
+          console.error(`Erro no refresh ${currentRefresh}:`, error)
+
+          // Tentar novamente após um delay maior
+          refreshTimerRef.current = setTimeout(() => performRefresh(currentRefresh), 3000)
+        }
+      }
+
+      // Iniciar sequência de refreshes
+      refreshTimerRef.current = setTimeout(() => performRefresh(1), 1000)
+    }
+
+    // Cleanup
+    return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current)
+        refreshTimerRef.current = null
+      }
+    }
+  }, [needsMultipleRefresh, refreshCount, refreshTimestamp])
+
+  // Efeito para lidar com usuário recém-registrado
+  useEffect(() => {
+    if (justRegistered && !initialLoadCompleteRef.current) {
+      logSync(LogLevel.INFO, "Usuário recém-registrado detectado, iniciando refreshes")
+      console.log("Usuário recém-registrado detectado, iniciando refreshes")
+
+      // Iniciar sequência de refreshes
+      router.setParams({
+        needsMultipleRefresh: "true",
+        refreshCount: "5", // Aumentado para 5 refreshes
+        refreshTimestamp: Date.now().toString(),
+        forceFullRefresh: "true",
+      })
+
+      // Resetar flag
+      setJustRegistered(false)
+    }
+
+    // Marcar carregamento inicial como concluído
+    initialLoadCompleteRef.current = true
+  }, [justRegistered])
 
   // Scroll para a etapa atual quando mudar
   useEffect(() => {
@@ -461,27 +561,50 @@ const Home = () => {
 
     const loadTrails = async () => {
       // Verificamos se o usuário está autenticado e o token foi carregado
-      if (authUser && isTokenLoaded && isMounted && !hasLoadedTrails) {
-        console.log("Carregando trilhas uma única vez")
-        await fetchTrailsRef.current()
+      if (authUser && isTokenLoaded && isMounted) {
+        logSync(LogLevel.INFO, "Carregando trilhas inicial")
+        console.log("Iniciando carregamento inicial de trilhas")
 
-        // Sincronizar o progresso apenas quando as trilhas forem carregadas com sucesso
-        if (trilhas && trilhas.length > 0 && isMounted) {
-          await syncProgress()
+        // Mostrar indicador de carregamento
+        setIsRefreshing(true)
+
+        try {
+          // Forçar atualização completa
+          await fetchTrailsRef.current()
+
+          // Sincronizar o progresso
           if (isMounted) {
+            await syncProgress()
+
+            // Atualizar dados do usuário
+            await refreshUserData()
+
+            // Marcar como carregado
             setHasLoadedTrails(true)
+            setInitialRefreshDone(true)
+            console.log("Carregamento inicial concluído com sucesso")
+          }
+        } catch (error) {
+          console.error("Erro no carregamento inicial:", error)
+          logSync(LogLevel.ERROR, "Erro no carregamento inicial:", error)
+        } finally {
+          if (isMounted) {
+            setIsRefreshing(false)
           }
         }
       }
     }
 
-    loadTrails()
+    // Executar carregamento inicial imediatamente
+    if (!initialRefreshDone) {
+      loadTrails()
+    }
 
     // Cleanup function para evitar memory leaks e chamadas após desmontagem
     return () => {
       isMounted = false
     }
-  }, [authUser, isTokenLoaded]) // Removemos trilhas e hasLoadedTrails das dependências
+  }, [authUser, isTokenLoaded, initialRefreshDone])
 
   const TAB_HEIGHT = 50
   const TRAIL_SELECTOR_HEIGHT = 80
@@ -490,11 +613,15 @@ const Home = () => {
     <View className="flex-1" style={{ backgroundColor: "transparent" }}>
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
-      {(trailsLoading || isSyncing) && (
+      {(trailsLoading || isSyncing || isRefreshing) && (
         <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4">
-              {isSyncing ? "Sincronizando progresso..." : "Carregando trilhas..."}
+              {isRefreshing
+                ? `Sincronizando dados (${refreshCountRef.current}/${refreshCount || 1})...`
+                : isSyncing
+                  ? "Sincronizando progresso..."
+                  : "Carregando trilhas..."}
             </Text>
             <ActivityIndicator size="large" color="#F6A608" />
           </View>
@@ -506,27 +633,30 @@ const Home = () => {
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4 text-red-500">Erro ao carregar trilhas</Text>
             <Text className="text-gray-600 mb-4">{trailsError}</Text>
-            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refreshTrails}>
+            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={() => refreshTrails(true)}>
               <Text className="text-white font-medium">Tentar novamente</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {!trailsLoading && !isSyncing && trilhas && trilhas.length === 0 && (
+      {!trailsLoading && !isSyncing && !isRefreshing && trilhas && trilhas.length === 0 && (
         <View className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <View className="bg-white p-6 rounded-xl shadow-lg">
             <Text className="text-lg font-medium text-center mb-4">Nenhuma trilha encontrada</Text>
-            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={refreshTrails}>
+            <TouchableOpacity className="bg-primary py-2 px-4 rounded-lg" onPress={() => refreshTrails(true)}>
               <Text className="text-white font-medium">Atualizar</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
+      <>
+        <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
+
+      </>
       {/* Navegador de trilha */}
-      <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-16  left-0 right-0 z-20 border-t-2 border-tertiary">
+      <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-16 left-0 right-0 z-20 border-t-2 border-tertiary">
         <TouchableOpacity
           onPress={handlePreviousTrilha}
           className="bg-tertiary p-2 rounded-md"
@@ -594,7 +724,6 @@ const Home = () => {
           contentOffset={{ x: 0, y: 10000 }} // Um valor grande para garantir que comece no final
           maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         >
-    
           <LearningPathTrack
             etapas={stages}
             currentEtapaIndex={etapaAtualIndex}

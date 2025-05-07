@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "expo-router"
-import { createUserWithEmailAndPassword } from "firebase/auth"
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { auth } from "../services/firebaseConfig"
-import { getDatabase, ref, set } from "firebase/database"
+import { getDatabase, ref, set, get } from "firebase/database"
 import Toast from "react-native-toast-message"
 import { useAuth } from "../context/AuthContext"
 import { initializeNewUserProgress } from "../services/userProgressService"
@@ -72,6 +72,17 @@ export const useQuickRegister = () => {
       const firstName = nameParts[0]
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : ""
 
+      // IMPORTANTE: Atualizar o perfil do usuário no Firebase Authentication
+      // Isso garante que displayName e outras propriedades sejam definidas
+      await updateProfile(user, {
+        displayName: name,
+        photoURL: `avatar${avatarId}`, // Armazenar o avatar como photoURL
+      })
+      logSync(
+        LogLevel.INFO,
+        `Perfil do usuário atualizado no Firebase Auth: displayName=${name}, photoURL=avatar${avatarId}`,
+      )
+
       // Salvar dados do usuário no Realtime Database
       const db = getDatabase()
       const userRef = ref(db, `users/${user.uid}`)
@@ -80,9 +91,12 @@ export const useQuickRegister = () => {
         email,
         nome: firstName,
         sobrenome: lastName,
+        name: name, // Adicionar o nome completo
+        displayName: name, // Adicionar displayName explicitamente
         phone: SIMPLIFIED_ONBOARDING_CONFIG.DEFAULT_VALUES.phone,
         avatarSource: `avatar${avatarId}`,
-        avatarId: avatarId,
+        avatarId: avatarId, // Garantir que o avatarId seja salvo
+        photoURL: `avatar${avatarId}`, // Adicionar photoURL para consistência
         points: 0,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString().split("T")[0],
@@ -91,10 +105,37 @@ export const useQuickRegister = () => {
         birthDate: SIMPLIFIED_ONBOARDING_CONFIG.DEFAULT_VALUES.birthDate,
         lgpdAccepted: SIMPLIFIED_ONBOARDING_CONFIG.DEFAULT_VALUES.lgpdAccepted,
         termsAccepted: SIMPLIFIED_ONBOARDING_CONFIG.DEFAULT_VALUES.termsAccepted,
+        // Adicionar dados para estatísticas
+        completedLessons: 0,
+        perfectLessons: 0,
+        minutesOnline: 0,
+        timeSpent: 0, // Total de segundos online
+        // Adicionar metadados da aplicação
+        appVersion: "1.0.0",
+        registrationMethod: "quick-start",
       }
 
       await set(userRef, userData)
-      logSync(LogLevel.INFO, "Dados do usuário salvos com sucesso")
+      logSync(LogLevel.INFO, "Dados do usuário salvos com sucesso no Realtime Database")
+
+      // Verificar se os dados foram salvos corretamente
+      try {
+        // Forma correta de verificar os dados: usar a função get() com a referência
+        const snapshot = await get(userRef)
+
+        if (snapshot.exists()) {
+          logSync(LogLevel.INFO, "Verificação: dados do usuário encontrados no banco")
+          const savedData = snapshot.val()
+          logSync(
+            LogLevel.INFO,
+            `Dados salvos - nome: ${savedData.nome}, avatarId: ${savedData.avatarId}, displayName: ${savedData.displayName}`,
+          )
+        } else {
+          logSync(LogLevel.WARNING, "Verificação: dados do usuário NÃO encontrados no banco!")
+        }
+      } catch (verifyError) {
+        logSync(LogLevel.ERROR, "Erro ao verificar dados salvos:", verifyError)
+      }
 
       // Inicializar o progresso do usuário
       try {
@@ -102,10 +143,27 @@ export const useQuickRegister = () => {
         await initializeNewUserProgress(user.uid)
         logSync(LogLevel.INFO, "Progresso do usuário inicializado com sucesso")
 
-        // Sincronizar progresso com as trilhas disponíveis
-        logSync(LogLevel.INFO, "Sincronizando progresso com trilhas disponíveis...")
+        // IMPORTANTE: Realizar múltiplas sincronizações para garantir persistência
+        logSync(LogLevel.INFO, "Iniciando processo de sincronização em sequência...")
+
+        // Primeira sincronização
+        logSync(LogLevel.INFO, "Executando sincronização inicial...")
         await syncUserProgress(user.uid, true, true)
-        logSync(LogLevel.INFO, "Sincronização concluída com sucesso")
+        logSync(LogLevel.INFO, "Sincronização inicial concluída")
+
+        // Segunda sincronização após um pequeno delay
+        setTimeout(async () => {
+          logSync(LogLevel.INFO, "Executando segunda sincronização...")
+          await syncUserProgress(user.uid, true, true)
+          logSync(LogLevel.INFO, "Segunda sincronização concluída")
+        }, 1000)
+
+        // Terceira sincronização após mais um delay
+        setTimeout(async () => {
+          logSync(LogLevel.INFO, "Executando terceira sincronização...")
+          await syncUserProgress(user.uid, true, true)
+          logSync(LogLevel.INFO, "Terceira sincronização concluída")
+        }, 2000)
       } catch (progressError) {
         logSync(LogLevel.ERROR, "Erro ao inicializar/sincronizar progresso:", progressError)
       }
@@ -122,7 +180,9 @@ export const useQuickRegister = () => {
         pathname: "/(tabs)/home",
         params: {
           needsMultipleRefresh: "true",
-          refreshCount: "3", // Número de refreshes a serem realizados
+          refreshCount: "2", 
+          refreshTimestamp: Date.now().toString(), // Timestamp para evitar caching
+          forceFullRefresh: "true", // Forçar refresh completo
         },
       })
       logSync(LogLevel.INFO, "Navegando para a home com parâmetro de múltiplos refreshes")

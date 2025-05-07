@@ -459,7 +459,7 @@ export const useLogin = () => {
     }
   }
 
-  const clearSavedCredentials = async () => {
+  const clearSavedCredentials = async (): Promise<boolean> => {
     try {
       logSync(LogLevel.INFO, "Limpando credenciais salvas e realizando logout")
 
@@ -484,9 +484,31 @@ export const useLogin = () => {
       setSavedEmail(null)
       setSavedPassword(null)
 
+      // 5. Limpar cache adicional
+      try {
+        // Limpar todos os outros dados que possam estar armazenados
+        const cacheKeys = allKeys.filter(
+          (key) =>
+            key.includes("cache") ||
+            key.includes("progress") ||
+            key.includes("state") ||
+            key.includes("data") ||
+            key.includes("trail"),
+        )
+
+        if (cacheKeys.length > 0) {
+          await AsyncStorage.multiRemove(cacheKeys)
+        }
+      } catch (cacheError) {
+        logSync(LogLevel.ERROR, "Erro ao limpar cache adicional:", cacheError)
+        // Continuar mesmo com erro no cache
+      }
+
       logSync(LogLevel.INFO, "Logout realizado com sucesso")
+      return true
     } catch (error) {
       logSync(LogLevel.ERROR, "Erro ao fazer logout:", error)
+      return false
     }
   }
 

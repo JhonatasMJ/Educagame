@@ -1,12 +1,11 @@
 "use client"
 
-import React from "react"
+import  React from "react"
 import { createContext, useState, useEffect, useContext, type ReactNode } from "react"
 import { getDatabase, ref, get, update, set } from "firebase/database"
 import { signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth"
 import { auth } from "../services/firebaseConfig"
 import { useRouter } from "expo-router"
-import { useRequireAuth } from "../hooks/useRequireAuth"
 import { getAuthToken, removeAuthToken } from "../services/apiService"
 import { USE_SIMPLIFIED_ONBOARDING } from "@/config/appConfig"
 
@@ -179,11 +178,17 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 email: user.email || "",
                 nome: user.displayName?.split(" ")[0] || "",
                 sobrenome: user.displayName?.split(" ").slice(1).join(" ") || "",
+                name: user.displayName || "",
+                displayName: user.displayName || "",
+                photoURL: user.photoURL || "",
+                avatarSource: user.photoURL || "",
+                avatarId: user.photoURL?.replace("avatar", "") || "",
                 points: 0,
                 lastLogin: new Date().toISOString().split("T")[0],
                 consecutiveDays: 1,
                 totalConsecutiveDays: 1,
                 createdAt: new Date().toISOString(), // Adicionar data de criação
+                appName: auth.app.name || "[DEFAULT]",
               }
 
               // Apenas inicializar dados básicos do usuário, não o progresso
