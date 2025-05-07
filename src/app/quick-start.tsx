@@ -41,14 +41,23 @@ const AVATAR_SIZE = width * 0.16 // Tamanho reduzido dos avatares
 export default function QuickStart() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [name, setName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const { handleQuickRegister, isLoading } = useQuickRegister()
 
   // Validação em tempo real do nome
   const [nameError, setNameError] = useState<string | null>(null)
 
-  // Função para validar o nome enquanto o usuário digita
+  // Função para validar o nome enquanto o usuário digita e separar nome/sobrenome
   const validateName = (text: string) => {
     setName(text)
+
+    // Separar nome e sobrenome
+    const nameParts = text.trim().split(/\s+/)
+    if (nameParts.length > 0) {
+      setFirstName(nameParts[0])
+      setLastName(nameParts.length > 1 ? nameParts.slice(1).join(" ") : "")
+    }
 
     if (text.trim().length > 0 && text.trim().length < 3) {
       setNameError("Nome deve ter pelo menos 3 caracteres")
@@ -130,7 +139,8 @@ export default function QuickStart() {
     }
 
     try {
-      await handleQuickRegister(name, selectedAvatar)
+      // Passar nome, sobrenome e nome completo para o registro
+      await handleQuickRegister(name, selectedAvatar, firstName, lastName)
     } catch (error) {
       Alert.alert("Erro", "Não foi possível criar sua conta. Tente novamente.")
       console.error(error)
@@ -153,6 +163,16 @@ export default function QuickStart() {
         useNativeDriver: true,
       }),
     ]).start()
+  }
+
+  // Determinar o texto de ajuda para o nome
+  const getNameHelperText = () => {
+    if (firstName && lastName) {
+      return `Nome: ${firstName} | Sobrenome: ${lastName}`
+    } else if (firstName) {
+      return `Nome: ${firstName}`
+    }
+    return ""
   }
 
   return (
@@ -187,7 +207,6 @@ export default function QuickStart() {
                         },
                       ],
                       width: "35%", // Define a largura para aproximadamente metade do container
-
                       alignItems: "center",
                     }}
                   >
@@ -207,14 +226,15 @@ export default function QuickStart() {
             <Text style={styles.subtitle}>Como podemos te chamar?</Text>
             <TextInput
               style={[styles.input, nameError ? styles.inputError : null]}
-              placeholder="Digite seu nome"
+              placeholder="Digite seu nome completo"
               placeholderTextColor={UI_COLORS.PLACEHOLDER}
               value={name}
               onChangeText={validateName}
-              maxLength={20}
+              maxLength={40}
               autoCapitalize="words"
             />
             {nameError && <Text style={styles.errorText}>{nameError}</Text>}
+            
           </View>
 
           <Animated.View
@@ -282,14 +302,14 @@ const styles = StyleSheet.create({
   },
   section: {
     width: "100%",
-    marginVertical: 10,
+    marginBottom: 10,
     alignItems: "center",
   },
   subtitle: {
     fontSize: 18,
     fontWeight: "600",
     color: TEXT_COLORS.LIGHT,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   avatarGrid: {
     flexDirection: "row",
@@ -376,5 +396,13 @@ const styles = StyleSheet.create({
     marginTop: 5,
     alignSelf: "flex-start",
     marginLeft: 5,
+  },
+  helperText: {
+    color: TEXT_COLORS.LIGHT,
+    fontSize: 14,
+    marginTop: 5,
+    alignSelf: "flex-start",
+    marginLeft: 5,
+    opacity: 0.8,
   },
 })

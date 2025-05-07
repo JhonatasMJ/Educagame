@@ -64,6 +64,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [justLoggedIn, setJustLoggedIn] = useState(false) // Estado para login recente
   const [justRegistered, setJustRegistered] = useState(false) // Novo estado para cadastro recente
   const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   // Adicione um efeito para carregar o token JWT do AsyncStorage
   useEffect(() => {
@@ -302,12 +303,32 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Modifique a função logout para também remover o token JWT
+  // Adicione esta função ao contexto AuthContext
+  const clearAllContextData = () => {
+    // Limpar todos os estados do contexto
+    setUserData(null)
+    setAuthUser(null)
+    setIsAuthenticated(false)
+    setLoading(false)
+    setShowLoadingTransition(false)
+    setJustLoggedIn(false)
+    setJwtToken(null)
+    setJustRegistered(false)
+    setError(null)
+    // Limpar quaisquer outros estados que você tenha no contexto
+  }
+
+  // Modifique a função logout para usar a nova função de limpeza
   const logout = async () => {
     try {
       setLoading(true)
       setShowLoadingTransition(true)
+      // Primeiro fazer logout no Firebase
       await signOut(auth)
+
+      // Depois limpar todos os dados do contexto
+      clearAllContextData()
+
       await removeAuthToken() // Remover o token JWT
       setAuthUser(null)
       setUserData(null)

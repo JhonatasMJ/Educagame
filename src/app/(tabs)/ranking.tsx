@@ -17,6 +17,7 @@ import React from "react"
 interface User {
   id: string
   name: string
+  surname: string
   points: number
   avatarSource: string
   hours?: number
@@ -138,6 +139,7 @@ const RankingScreen = () => {
         const formattedUsers = firebaseUsers.map((user) => ({
           id: user.id,
           name: user.nome || "Usuário",
+          surname: user.sobrenome || "",
           points: user.points || 0,
           avatarSource: user.avatarSource || "avatar1",
           consecutiveDays: user.consecutiveDays || 0,
@@ -258,7 +260,7 @@ const RankingScreen = () => {
             className={isCurrentUser ? "w-12 h-12" : "w-10 h-10"}
           />
         </View>
-        <Text className={`flex-1 ${isCurrentUser ? "text-lg" : "text-base"} font-bold capitalize`}>{item.name}</Text>
+        <Text className={`flex-1 ${isCurrentUser ? "text-lg" : "text-base"} font-bold capitalize`}>{item.name} {item.surname}</Text>
         <View className={`flex-row items-center ${isCurrentUser ? "bg-[#333]" : "bg-[#444]"} px-3 py-1.5 rounded`}>
           <Feather name="award" size={isCurrentUser ? 20 : 16} color="#FFA500" />
           <Text className={`text-white font-bold ml-1 ${isCurrentUser ? "text-base" : ""}`}>{item.points}</Text>

@@ -38,7 +38,7 @@ export const useQuickRegister = () => {
     return password
   }
 
-  const handleQuickRegister = async (name: string, avatarId: string) => {
+  const handleQuickRegister = async (name: string, avatarId: string, firstName?: string, lastName?: string) => {
     if (!name || !avatarId) {
       Toast.show({
         type: "error",
@@ -68,9 +68,18 @@ export const useQuickRegister = () => {
       logSync(LogLevel.INFO, `Usuário criado com sucesso: ${user.uid}`)
 
       // Determinar nome e sobrenome
-      const nameParts = name.trim().split(" ")
-      const firstName = nameParts[0]
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : ""
+      // Se firstName e lastName foram fornecidos, use-os
+      // Caso contrário, extraia do nome completo
+      let userFirstName = firstName
+      let userLastName = lastName
+
+      if (!userFirstName || !userLastName) {
+        const nameParts = name.trim().split(/\s+/)
+        userFirstName = nameParts[0]
+        userLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : ""
+      }
+
+      logSync(LogLevel.INFO, `Nome processado: ${userFirstName} ${userLastName}`)
 
       // IMPORTANTE: Atualizar o perfil do usuário no Firebase Authentication
       // Isso garante que displayName e outras propriedades sejam definidas
@@ -89,8 +98,8 @@ export const useQuickRegister = () => {
 
       const userData = {
         email,
-        nome: firstName,
-        sobrenome: lastName,
+        nome: userFirstName,
+        sobrenome: userLastName,
         name: name, // Adicionar o nome completo
         displayName: name, // Adicionar displayName explicitamente
         phone: SIMPLIFIED_ONBOARDING_CONFIG.DEFAULT_VALUES.phone,
@@ -111,7 +120,6 @@ export const useQuickRegister = () => {
         minutesOnline: 0,
         timeSpent: 0, // Total de segundos online
         // Adicionar metadados da aplicação
-        appVersion: "1.0.0",
         registrationMethod: "quick-start",
       }
 
@@ -128,7 +136,7 @@ export const useQuickRegister = () => {
           const savedData = snapshot.val()
           logSync(
             LogLevel.INFO,
-            `Dados salvos - nome: ${savedData.nome}, avatarId: ${savedData.avatarId}, displayName: ${savedData.displayName}`,
+            `Dados salvos - nome: ${savedData.nome}, sobrenome: ${savedData.sobrenome}, avatarId: ${savedData.avatarId}, displayName: ${savedData.displayName}`,
           )
         } else {
           logSync(LogLevel.WARNING, "Verificação: dados do usuário NÃO encontrados no banco!")
@@ -180,7 +188,7 @@ export const useQuickRegister = () => {
         pathname: "/(tabs)/home",
         params: {
           needsMultipleRefresh: "true",
-          refreshCount: "2", 
+          refreshCount: "5", // Aumentado para 5 refreshes para maior garantia
           refreshTimestamp: Date.now().toString(), // Timestamp para evitar caching
           forceFullRefresh: "true", // Forçar refresh completo
         },

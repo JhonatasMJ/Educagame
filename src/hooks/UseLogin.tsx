@@ -12,6 +12,7 @@ import { loginApi } from "../services/apiService"
 import { syncUserProgress, resetUserProgress } from "../services/userProgressService"
 import { logSync, LogLevel } from "../services/syncLogger"
 import { getDatabase, ref, set, get } from "firebase/database"
+import { Platform } from "react-native"
 
 export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -461,53 +462,51 @@ export const useLogin = () => {
 
   const clearSavedCredentials = async (): Promise<boolean> => {
     try {
-      logSync(LogLevel.INFO, "Limpando credenciais salvas e realizando logout")
+      logSync(LogLevel.INFO, "=== INICIANDO LIMPEZA COMPLETA DE DADOS ===")
 
       // 1. Desconectar do Firebase Auth
+      logSync(LogLevel.INFO, "Desconectando do Firebase Auth...")
       await auth.signOut()
 
-      // 2. Limpar todas as credenciais e dados do usuário no AsyncStorage
-      await AsyncStorage.removeItem("rememberedEmail")
-      await AsyncStorage.removeItem("rememberedPassword")
-
-      // 3. Limpar outros possíveis dados de sessão
+      // 2. Obter TODAS as chaves do AsyncStorage para limpeza completa
+      logSync(LogLevel.INFO, "Obtendo todas as chaves do AsyncStorage...")
       const allKeys = await AsyncStorage.getAllKeys()
-      const userDataKeys = allKeys.filter(
-        (key) => key.startsWith("user_") || key.includes("token") || key.includes("auth") || key.includes("session"),
-      )
+      logSync(LogLevel.INFO, `Encontradas ${allKeys.length} chaves no AsyncStorage`)
 
-      if (userDataKeys.length > 0) {
-        await AsyncStorage.multiRemove(userDataKeys)
+      // 3. Remover TODOS os dados do AsyncStorage
+      if (allKeys.length > 0) {
+        logSync(LogLevel.INFO, "Removendo TODOS os dados do AsyncStorage...")
+        await AsyncStorage.multiRemove(allKeys)
+        logSync(LogLevel.INFO, `Removidos ${allKeys.length} itens do AsyncStorage`)
       }
 
       // 4. Atualizar o estado local
       setSavedEmail(null)
       setSavedPassword(null)
 
-      // 5. Limpar cache adicional
-      try {
-        // Limpar todos os outros dados que possam estar armazenados
-        const cacheKeys = allKeys.filter(
-          (key) =>
-            key.includes("cache") ||
-            key.includes("progress") ||
-            key.includes("state") ||
-            key.includes("data") ||
-            key.includes("trail"),
-        )
-
-        if (cacheKeys.length > 0) {
-          await AsyncStorage.multiRemove(cacheKeys)
+      // 5. Limpar cache do navegador se estiver na web
+      if (Platform.OS === "web") {
+        try {
+          logSync(LogLevel.INFO, "Tentando limpar cache do navegador...")
+          // Limpar cache de sessão
+          sessionStorage.clear()
+          // Tentar limpar cache do IndexedDB se disponível
+          if (window.indexedDB) {
+            const databases = await window.indexedDB.databases()
+            databases.forEach((db) => {
+              if (db.name) window.indexedDB.deleteDatabase(db.name)
+            })
+          }
+          logSync(LogLevel.INFO, "Limpeza de cache do navegador concluída")
+        } catch (browserError) {
+          logSync(LogLevel.WARNING, "Erro ao limpar cache do navegador:", browserError)
         }
-      } catch (cacheError) {
-        logSync(LogLevel.ERROR, "Erro ao limpar cache adicional:", cacheError)
-        // Continuar mesmo com erro no cache
       }
 
-      logSync(LogLevel.INFO, "Logout realizado com sucesso")
+      logSync(LogLevel.INFO, "=== LIMPEZA COMPLETA DE DADOS FINALIZADA COM SUCESSO ===")
       return true
     } catch (error) {
-      logSync(LogLevel.ERROR, "Erro ao fazer logout:", error)
+      logSync(LogLevel.ERROR, "Erro crítico durante limpeza de dados:", error)
       return false
     }
   }
