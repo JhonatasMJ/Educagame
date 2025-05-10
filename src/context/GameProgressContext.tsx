@@ -12,6 +12,7 @@ import {
 import { useAuth } from "./AuthContext"
 import { syncUserProgress, getUserProgressFromFirebase, calculatePhaseProgress } from "../services/userProgressService"
 import { logSync, LogLevel } from "../services/syncLogger"
+import { get, getDatabase, ref, set } from "firebase/database"
 
 // Define types for our progress data
 interface QuestionProgress {
@@ -276,82 +277,126 @@ export const GameProgressProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [progress, isLoading, isSyncing, authUser, isInitialLoadComplete])
 
   // FUNÇÃO CORRIGIDA: Iniciar uma fase sem criar duplicações
-  const startPhase = (trailId: string, phaseId: string) => {
-    setProgress((prev) => {
-      // Criar uma cópia profunda do progresso atual para evitar mutações indesejadas
-      const newProgress = JSON.parse(JSON.stringify(prev))
+// FUNÇÃO CORRIGIDA: Iniciar uma fase com todos os seus estágios
+const startPhase = (trailId: string, phaseId: string) => {
+  setProgress((prev) => {
+    // Criar uma cópia profunda do progresso atual para evitar mutações indesejadas
+    const newProgress = JSON.parse(JSON.stringify(prev))
 
-      // Garantir que trails seja sempre um array
-      if (!Array.isArray(newProgress.trails)) {
-        newProgress.trails = []
+    // Garantir que trails seja sempre um array
+    if (!Array.isArray(newProgress.trails)) {
+      newProgress.trails = []
+    }
+
+    // Remover qualquer trilha duplicada antes de prosseguir
+    const uniqueTrails = []
+    const trailIds = new Set()
+
+    for (const trail of newProgress.trails) {
+      if (trail && trail.id && !trailIds.has(trail.id)) {
+        trailIds.add(trail.id)
+        uniqueTrails.push(trail)
       }
+    }
 
-      // CORREÇÃO: Remover qualquer trilha duplicada antes de prosseguir
-      // Isso garante que só exista uma trilha com o ID especificado
-      const uniqueTrails = []
-      const trailIds = new Set()
+    newProgress.trails = uniqueTrails
 
-      for (const trail of newProgress.trails) {
-        if (trail && trail.id && !trailIds.has(trail.id)) {
-          trailIds.add(trail.id)
-          uniqueTrails.push(trail)
-        }
+    // Agora procurar a trilha pelo ID
+    let trail = newProgress.trails.find((t: { id: string }) => t && t.id === trailId)
+
+    // Se não encontrar, criar uma nova trilha
+    if (!trail) {
+      logSync(LogLevel.INFO, `Criando nova trilha: ${trailId}`)
+      trail = { id: trailId, phases: [] }
+      newProgress.trails.push(trail)
+    } else {
+      logSync(LogLevel.INFO, `Atualizando trilha existente: ${trailId}`)
+    }
+
+    // Garantir que phases seja sempre um array
+    if (!Array.isArray(trail.phases)) {
+      trail.phases = []
+    }
+
+    // CORREÇÃO: Buscar informações sobre todos os estágios desta fase
+    // Esta parte é crucial - precisamos buscar os dados da trilha para obter todos os estágios
+    const db = getDatabase()
+    
+    // Inicializar a fase atual que foi explicitamente solicitada
+    let phase = trail.phases.find((p: { id: string }) => p && p.id === phaseId)
+    if (!phase) {
+      logSync(LogLevel.INFO, `Criando nova fase ${phaseId} na trilha ${trailId}`)
+      phase = {
+        id: phaseId,
+        started: true,
+        completed: false,
+        questionsProgress: [],
+        timeSpent: 0,
       }
+      trail.phases.push(phase)
+    } else {
+      // Marcar fase como iniciada
+      logSync(LogLevel.INFO, `Atualizando fase existente ${phaseId} na trilha ${trailId}`)
+      phase.started = true
+    }
 
-      newProgress.trails = uniqueTrails
+    // Chamar a API para atualizar o progresso no servidor
+    if (authUser) {
+      apiStartPhase(authUser.uid, trailId, phaseId)
+        .then(() => {
+          logSync(LogLevel.INFO, "Fase iniciada na API com sucesso")
+          
+          // CORREÇÃO: Após iniciar a fase, buscar e inicializar todos os estágios associados
+          get(ref(db, `trails/${trailId}/etapas/${phaseId}/stages`))
+            .then((snapshot) => {
+              if (snapshot.exists()) {
+                const stages = snapshot.val()
+                const stageIds = Object.keys(stages)
+                
+                logSync(LogLevel.INFO, `Encontrados ${stageIds.length} estágios para a fase ${phaseId}`)
+                
+                // Inicializar todos os estágios encontrados
+                stageIds.forEach(stageId => {
+                  // Verificar se este estágio já existe no progresso
+                  const existingStage = trail.phases.find((p: { id: string }) => p && p.id === stageId)
+                  
+                  if (!existingStage) {
+                    // Criar novo estágio no progresso
+                    const newStage = {
+                      id: stageId,
+                      started: false, // Apenas o estágio atual é marcado como iniciado
+                      completed: false,
+                      questionsProgress: [],
+                      timeSpent: 0,
+                    }
+                    
+                    trail.phases.push(newStage)
+                    logSync(LogLevel.INFO, `Estágio ${stageId} adicionado ao progresso`)
+                  }
+                })
+                
+                // Atualizar o progresso no Firebase após adicionar todos os estágios
+                if (authUser) {
+                  set(ref(db, `userProgress/${authUser.uid}`), newProgress)
+                    .then(() => logSync(LogLevel.INFO, "Progresso atualizado com todos os estágios"))
+                    .catch((error: any) => logSync(LogLevel.ERROR, "Erro ao atualizar progresso com estágios:", error))
+                }
+              }
+            })
+            .catch(error => logSync(LogLevel.ERROR, "Erro ao buscar estágios da fase:", error))
+        })
+        .catch((error) => logSync(LogLevel.ERROR, "Erro ao iniciar fase na API:", error))
+    }
 
-      // Agora procurar a trilha pelo ID
-      let trail = newProgress.trails.find((t: { id: string }) => t && t.id === trailId)
+    // Atualizar o estado atual
+    newProgress.currentPhaseId = phaseId
+    newProgress.currentQuestionIndex = 0
+    newProgress.lastSyncTimestamp = Date.now()
 
-      // Se não encontrar, criar uma nova trilha
-      if (!trail) {
-        logSync(LogLevel.INFO, `Criando nova trilha: ${trailId}`)
-        trail = { id: trailId, phases: [] }
-        newProgress.trails.push(trail)
-      } else {
-        logSync(LogLevel.INFO, `Atualizando trilha existente: ${trailId}`)
-      }
+    return newProgress
+  })
+}
 
-      // Garantir que phases seja sempre um array
-      if (!Array.isArray(trail.phases)) {
-        trail.phases = []
-      }
-
-      // Procurar a fase pelo ID
-      let phase = trail.phases.find((p: { id: string }) => p && p.id === phaseId)
-
-      // Se não encontrar, criar uma nova fase
-      if (!phase) {
-        logSync(LogLevel.INFO, `Criando nova fase ${phaseId} na trilha ${trailId}`)
-        phase = {
-          id: phaseId,
-          started: true,
-          completed: false,
-          questionsProgress: [],
-          timeSpent: 0,
-        }
-        trail.phases.push(phase)
-      } else {
-        // Marcar fase como iniciada
-        logSync(LogLevel.INFO, `Atualizando fase existente ${phaseId} na trilha ${trailId}`)
-        phase.started = true
-      }
-
-      // Chamar a API para atualizar o progresso no servidor
-      if (authUser) {
-        apiStartPhase(authUser.uid, trailId, phaseId)
-          .then(() => logSync(LogLevel.INFO, "Fase iniciada na API com sucesso"))
-          .catch((error) => logSync(LogLevel.ERROR, "Erro ao iniciar fase na API:", error))
-      }
-
-      // Atualizar o estado atual
-      newProgress.currentPhaseId = phaseId
-      newProgress.currentQuestionIndex = 0
-      newProgress.lastSyncTimestamp = Date.now()
-
-      return newProgress
-    })
-  }
 
   // Função para responder uma questão
   const answerQuestion = (correct: boolean, questionId: string) => {

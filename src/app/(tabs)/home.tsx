@@ -610,7 +610,7 @@ const Home = () => {
   const TRAIL_SELECTOR_HEIGHT = 80
 
   return (
-    <View className="flex-1" style={{ backgroundColor: "transparent" }}>
+    <View className="flex-1" style={{ backgroundColor: "#E5243B" }}>
       <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#F6A608" />
 
       {(trailsLoading || isSyncing || isRefreshing) && (
