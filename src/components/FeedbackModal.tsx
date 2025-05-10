@@ -133,7 +133,7 @@ const FeedbackModal = ({
           {/* Image (if available) */}
           {displayImage && (
             <View style={[styles.imageContainer, {
-              right: isCorrect ? -20 : -15,
+              right: isCorrect ? -35 : -15,
               top: isCorrect ? -90 : -85,
               width: isCorrect ? 220 : 200,
               height: isCorrect ? 280 : 280,
@@ -158,7 +158,7 @@ const FeedbackModal = ({
           {/* Content */}
           <View style={[styles.contentContainer, {
             marginTop: isCorrect ? 40 : 50,
-            paddingRight: isCorrect ? 110 : 125,
+            paddingRight: isCorrect ? 155 : 125,
           }]}>
             <Text style={[styles.titleText, { color: isCorrect ? "#223AD2" : "#fff" }]}>{displayTitle}</Text>
             <Text style={[styles.descriptionText, {

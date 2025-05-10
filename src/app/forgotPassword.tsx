@@ -18,6 +18,7 @@ import { useRequireAuth } from "../hooks/useRequireAuth"
 import { usePasswordReset } from "@/src/hooks/useReset"
 import ArrowBack from "../components/ArrowBack"
 import colors from "../colors"
+import { USE_SIMPLIFIED_ONBOARDING } from "@/config/appConfig"
 
 const ForgotPasswordScreen = () => {
   const [step, setStep] = useState<"email" | "code" | "password">("email")
@@ -130,7 +131,7 @@ const ForgotPasswordScreen = () => {
         disabled={isLoading || !email}
       />
 
-      <TouchableOpacity className="mt-5 self-center" onPress={() => router.push("/")}>
+      <TouchableOpacity className="mt-5 self-center" onPress={() => router.replace("/login")}>
         <Text className="text-primary font-semibold text-base">Voltar para o login</Text>
       </TouchableOpacity>
     </View>

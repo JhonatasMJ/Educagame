@@ -13,6 +13,16 @@ export const BRAND_COLORS = {
   TERTIARY: "#0D153A",
   /** Green brand color - Used for success states, progress indicators */
   GREEN: "#95C11F",
+  /** Red brand color - Used for error states, progress indicators */
+  RED: "#FF0000",
+  /** Blue brand color - Used for info states, progress indicators */
+  BLUE: "#3B82F6",
+  /** Yellow brand color - Used for warning states, progress indicators */
+  YELLOW: "#F59E0B",
+  /** Gray brand color - Used for neutral states, progress indicators */
+  GRAY: "#6B7280",
+  /** White brand color - Used for light states, progress indicators */
+  WHITE: "#FFFFFF",
 }
 
 // UI element colors

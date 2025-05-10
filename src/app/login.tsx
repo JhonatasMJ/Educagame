@@ -20,6 +20,7 @@ import Logo from "../../assets/images/web.svg"
 import LoadingTransition from "@/src/components/LoadingTransition"
 import { useAuth } from "../context/AuthContext"
 import colors from "../colors"
+import { USE_SIMPLIFIED_ONBOARDING } from "@/config/appConfig"
 
 interface Errors {
   email?: string
@@ -204,7 +205,7 @@ const Login = () => {
 
               <View className="flex-row justify-center mb-8">
                 <Text className="text-[#6B7280]">Não tem uma conta? </Text>
-                <TouchableOpacity onPress={() => router.push("/(register)")}>
+                <TouchableOpacity onPress={() => USE_SIMPLIFIED_ONBOARDING ? router.push("/quick-start") : router.push("/(register)")}>
                   <Text className="text-primary font-medium underline">Criar conta</Text>
                 </TouchableOpacity>
               </View>

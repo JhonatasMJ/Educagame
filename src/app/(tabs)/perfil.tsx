@@ -1,6 +1,6 @@
 "use client"
 
-import React,{ useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import {
   View,
   Text,
@@ -25,7 +25,7 @@ import useDeviceType from "@/useDeviceType"
 import { MOBILE_WIDTH } from "@/PlataformWrapper"
 import CustomWebDrawer from "@/src/components/CustomWebDrawer"
 import { useAuth } from "@/src/context/AuthContext"
-import { getDatabase, ref, update } from "firebase/database"
+import { getDatabase, ref, update, get, set } from "firebase/database"
 import TextInputLabel from "@/src/components/TextInputLabel"
 import Toast from "react-native-toast-message"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
@@ -33,6 +33,19 @@ import { useEditMode } from "@/src/context/EditableContext"
 import UnsavedChangesModal from "@/src/components/UnsavedChangesModal"
 import { BRAND_COLORS, TEXT_COLORS } from "@/src/colors"
 import { SIMPLIFIED_ONBOARDING_CONFIG } from "@/config/appConfig"
+import {
+  updateEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateProfile,
+  createUserWithEmailAndPassword,
+} from "firebase/auth"
+import { auth } from "@/src/services/firebaseConfig"
+import { logSync, LogLevel } from "@/src/services/syncLogger"
+import { useRouter } from "expo-router"
+import React from "react"
+
 const { height, width } = Dimensions.get("window")
 const Drawer = createDrawerNavigator()
 
@@ -45,7 +58,7 @@ const avatarComponents = {
 
 const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   const { isDesktop, isMobileDevice } = useDeviceType()
-  const { userData, authUser, refreshUserData, loading } = useAuth()
+  const { userData, authUser, refreshUserData, loading, setShowLoadingTransition } = useAuth()
   const [editar, setEditar] = useState(false)
   const [nome, setNome] = useState("")
   const [email, setEmail] = useState("")
@@ -55,6 +68,12 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
   const [avatarSource, setAvatarSource] = useState("avatar1")
   const [showAvatarModal, setShowAvatarModal] = useState(false)
   const [usedQuickRegistration, setUsedQuickRegistration] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [showPasswordConfirmModal, setShowPasswordConfirmModal] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [emailChanged, setEmailChanged] = useState(false)
+  const [passwordChanged, setPasswordChanged] = useState(false)
+  const router = useRouter()
 
   // Get edit mode context
   const {
@@ -82,6 +101,8 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
       setSobrenome(userData.sobrenome || "")
       setCelular(userData.phone || "")
       setAvatarSource(userData.avatarSource || "avatar1")
+      setEmail(authUser?.email || "")
+      setSenha("")
     }
 
     // Exit edit mode
@@ -125,33 +146,275 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
     refreshUserData()
   }, [])
 
+  // Detectar mudanças no email e senha
+  useEffect(() => {
+    if (authUser && email !== authUser.email) {
+      setEmailChanged(true)
+    } else {
+      setEmailChanged(false)
+    }
+
+    if (senha.length > 0) {
+      setPasswordChanged(true)
+    } else {
+      setPasswordChanged(false)
+    }
+  }, [email, senha, authUser])
+
   const AvatarComponent = avatarComponents[avatarSource as keyof typeof avatarComponents] || BigAvatar1
 
   const handleEdit = async () => {
     if (editar) {
-      if (authUser?.uid) {
-        const db = getDatabase()
-        const userRef = ref(db, `users/${authUser.uid}`)
-
-        await update(userRef, {
-          nome,
-          celular,
-          sobrenome,
-          avatarSource,
-        })
-        await refreshUserData()
-        Toast.show({
-          type: "success",
-          text1: "Perfil atualizado com sucesso!",
-          position: "top",
-          visibilityTime: 2000,
-        })
-
-        // Reset edit state in context
-        resetEditState()
+      // Se o email ou senha foram alterados, precisamos de autenticação adicional
+      if ((emailChanged || passwordChanged) && authUser?.email) {
+        // Se o usuário usou cadastro rápido e está definindo email/senha pela primeira vez
+        if (usedQuickRegistration && authUser.email.includes(SIMPLIFIED_ONBOARDING_CONFIG.AUTO_EMAIL_DOMAIN)) {
+          // Não precisamos de reautenticação, apenas criar uma nova conta
+          await handleSaveChanges()
+        } else {
+          // Precisamos de reautenticação para usuários normais
+          setShowPasswordConfirmModal(true)
+        }
+      } else {
+        // Apenas atualizações normais de perfil
+        await handleSaveChanges()
       }
+    } else {
+      // Entrar no modo de edição
+      setEditar(true)
     }
-    setEditar(!editar)
+  }
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true)
+    try {
+      if (!authUser?.uid) {
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "Usuário não autenticado",
+          position: "top",
+        })
+        return
+      }
+
+      // 1. Atualizar dados básicos no Realtime Database
+      const db = getDatabase()
+      const userRef = ref(db, `users/${authUser.uid}`)
+
+      await update(userRef, {
+        nome,
+        sobrenome,
+        celular,
+        avatarSource,
+      })
+
+      logSync(LogLevel.INFO, "Dados básicos do usuário atualizados com sucesso")
+
+      // 2. Lidar com mudanças de email e senha
+      let needsRefresh = false
+
+      // Verificar se o usuário usou cadastro rápido e está definindo email/senha pela primeira vez
+      if (usedQuickRegistration && authUser.email?.includes(SIMPLIFIED_ONBOARDING_CONFIG.AUTO_EMAIL_DOMAIN)) {
+        if (email && senha && email !== authUser.email) {
+          try {
+            logSync(LogLevel.INFO, "Criando nova conta para usuário de cadastro rápido")
+            setShowLoadingTransition(true)
+
+            // 1. Obter todos os dados do usuário atual
+            const userSnapshot = await get(userRef)
+            if (!userSnapshot.exists()) {
+              throw new Error("Dados do usuário não encontrados")
+            }
+
+            const userData = userSnapshot.val()
+
+            // 2. Criar nova conta com o email e senha fornecidos
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha)
+            const newUser = userCredential.user
+
+            // 3. Atualizar o perfil do novo usuário
+            await updateProfile(newUser, {
+              displayName: `${nome} ${sobrenome}`,
+              photoURL: avatarSource,
+            })
+
+            // 4. Copiar todos os dados do usuário antigo para o novo
+            const newUserRef = ref(db, `users/${newUser.uid}`)
+
+            // Preparar dados atualizados
+            const updatedUserData = {
+              ...userData,
+              nome,
+              sobrenome,
+              email,
+              celular,
+              avatarSource,
+              usedQuickRegistration: false,
+              migratedFromQuickRegistration: true,
+              migrationDate: new Date().toISOString(),
+              oldUid: authUser.uid,
+            }
+
+            // 5. Salvar dados no novo usuário
+            await set(newUserRef, updatedUserData)
+
+            // 6. Marcar o usuário antigo como migrado
+            await update(userRef, {
+              migratedTo: newUser.uid,
+              migrationDate: new Date().toISOString(),
+              isMigrated: true,
+            })
+
+            // 7. Sair do modo de edição
+            setEditar(false)
+            resetEditState()
+
+            // 8. Mostrar mensagem de sucesso
+            Toast.show({
+              type: "success",
+              text1: "Conta criada com sucesso!",
+              text2: "Suas informações foram atualizadas",
+              position: "top",
+              visibilityTime: 3000,
+            })
+
+            // 9. Redirecionar para a tela inicial após um breve delay
+            setTimeout(() => {
+              router.replace("/(tabs)/home")
+            }, 1500)
+
+            return
+          } catch (error: any) {
+            setShowLoadingTransition(false)
+            logSync(LogLevel.ERROR, `Erro ao criar nova conta: ${error.message}`)
+            Toast.show({
+              type: "error",
+              text1: "Erro ao criar conta",
+              text2: error.message || "Tente novamente com outro email",
+              position: "top",
+            })
+            return
+          }
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Dados incompletos",
+            text2: "Forneça email e senha para criar sua conta",
+            position: "top",
+          })
+          return
+        }
+      }
+
+      // Para usuários normais, atualizar email e senha se necessário
+      if (emailChanged && email) {
+        try {
+          await updateEmail(authUser, email)
+          await update(userRef, { email })
+          logSync(LogLevel.INFO, "Email do usuário atualizado com sucesso")
+          needsRefresh = true
+        } catch (error: any) {
+          logSync(LogLevel.ERROR, `Erro ao atualizar email: ${error.message}`)
+          Toast.show({
+            type: "error",
+            text1: "Erro ao atualizar email",
+            text2: error.message,
+            position: "top",
+          })
+        }
+      }
+
+      if (passwordChanged && senha) {
+        try {
+          await updatePassword(authUser, senha)
+          logSync(LogLevel.INFO, "Senha do usuário atualizada com sucesso")
+          setSenha("") // Limpar a senha após atualização
+        } catch (error: any) {
+          logSync(LogLevel.ERROR, `Erro ao atualizar senha: ${error.message}`)
+          Toast.show({
+            type: "error",
+            text1: "Erro ao atualizar senha",
+            text2: error.message,
+            position: "top",
+          })
+        }
+      }
+
+      // 3. Atualizar o perfil no Firebase Auth
+      try {
+        await updateProfile(authUser, {
+          displayName: `${nome} ${sobrenome}`,
+          photoURL: avatarSource,
+        })
+        logSync(LogLevel.INFO, "Perfil do usuário atualizado com sucesso no Firebase Auth")
+      } catch (error: any) {
+        logSync(LogLevel.ERROR, `Erro ao atualizar perfil no Firebase Auth: ${error.message}`)
+      }
+
+      // 4. Atualizar dados locais
+      await refreshUserData()
+
+      Toast.show({
+        type: "success",
+        text1: "Perfil atualizado com sucesso!",
+        position: "top",
+        visibilityTime: 2000,
+      })
+
+      // Reset edit state in context
+      resetEditState()
+      setEditar(false)
+    } catch (error: any) {
+      logSync(LogLevel.ERROR, `Erro ao salvar alterações: ${error.message}`)
+      Toast.show({
+        type: "error",
+        text1: "Erro ao atualizar perfil",
+        text2: error.message || "Tente novamente mais tarde",
+        position: "top",
+      })
+    } finally {
+      setIsSaving(false)
+      setShowPasswordConfirmModal(false)
+    }
+  }
+
+  const handleReauthenticate = async () => {
+    if (!authUser?.email || !currentPassword) {
+      Toast.show({
+        type: "error",
+        text1: "Erro",
+        text2: "Email ou senha atual não fornecidos",
+        position: "top",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Criar credencial com email atual e senha fornecida
+      const credential = EmailAuthProvider.credential(authUser.email, currentPassword)
+
+      // Reautenticar o usuário
+      await reauthenticateWithCredential(authUser, credential)
+
+      // Fechar modal e prosseguir com as alterações
+      setShowPasswordConfirmModal(false)
+      setCurrentPassword("")
+
+      // Salvar as alterações
+      await handleSaveChanges()
+    } catch (error: any) {
+      logSync(LogLevel.ERROR, `Erro na reautenticação: ${error.message}`)
+      Toast.show({
+        type: "error",
+        text1: "Senha incorreta",
+        text2: "A senha atual fornecida está incorreta",
+        position: "top",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleAvatarChange = (newAvatarSource: string) => {
@@ -243,13 +506,17 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                 className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${
                   editar ? "bg-primary" : "bg-secondary"
                 }`}
-                onPress={() => {
-                  handleEdit()
-                  setEditar(!editar)
-                }}
+                onPress={handleEdit}
+                disabled={isSaving}
               >
-                <FontAwesome name={editar ? "save" : "edit"} size={26} color="#111" />
-                <Text className="ml-4 text-xl font-medium text-zinc-800">{editar ? "Salvar" : "Editar"}</Text>
+                {isSaving ? (
+                  <ActivityIndicator color="#111" size="small" />
+                ) : (
+                  <>
+                    <FontAwesome name={editar ? "save" : "edit"} size={26} color="#111" />
+                    <Text className="ml-4 text-xl font-medium text-zinc-800">{editar ? "Salvar" : "Editar"}</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               <View className="space-y-4">
@@ -269,7 +536,15 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                   editable={editar}
                 />
 
-                <TextInputLabel label="Email" placeholder="Digite seu email" value={email} editable={false} />
+                <TextInputLabel
+                  label="Email"
+                  placeholder="Digite seu email"
+                  value={email}
+                  onChangeText={setEmail}
+                  editable={editar}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
 
                 <TextInputLabel
                   label="Celular"
@@ -277,19 +552,29 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                   value={celular}
                   onChangeText={setCelular}
                   editable={editar}
+                  keyboardType="phone-pad"
                 />
 
                 <TextInputLabel
                   label="Senha"
-                  placeholder="Digite sua senha"
+                  placeholder={editar ? "Digite uma nova senha" : "••••••••"}
                   secureTextEntry={true}
                   value={senha}
                   onChangeText={setSenha}
                   editable={editar}
                 />
+
+                {editar && (
+                  <Text className="text-zinc-400 text-xs mt-1">
+                    {usedQuickRegistration
+                      ? "Defina seu email e senha para criar sua conta permanente"
+                      : "Deixe a senha em branco se não quiser alterá-la"}
+                  </Text>
+                )}
               </View>
             </View>
 
+            {/* Modal de seleção de avatar */}
             <Modal
               visible={showAvatarModal}
               transparent={true}
@@ -333,6 +618,55 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                       onPress={() => handleSelectAvatar(avatarSource)}
                     >
                       <Text className="text-zinc-800 font-semibold">Confirmar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+
+            {/* Modal de confirmação de senha */}
+            <Modal
+              visible={showPasswordConfirmModal}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setShowPasswordConfirmModal(false)}
+            >
+              <View className="flex-1 justify-center items-center bg-black/50">
+                <View className={`w-[${MOBILE_WIDTH - 150}] bg-zinc-800 rounded-3xl p-8 items-center`}>
+                  <Text className="text-xl font-bold mb-5 text-white">Confirme sua senha</Text>
+
+                  <Text className="text-zinc-300 text-center mb-4">
+                    Para alterar seu email ou senha, precisamos confirmar sua identidade.
+                  </Text>
+
+                  <TextInputLabel
+                    label="Senha atual"
+                    placeholder="Digite sua senha atual"
+                    secureTextEntry={true}
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    editable={!isSaving}
+                  />
+
+                  <View className="flex-row w-full gap-3 mt-6">
+                    <TouchableOpacity
+                      className="flex-1 bg-red-500 py-3 rounded-xl items-center"
+                      onPress={() => setShowPasswordConfirmModal(false)}
+                      disabled={isSaving}
+                    >
+                      <Text className="text-white font-semibold">Cancelar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      className="flex-1 bg-secondary py-3 rounded-xl items-center"
+                      onPress={handleReauthenticate}
+                      disabled={isSaving || !currentPassword}
+                    >
+                      {isSaving ? (
+                        <ActivityIndicator color="#111" size="small" />
+                      ) : (
+                        <Text className="text-zinc-800 font-semibold">Confirmar</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -432,7 +766,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderLeftWidth: 4,
     borderLeftColor: BRAND_COLORS.SECONDARY,
-    width: '100%'
+    width: "100%",
   },
   quickRegisterNoticeText: {
     color: TEXT_COLORS.BRANCO,

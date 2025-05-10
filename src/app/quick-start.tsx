@@ -27,6 +27,7 @@ import Avatar3 from "../../assets/images/avatar3.svg"
 import Avatar4 from "../../assets/images/avatar4.svg"
 import Character from "../components/Character"
 import React from "react"
+import { router } from "expo-router"
 
 const avatars = [
   { id: "1", source: Avatar1, sourceName: "avatar1" },
@@ -264,6 +265,12 @@ export default function QuickStart() {
                 </Text>
               )}
             </TouchableOpacity>
+            <View style={{ height: 20 }} />
+            <TouchableOpacity style={{ alignItems: "center", justifyContent: "center", flexDirection: "row" }} onPress={() => router.replace("/login")}>
+              <Text style={styles.subtitle}>Ja possui uma conta?</Text>
+              <View style={{ width: 6.75 }} />
+              <Text style={[styles.subtitle, { textDecorationLine: "underline"}]}>Clique aqui!</Text>
+            </TouchableOpacity>
           </Animated.View>
         </Animated.View>
       </ScrollView>
@@ -383,6 +390,12 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 18,
+    fontWeight: "bold",
+    letterSpacing: 1,
+  },
+  buttonText2: {
+    color: BRAND_COLORS.WHITE,
+    fontSize: 16,
     fontWeight: "bold",
     letterSpacing: 1,
   },

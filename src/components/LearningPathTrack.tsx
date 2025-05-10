@@ -499,11 +499,6 @@ const styles = StyleSheet.create({
   imageBackground: {
     resizeMode: "cover",
   },
-  trackLine: {
-    position: "absolute",
-    width: TRACK_WIDTH,
-    borderRadius: TRACK_BORDER_RADIUS,
-  },
   progressTrack: {
     bottom: 0, // Começa de baixo
   },

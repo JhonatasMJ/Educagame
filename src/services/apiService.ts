@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 // Configuração base da API
-const API_BASE_URL = "http://127.0.0.1:5001/educagame-e0d46/us-central1/api/api"
+const API_BASE_URL = "https://api-p7f7f3jyua-uc.a.run.app/api"
 
 // Interface para o token de autenticação
 interface AuthToken {

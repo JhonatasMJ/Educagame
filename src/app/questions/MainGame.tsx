@@ -328,6 +328,13 @@ const MainGame = () => {
                   timeSpent: 0,
                   questionsProgress: [],
                 },
+                {
+                  id: phaseId,
+                  started: true,
+                  completed: false,
+                  timeSpent: 0,
+                  questionsProgress: [],
+                },
               ],
             },
           ],
