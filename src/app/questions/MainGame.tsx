@@ -681,9 +681,6 @@ const MainGame = () => {
     setShowLoading(true)
   }
 
-  // Modifique a função updateStageCompletion para verificar se todos os stages estão concluídos
-  // Substitua a função updateStageCompletion existente por esta versão atualizada
-
   // Função para atualizar o status de conclusão do stage atual
   const updateStageCompletion = async () => {
     if (!authUser) return
@@ -706,8 +703,17 @@ const MainGame = () => {
         // Encontrar a trilha
         let trail = userProgress.trails.find((t: any) => t.id === trailId)
         if (!trail) {
-          trail = { id: trailId, phases: [] }
+          trail = {
+            id: trailId,
+            phases: [],
+            completed: false, // Inicializar o campo completed da trilha
+          }
           userProgress.trails.push(trail)
+        }
+
+        // Garantir que o campo completed existe na trilha
+        if (trail.completed === undefined) {
+          trail.completed = false
         }
 
         // Garantir que phases é um array
@@ -715,14 +721,38 @@ const MainGame = () => {
           trail.phases = []
         }
 
-        // Encontrar a fase
-        let phase = trail.phases.find((p: any) => p.id === phaseId)
-        if (!phase) {
-          phase = { id: phaseId, started: true, completed: false, timeSpent: 0, questionsProgress: [] }
-          trail.phases.push(phase)
+        // Encontrar a fase principal
+        let mainPhase = trail.phases.find((p: any) => p.id === phaseId)
+        if (!mainPhase) {
+          mainPhase = {
+            id: phaseId,
+            started: true,
+            completed: false,
+            timeSpent: 0,
+            questionsProgress: [],
+          }
+          trail.phases.push(mainPhase)
         }
 
-        // NOVA IMPLEMENTAÇÃO: Verificar se há novos stages na etapa que o progresso do usuário não possui
+        // Encontrar ou criar a fase do stage atual
+        const stagePhaseId = `${phaseId}_stage_${stageId}`
+        let stagePhase = trail.phases.find((p: any) => p.id === stagePhaseId)
+
+        if (!stagePhase) {
+          stagePhase = {
+            id: stagePhaseId,
+            started: true,
+            completed: false,
+            timeSpent: 0,
+            questionsProgress: [],
+          }
+          trail.phases.push(stagePhase)
+        }
+
+        // Marcar o stage atual como concluído
+        stagePhase.completed = true
+        stagePhase.timeSpent = (stagePhase.timeSpent || 0) + totalTime
+
         // Buscar a trilha e etapa atuais dos dados carregados
         const currentTrail = trilhas.find((t) => t.id === trailId)
         if (currentTrail) {
@@ -743,79 +773,62 @@ const MainGame = () => {
               allStages = Object.values(currentEtapa.stages)
             }
 
-            // Verificar se o progresso do usuário tem o mesmo número de stages que a etapa atual
-            const stageIdsInProgress = new Set(
-              trail.phases.filter((p: any) => p.id.startsWith(`${phaseId}_stage_`)).map((p: any) => p.id),
-            )
+            // Verificar se todos os stages estão concluídos
+            const allStageIds = allStages.map((s: any) => s.id)
 
-            // Adicionar o stage atual ao conjunto
-            stageIdsInProgress.add(phaseId)
+            // Log para debug
+            logSync(LogLevel.INFO, `Verificando conclusão de todos os stages: ${JSON.stringify(allStageIds)}`)
 
-            logSync(
-              LogLevel.INFO,
-              `Stages no progresso: ${stageIdsInProgress.size}, Stages na etapa: ${allStages.length}`,
-            )
+            // Verificar se cada stage tem uma entrada no progresso e se está concluído
+            let allStagesCompleted = true
 
-            // Se o número de stages no progresso for menor que o número de stages na etapa
-            if (stageIdsInProgress.size < allStages.length) {
+            for (const stageId of allStageIds) {
+              const stagePhaseId = `${phaseId}_stage_${stageId}`
+              const stagePhase = trail.phases.find((p: any) => p.id === stagePhaseId)
+
+              // Se o stage não existe no progresso ou não está concluído
+              if (!stagePhase || !stagePhase.completed) {
+                allStagesCompleted = false
+                logSync(LogLevel.INFO, `Stage ${stageId} não está concluído`)
+                break
+              }
+            }
+
+            // Se todos os stages estiverem concluídos, marcar a etapa principal como concluída
+            if (allStagesCompleted) {
               logSync(
                 LogLevel.INFO,
-                `Detectados novos stages na etapa ${phaseId}. Marcando apenas o stage atual como concluído.`,
+                `Todos os stages da etapa ${phaseId} estão concluídos. Marcando a etapa como concluída.`,
               )
+              mainPhase.completed = true
 
-              // Marcar apenas o stage atual como concluído, não a etapa inteira
-              phase.completed = true
-              phase.timeSpent = (phase.timeSpent || 0) + totalTime
+              // Verificar se todas as etapas da trilha estão concluídas
+              const allEtapasIds = etapas.map((e: any) => e.id)
+              let allEtapasCompleted = true
 
-              // Adicionar entradas para os novos stages no progresso
-              allStages.forEach((stage: any) => {
-                if (stage && stage.id && stage.id !== stageId) {
-                  const stageProgressId = `${phaseId}_stage_${stage.id}`
+              for (const etapaId of allEtapasIds) {
+                const etapaPhase = trail.phases.find((p: any) => p.id === etapaId)
 
-                  // Verificar se este stage já existe no progresso
-                  const existingStageProgress = trail.phases.find((p: any) => p.id === stageProgressId)
-
-                  if (!existingStageProgress) {
-                    logSync(LogLevel.INFO, `Adicionando novo stage ${stage.id} ao progresso`)
-
-                    // Criar uma entrada para o novo stage
-                    const newStageProgress = {
-                      id: stageProgressId,
-                      started: false,
-                      completed: false,
-                      timeSpent: 0,
-                      questionsProgress: [],
-                    }
-
-                    // Adicionar questões do stage ao progresso
-                    if (stage.questions) {
-                      const questions = Array.isArray(stage.questions)
-                        ? stage.questions
-                        : Object.values(stage.questions)
-
-                      questions.forEach((q: any) => {
-                        if (q && q.id) {
-                          newStageProgress.questionsProgress.push({
-                            id: q.id,
-                            answered: false,
-                            correct: false,
-                          })
-                        }
-                      })
-                    }
-
-                    trail.phases.push(newStageProgress)
-                  }
+                if (!etapaPhase || !etapaPhase.completed) {
+                  allEtapasCompleted = false
+                  logSync(LogLevel.INFO, `Etapa ${etapaId} não está concluída`)
+                  break
                 }
-              })
+              }
+
+              // Se todas as etapas estiverem concluídas, marcar a trilha como concluída
+              if (allEtapasCompleted) {
+                logSync(
+                  LogLevel.INFO,
+                  `Todas as etapas da trilha ${trailId} estão concluídas. Marcando a trilha como concluída.`,
+                )
+                trail.completed = true
+              }
             } else {
-              // Se todos os stages já estão no progresso, marcar a etapa como concluída
               logSync(
                 LogLevel.INFO,
-                `Todos os stages da etapa ${phaseId} estão no progresso. Marcando a etapa como concluída.`,
+                `Nem todos os stages da etapa ${phaseId} estão concluídos. A etapa não será marcada como concluída.`,
               )
-              phase.completed = true
-              phase.timeSpent = (phase.timeSpent || 0) + totalTime
             }
           } else {
             // Se não encontrar a etapa, apenas marcar o stage atual como concluído
@@ -823,8 +836,6 @@ const MainGame = () => {
               LogLevel.WARNING,
               `Etapa ${phaseId} não encontrada nos dados carregados. Marcando apenas o stage como concluído.`,
             )
-            phase.completed = true
-            phase.timeSpent = (phase.timeSpent || 0) + totalTime
           }
         } else {
           // Se não encontrar a trilha, apenas marcar o stage atual como concluído
@@ -832,8 +843,6 @@ const MainGame = () => {
             LogLevel.WARNING,
             `Trilha ${trailId} não encontrada nos dados carregados. Marcando apenas o stage como concluído.`,
           )
-          phase.completed = true
-          phase.timeSpent = (phase.timeSpent || 0) + totalTime
         }
 
         // Salvar progresso atualizado
@@ -845,7 +854,6 @@ const MainGame = () => {
     }
   }
 
-  // Substitua a função handleLoadingComplete por esta versão atualizada
   const handleLoadingComplete = () => {
     setShowLoading(false)
 
