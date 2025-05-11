@@ -91,6 +91,7 @@ const StartPhase = ({
   const image = propImage || (params.image as string)
   const video = propVideo || (params.video as string)
   const tempo_estimado = params.tempo_estimado as string
+  const youtubePlayerRef = useRef<any>(null);
 
   // Add tips parameter handling
   const tips_str = params.tips as string
@@ -178,6 +179,27 @@ const StartPhase = ({
     }
   }, [video])
 
+  const pauseAllVideos = () => {
+    // Pausar vídeo do Vimeo
+    if (isVimeoVideo && vimeoPlayer) {
+      vimeoPlayer.pause().catch((error: any) => {
+        console.error("Error pausing Vimeo video:", error);
+      });
+    }
+
+    // Pausar vídeo do YouTube
+    if (isYoutubeVideo && youtubePlayerRef.current) {
+      youtubePlayerRef.current.pauseVideo?.();
+    }
+
+    // Pausar vídeo MP4
+    if (videoRef.current) {
+      videoRef.current.pauseAsync().catch((error) => {
+        console.error("Error pausing video:", error);
+      });
+    }
+  };
+
   // Initialize Vimeo Player API
   useEffect(() => {
     if (Platform.OS === "web" && isVimeoVideo && vimeoIframeRef.current) {
@@ -200,6 +222,25 @@ const StartPhase = ({
       }
     }
   }, [isVimeoVideo, vimeoIframeRef.current])
+
+  useEffect(() => {
+    // Inicialização...
+
+    return () => {
+      // Pausar e limpar todos os vídeos ao desmontar o componente
+      pauseAllVideos();
+
+      // Destruir o player do Vimeo
+      if (vimeoPlayer) {
+        vimeoPlayer.destroy?.();
+      }
+
+      // Limpar referências
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current = null;
+      }
+    };
+  }, []);
 
   // Listen for fullscreen change events
   useEffect(() => {
@@ -323,10 +364,10 @@ const StartPhase = ({
         container.requestFullscreen()
       } else if ((container as any).webkitRequestFullscreen) {
         /* Safari */
-        ;(container as any).webkitRequestFullscreen()
+        ; (container as any).webkitRequestFullscreen()
       } else if ((container as any).msRequestFullscreen) {
         /* IE11 */
-        ;(container as any).msRequestFullscreen()
+        ; (container as any).msRequestFullscreen()
       }
     } else {
       // Exit fullscreen
@@ -334,10 +375,10 @@ const StartPhase = ({
         document.exitFullscreen()
       } else if ((document as any).webkitExitFullscreen) {
         /* Safari */
-        ;(document as any).webkitExitFullscreen()
+        ; (document as any).webkitExitFullscreen()
       } else if ((document as any).msExitFullscreen) {
         /* IE11 */
-        ;(document as any).msExitFullscreen()
+        ; (document as any).msExitFullscreen()
       }
     }
   }
@@ -599,6 +640,9 @@ const StartPhase = ({
             <CustomButton
               title="CONTINUAR"
               onPress={() => {
+                // Pausar todos os tipos de vídeo antes de navegar
+                pauseAllVideos();
+
                 router.push({
                   pathname: "/questions/game",
                   params: {
@@ -606,7 +650,7 @@ const StartPhase = ({
                     trailId,
                     stageId,
                   },
-                })
+                });
               }}
               className="bg-secondary shadow-md"
               textClassName="tracking-wide"
