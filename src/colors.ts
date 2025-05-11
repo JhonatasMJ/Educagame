@@ -23,6 +23,12 @@ export const BRAND_COLORS = {
   GRAY: "#6B7280",
   /** White brand color - Used for light states, progress indicators */
   WHITE: "#FFFFFF",
+  /** Black brand color - Used for dark states, progress indicators */
+  BLACK: "#000000",
+  /** Orange brand color */
+  ORANGE: "#F59E0B",
+  /** Transparent brand color - Used for transparent states, progress indicators */
+  TRANSPARENT: "transparent",
 }
 
 // UI element colors

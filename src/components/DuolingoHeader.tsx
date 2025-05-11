@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import Regras from "./Regras"
 import { getDatabase, ref, get } from "firebase/database"
+import { BRAND_COLORS } from "../colors"
 
 interface DuolingoHeaderProps {
   nome: string
@@ -182,7 +183,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion, currentTrailId }: Duo
         {/* Streak - Global */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
-            <Target size={20} color="#5609e4" />
+            <Target size={20} color={BRAND_COLORS.RED} />
             <Text className="text-white font-bold ml-1">{userDetailsData.consecutiveDays} dias</Text>
           </View>
         </TouchableOpacity>
@@ -190,7 +191,7 @@ const DuolingoHeader = ({ nome, scrollY, selectedQuestion, currentTrailId }: Duo
         {/* Acertos consecutivos - Específico da trilha */}
         <TouchableOpacity className="items-center bg-primary px-3 py-2 rounded-xl" onPress={toggleRulesModal}>
           <View className="flex-row items-center">
-            <Flame size={20} color="#051747" />
+            <Flame size={20} color={BRAND_COLORS.ORANGE} />
             <Text className="text-white font-bold ml-1">{trailConsecutiveCorrect}</Text>
           </View>
         </TouchableOpacity>
