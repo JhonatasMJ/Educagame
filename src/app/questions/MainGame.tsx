@@ -43,6 +43,16 @@ interface BaseQuestion {
   description: string
   image?: string
   explanation?: string
+  correctExplanation?: {
+    title?: string
+    description?: string
+    imageUrl?: string
+  }
+  incorrectExplanation?: {
+    title?: string
+    description?: string
+    imageUrl?: string
+  }
 }
 
 interface TrueOrFalseQuestion extends BaseQuestion {
@@ -224,6 +234,18 @@ const MainGame = () => {
   const [dataLoaded, setDataLoaded] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
   const [userProgressInitialized, setUserProgressInitialized] = useState(false)
+  const [feedbackData, setFeedbackData] = useState<{
+    correctExplanation?: {
+      title?: string
+      description?: string
+      imageUrl?: string
+    }
+    incorrectExplanation?: {
+      title?: string
+      description?: string
+      imageUrl?: string
+    }
+  }>({})
 
   // Refs
   const helpButtonPulse = useRef(new Animated.Value(0)).current
@@ -281,8 +303,6 @@ const MainGame = () => {
     resetOnActivity: true,
   })
 
-  // Debug log
-  console.log("MainGame rendered, phaseId:", phaseId, "trailId:", trailId, "stageId:", stageId)
 
   // Função para verificar se o usuário é novo e inicializar o progresso se necessário
   const checkAndInitializeUserProgress = async () => {
@@ -408,8 +428,6 @@ const MainGame = () => {
   // Efeito para encontrar questões
   useEffect(() => {
     if (!isInitialized || !trilhas || trilhas.length === 0) return
-
-    console.log("Finding questions for phase:", phaseId, "and stage:", stageId)
 
     try {
       // Encontrar a trilha com o ID correspondente
@@ -653,6 +671,10 @@ const MainGame = () => {
     setIsCorrect(correct)
     setFeedbackExplanation(explanation || currentQuestion?.explanation)
 
+    // Obter as explicações corretas e incorretas da questão atual
+    const correctExplanation = currentQuestion?.correctExplanation
+    const incorrectExplanation = currentQuestion?.incorrectExplanation
+
     // Record answer in context
     if (currentQuestion) {
       answerQuestion(correct, currentQuestion.id)
@@ -672,6 +694,12 @@ const MainGame = () => {
     if (!correct && !wrongQuestions.includes(currentQuestionIndex) && !isRetrying) {
       setWrongQuestions((prev) => [...prev, currentQuestionIndex])
     }
+
+    // Atualizar o estado com as explicações
+    setFeedbackData({
+      correctExplanation,
+      incorrectExplanation,
+    })
 
     setShowFeedback(true)
   }
@@ -1132,6 +1160,8 @@ const MainGame = () => {
         isCorrect={isCorrect}
         onContinue={handleContinue}
         description={feedbackExplanation}
+        correctExplanation={feedbackData.correctExplanation}
+        incorrectExplanation={feedbackData.incorrectExplanation}
       />
 
       {/* Loading Transition */}
