@@ -357,121 +357,6 @@ const syncOnlyNewContent = async (currentProgress: UserProgress, availableTrails
 }
 
 /**
- * NOVA FUNÇÃO: Inicializa o progresso para um novo usuário
- * Garante que todas as estruturas estejam corretamente configuradas
- */
-export const initializeNewUserProgress = async (userId: string): Promise<UserProgress | null> => {
-  try {
-    logSync(LogLevel.INFO, `Inicializando progresso para NOVO USUÁRIO: ${userId}`)
-
-    // Bloquear outras sincronizações durante a inicialização
-    blockSyncing()
-
-    // 1. Buscar todas as trilhas disponíveis
-    let availableTrails: any[] = []
-    try {
-      const trailsResponse = await getTrails()
-      if (trailsResponse?.data) {
-        availableTrails = Array.isArray(trailsResponse.data)
-          ? trailsResponse.data
-          : Object.values(trailsResponse.data || {})
-      }
-      logSync(LogLevel.INFO, `Trilhas disponíveis carregadas: ${availableTrails.length}`)
-    } catch (trailsError) {
-      logSync(LogLevel.ERROR, "Erro ao buscar trilhas disponíveis:", trailsError)
-      return null
-    }
-
-    // 2. Criar um progresso inicial completo
-    const initialProgress: UserProgress = {
-      totalPoints: 0,
-      consecutiveCorrect: 0,
-      highestConsecutiveCorrect: 0,
-      trails: [],
-      lastSyncTimestamp: Date.now(),
-    }
-
-    // 3. Adicionar todas as trilhas disponíveis com estrutura completa
-    for (const availableTrail of availableTrails) {
-      if (!availableTrail?.id) continue
-
-      const newTrail: TrailProgress = {
-        id: availableTrail.id,
-        phases: [],
-        currentPhaseId: null,
-        currentQuestionIndex: 0,
-        totalPoints: 0,
-      }
-
-      // Adicionar todas as fases da trilha
-      const availablePhases = Array.isArray(availableTrail.etapas)
-        ? availableTrail.etapas
-        : Object.values(availableTrail.etapas || {})
-
-      for (const phase of availablePhases) {
-        if (!phase?.id) continue
-
-        const newPhase: PhaseProgress = {
-          id: phase.id,
-          started: false,
-          completed: false,
-          questionsProgress: [],
-          timeSpent: 0,
-        }
-
-        // Adicionar todas as questões da fase
-        const availableStages = Array.isArray(phase.stages) ? phase.stages : Object.values(phase.stages || {})
-
-        for (const stage of availableStages) {
-          if (!stage?.questions) continue
-
-          const questions = Array.isArray(stage.questions) ? stage.questions : Object.values(stage.questions || {})
-
-          for (const question of questions) {
-            if (!question?.id) continue
-
-            newPhase.questionsProgress.push({
-              id: question.id,
-              answered: false,
-              correct: false,
-            })
-          }
-        }
-
-        newTrail.phases.push(newPhase)
-      }
-
-      initialProgress.trails.push(newTrail)
-    }
-
-    // 4. Salvar o progresso inicial
-    await saveUserProgressToFirebase(userId, initialProgress)
-    logSync(LogLevel.INFO, "Progresso inicial para novo usuário criado com sucesso")
-
-    // 5. Também salvar na API
-    try {
-      for (const trail of initialProgress.trails) {
-        if (!trail?.id) continue
-        await updateUserProgress(userId, trail.id, {
-          phases: trail.phases,
-          totalPoints: initialProgress.totalPoints,
-          consecutiveCorrect: initialProgress.consecutiveCorrect,
-          highestConsecutiveCorrect: initialProgress.highestConsecutiveCorrect,
-        })
-      }
-      logSync(LogLevel.INFO, "Progresso inicial do usuário atualizado na API com sucesso")
-    } catch (apiError) {
-      logSync(LogLevel.ERROR, "Erro ao atualizar progresso inicial na API:", apiError)
-    }
-
-    return initialProgress
-  } catch (error) {
-    logSync(LogLevel.ERROR, "Erro ao inicializar progresso para novo usuário:", error)
-    return null
-  }
-}
-
-/**
  * Sincroniza o progresso do usuário com as trilhas disponíveis
  * Preserva o progresso existente e adiciona novas trilhas/etapas/questões
  */
@@ -489,13 +374,6 @@ export const syncUserProgress = async (
 
     logSync(LogLevel.INFO, `Iniciando sincronização de progresso para o usuário: ${userId}`)
     logSync(LogLevel.INFO, `Parâmetros: forceCreate=${forceCreate}, preserveCompletion=${preserveCompletion}`)
-
-    // Verificar se é um novo usuário
-    const isNewUser = await AsyncStorage.getItem(`new_user_${userId}`)
-    if (isNewUser === "true" && forceCreate) {
-      logSync(LogLevel.INFO, "Novo usuário detectado - usando inicialização especial")
-      return await initializeNewUserProgress(userId)
-    }
 
     // IMPORTANTE: Fazer backup do progresso atual antes de qualquer modificação
     const currentProgress = await getUserProgressFromFirebase(userId)
@@ -968,6 +846,10 @@ const mergeProgressWithTrails = (
     // Adicionar apenas trilhas com ID válido
     updatedProgress.trails.forEach((trail) => {
       if (trail?.id) {
+        // Garantir que o campo completed existe
+        if (trail.completed === undefined) {
+          trail.completed = false
+        }
         existingTrails.set(trail.id, { ...trail })
       }
     })
@@ -986,10 +868,15 @@ const mergeProgressWithTrails = (
         trail = {
           id: availableTrail.id,
           phases: [],
+          completed: false, // Adicionar campo completed
         }
         existingTrails.set(availableTrail.id, trail)
       } else {
         logSync(LogLevel.INFO, `Atualizando trilha existente: ${availableTrail.id}`)
+        // Garantir que o campo completed existe
+        if (trail.completed === undefined) {
+          trail.completed = false
+        }
       }
 
       // Merge phases

@@ -43,16 +43,6 @@ interface BaseQuestion {
   description: string
   image?: string
   explanation?: string
-  correctExplanation?: {
-    title?: string
-    description?: string
-    imageUrl?: string
-  }
-  incorrectExplanation?: {
-    title?: string
-    description?: string
-    imageUrl?: string
-  }
 }
 
 interface TrueOrFalseQuestion extends BaseQuestion {
@@ -321,13 +311,6 @@ const MainGame = () => {
               id: trailId,
               currentPhaseId: phaseId,
               phases: [
-                {
-                  id: phaseId,
-                  started: true,
-                  completed: false,
-                  timeSpent: 0,
-                  questionsProgress: [],
-                },
                 {
                   id: phaseId,
                   started: true,
@@ -698,6 +681,9 @@ const MainGame = () => {
     setShowLoading(true)
   }
 
+  // Modifique a função updateStageCompletion para verificar se todos os stages estão concluídos
+  // Substitua a função updateStageCompletion existente por esta versão atualizada
+
   // Função para atualizar o status de conclusão do stage atual
   const updateStageCompletion = async () => {
     if (!authUser) return
@@ -736,9 +722,119 @@ const MainGame = () => {
           trail.phases.push(phase)
         }
 
-        // Atualizar status da fase
-        phase.completed = true
-        phase.timeSpent = (phase.timeSpent || 0) + totalTime
+        // NOVA IMPLEMENTAÇÃO: Verificar se há novos stages na etapa que o progresso do usuário não possui
+        // Buscar a trilha e etapa atuais dos dados carregados
+        const currentTrail = trilhas.find((t) => t.id === trailId)
+        if (currentTrail) {
+          let etapas = []
+          if (Array.isArray(currentTrail.etapas)) {
+            etapas = currentTrail.etapas
+          } else if (typeof currentTrail.etapas === "object" && currentTrail.etapas !== null) {
+            etapas = Object.values(currentTrail.etapas)
+          }
+
+          const currentEtapa = etapas.find((e: { id: string }) => e.id === phaseId)
+          if (currentEtapa) {
+            // Obter todos os stages da etapa atual
+            let allStages = []
+            if (Array.isArray(currentEtapa.stages)) {
+              allStages = currentEtapa.stages
+            } else if (typeof currentEtapa.stages === "object" && currentEtapa.stages !== null) {
+              allStages = Object.values(currentEtapa.stages)
+            }
+
+            // Verificar se o progresso do usuário tem o mesmo número de stages que a etapa atual
+            const stageIdsInProgress = new Set(
+              trail.phases.filter((p: any) => p.id.startsWith(`${phaseId}_stage_`)).map((p: any) => p.id),
+            )
+
+            // Adicionar o stage atual ao conjunto
+            stageIdsInProgress.add(phaseId)
+
+            logSync(
+              LogLevel.INFO,
+              `Stages no progresso: ${stageIdsInProgress.size}, Stages na etapa: ${allStages.length}`,
+            )
+
+            // Se o número de stages no progresso for menor que o número de stages na etapa
+            if (stageIdsInProgress.size < allStages.length) {
+              logSync(
+                LogLevel.INFO,
+                `Detectados novos stages na etapa ${phaseId}. Marcando apenas o stage atual como concluído.`,
+              )
+
+              // Marcar apenas o stage atual como concluído, não a etapa inteira
+              phase.completed = true
+              phase.timeSpent = (phase.timeSpent || 0) + totalTime
+
+              // Adicionar entradas para os novos stages no progresso
+              allStages.forEach((stage: any) => {
+                if (stage && stage.id && stage.id !== stageId) {
+                  const stageProgressId = `${phaseId}_stage_${stage.id}`
+
+                  // Verificar se este stage já existe no progresso
+                  const existingStageProgress = trail.phases.find((p: any) => p.id === stageProgressId)
+
+                  if (!existingStageProgress) {
+                    logSync(LogLevel.INFO, `Adicionando novo stage ${stage.id} ao progresso`)
+
+                    // Criar uma entrada para o novo stage
+                    const newStageProgress = {
+                      id: stageProgressId,
+                      started: false,
+                      completed: false,
+                      timeSpent: 0,
+                      questionsProgress: [],
+                    }
+
+                    // Adicionar questões do stage ao progresso
+                    if (stage.questions) {
+                      const questions = Array.isArray(stage.questions)
+                        ? stage.questions
+                        : Object.values(stage.questions)
+
+                      questions.forEach((q: any) => {
+                        if (q && q.id) {
+                          newStageProgress.questionsProgress.push({
+                            id: q.id,
+                            answered: false,
+                            correct: false,
+                          })
+                        }
+                      })
+                    }
+
+                    trail.phases.push(newStageProgress)
+                  }
+                }
+              })
+            } else {
+              // Se todos os stages já estão no progresso, marcar a etapa como concluída
+              logSync(
+                LogLevel.INFO,
+                `Todos os stages da etapa ${phaseId} estão no progresso. Marcando a etapa como concluída.`,
+              )
+              phase.completed = true
+              phase.timeSpent = (phase.timeSpent || 0) + totalTime
+            }
+          } else {
+            // Se não encontrar a etapa, apenas marcar o stage atual como concluído
+            logSync(
+              LogLevel.WARNING,
+              `Etapa ${phaseId} não encontrada nos dados carregados. Marcando apenas o stage como concluído.`,
+            )
+            phase.completed = true
+            phase.timeSpent = (phase.timeSpent || 0) + totalTime
+          }
+        } else {
+          // Se não encontrar a trilha, apenas marcar o stage atual como concluído
+          logSync(
+            LogLevel.WARNING,
+            `Trilha ${trailId} não encontrada nos dados carregados. Marcando apenas o stage como concluído.`,
+          )
+          phase.completed = true
+          phase.timeSpent = (phase.timeSpent || 0) + totalTime
+        }
 
         // Salvar progresso atualizado
         await set(userProgressRef, userProgress)
@@ -1024,13 +1120,10 @@ const MainGame = () => {
 
       {/* Feedback Modal */}
       <FeedbackModal
-      
         visible={showFeedback}
         isCorrect={isCorrect}
         onContinue={handleContinue}
         description={feedbackExplanation}
-        correctExplanation={currentQuestion?.correctExplanation}
-        incorrectExplanation={currentQuestion?.incorrectExplanation}
       />
 
       {/* Loading Transition */}
