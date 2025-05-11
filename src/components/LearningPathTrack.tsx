@@ -139,11 +139,31 @@ const LearningPathTrack = ({
       // Determinar se a etapa está concluída com base no progresso do usuário
       const concluida = phaseProgress ? phaseProgress.completed : false
 
-      // Calcular o progresso da etapa com base nas questões respondidas
-      const progress = phaseProgress ? calculatePhaseProgress(phaseProgress) : 0
-
       // Garantir que stages seja um array
       const stages = etapa.stages ? (Array.isArray(etapa.stages) ? etapa.stages : []) : []
+
+      // Calcular o progresso com base nos stages concluídos no progresso do usuário
+      let progress = 0
+
+      if (trailProgress && etapa.id) {
+        // Encontrar todos os stages relacionados a esta etapa no progresso do usuário
+        const stageProgressEntries = trailProgress.phases.filter(
+          (phase: any) => phase.id.startsWith(`${etapa.id}_stage_`) || phase.id === etapa.id,
+        )
+
+        if (stageProgressEntries.length > 0) {
+          // Contar quantos stages estão concluídos
+          const completedStages = stageProgressEntries.filter((phase: any) => phase.completed).length
+          // Calcular a porcentagem
+          progress = Math.round((completedStages / stageProgressEntries.length) * 100)
+        } else if (phaseProgress) {
+          // Se não encontrar stages específicos, usar o progresso da fase principal
+          progress = phaseProgress.completed ? 100 : calculatePhaseProgress(phaseProgress)
+        }
+      } else if (phaseProgress) {
+        // Fallback para o cálculo antigo se não encontrar a trilha
+        progress = calculatePhaseProgress(phaseProgress)
+      }
 
       return {
         id: etapa.id || `id-${Math.random().toString(36).substring(2, 9)}`,
@@ -185,6 +205,82 @@ const LearningPathTrack = ({
 
     // Só permite navegação se a etapa não estiver bloqueada
     if (!isEtapaBlocked(index)) {
+      // Obter a etapa selecionada
+      const etapa = processedEtapas[index]
+
+      // Verificar se a etapa tem stages
+      if (etapa && etapa.stages && etapa.stages.length > 0) {
+        // Buscar o progresso da trilha
+        const trailProgress = trailId ? getTrailProgress(trailId) : null
+
+        if (trailProgress) {
+          logSync(LogLevel.INFO, `Buscando próximo stage não concluído para etapa ${etapa.id}`)
+
+          // Mapear os IDs dos stages para seus status de conclusão no progresso do usuário
+          const stageProgressMap = new Map()
+
+          // Primeiro, verificar se a fase principal está concluída
+          const mainPhase = trailProgress.phases.find((phase: any) => phase.id === etapa.id)
+          if (mainPhase) {
+            logSync(LogLevel.INFO, `Status da fase principal ${etapa.id}: completed=${mainPhase.completed}`)
+          }
+
+          // Depois, mapear todos os stages desta etapa
+          trailProgress.phases.forEach((phase: any) => {
+            if (phase.id.startsWith(`${etapa.id}_stage_`)) {
+              // Extrair o ID do stage do ID da fase no progresso
+              const stageIdMatch = phase.id.match(new RegExp(`${etapa.id}_stage_(.+)$`))
+              if (stageIdMatch && stageIdMatch[1]) {
+                stageProgressMap.set(stageIdMatch[1], phase.completed)
+                logSync(LogLevel.INFO, `Stage ${stageIdMatch[1]}: completed=${phase.completed}`)
+              }
+            }
+          })
+
+          // Encontrar o primeiro stage não concluído
+          let nextStageIndex = -1
+          for (let i = 0; i < etapa.stages.length; i++) {
+            const stage = etapa.stages[i]
+            if (!stageProgressMap.get(stage.id)) {
+              nextStageIndex = i
+              break
+            }
+          }
+
+          // Se todos os stages estiverem concluídos, usar o último
+          if (nextStageIndex === -1 && etapa.stages.length > 0) {
+            nextStageIndex = etapa.stages.length - 1
+          }
+
+          // Se encontrou um stage, use-o
+          if (nextStageIndex !== -1) {
+            const stageToUse = etapa.stages[nextStageIndex]
+            logSync(
+              LogLevel.INFO,
+              `Navegando para o stage ${stageToUse.id} (índice ${nextStageIndex}) da etapa ${etapa.id}`,
+            )
+
+            // Chamar onEtapaPress com o índice da etapa
+            // Aqui estamos passando informações adicionais sobre qual stage deve ser carregado
+            onEtapaPress(index)
+
+            // Armazenar o índice do stage a ser carregado em localStorage para que o componente Home possa acessá-lo
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem("nextStageIndex", nextStageIndex.toString())
+                localStorage.setItem("currentEtapaId", etapa.id)
+                logSync(LogLevel.INFO, `Armazenado nextStageIndex=${nextStageIndex} para etapa ${etapa.id}`)
+              } catch (error) {
+                logSync(LogLevel.ERROR, `Erro ao armazenar nextStageIndex: ${error}`)
+              }
+            }
+
+            return
+          }
+        }
+      }
+
+      // Se não encontrou stages ou progresso, apenas chame onEtapaPress normalmente
       onEtapaPress(index)
     }
     // Se estiver bloqueada, não faz nada (ou poderia mostrar uma mensagem)
@@ -465,7 +561,7 @@ const EtapasList = ({
               isNext={isNextEtapa}
               isLocked={isLocked}
               onPress={() => onEtapaPress(originalIndex)}
-              title={etapa.titulo}
+              title={etapa.titulo!}
               icon={etapa.icon}
               iconLibrary={etapa.iconLibrary as IconLibrary}
               description={etapa.descricao}
@@ -474,7 +570,7 @@ const EtapasList = ({
             />
 
             {/* Espaço entre bolhas */}
-            {reversedIndex < reversedEtapas.length - 1 && <View style={{  marginTop: ETAPA_SPACING, paddingTop: 40 }} />}
+            {reversedIndex < reversedEtapas.length - 1 && <View style={{ marginTop: ETAPA_SPACING, paddingTop: 40 }} />}
           </View>
         )
       })}

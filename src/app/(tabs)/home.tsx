@@ -67,7 +67,8 @@ const Home = () => {
   const [etapaAtualIndex, setEtapaAtualIndex] = useState(0)
 
   const { userData, authUser, refreshUserData, isTokenLoaded, justRegistered, setJustRegistered } = useAuth()
-  const { getPhaseCompletionPercentage, syncProgress, isSyncing } = useGameProgress()
+  const { getPhaseCompletionPercentage, syncProgress, isSyncing, getPhaseProgress, getTrailProgress } =
+    useGameProgress()
   const { isAuthenticated, isLoading } = useRequireAuth()
   const nome = `${userData?.nome || ""} ${userData?.sobrenome || ""}`
   const scrollViewRef = useRef<ScrollView>(null)
@@ -329,28 +330,126 @@ const Home = () => {
     const currentEtapa = stages[index]
     if (!currentEtapa || !currentEtapa.stages || currentEtapa.stages.length === 0) return
 
-    // Encontrar o primeiro stage não concluído ou o primeiro stage se todos estiverem concluídos
-    const currentStageIndex = currentEtapa.stages.findIndex((stage: any) => !stage.completed)
-    const stageIndex = currentStageIndex >= 0 ? currentStageIndex : 0
-    const currentStage = currentEtapa.stages[stageIndex]
+    // Buscar o progresso da trilha
+    const trailProgress = currentTrilha.id ? getTrailProgress(currentTrilha.id) : null
 
-    if (!currentStage) return
+    if (!trailProgress) {
+      console.error("Progresso da trilha não encontrado")
+      return
+    }
 
-    // Navigate to the start phase with the stage data
-    router.push({
-      pathname: "/questions/start/startPhase",
-      params: {
-        phaseId: currentEtapa.id,
-        trailId: currentTrilha.id,
-        stageId: currentStage.id,
-        title: currentStage.title,
-        description: currentStage.description || "",
-        image: currentStage.image || "",
-        video: (currentStage as StageInfo).video || "",
-        tempo_estimado: currentStage.tempo_estimado || "10-15 minutos",
-        pontos_chave: JSON.stringify(currentStage.pontos_chave || []),
-      },
-    } as any)
+    // Verificar se a fase principal está concluída
+    const mainPhase = trailProgress.phases.find((phase: any) => phase.id === currentEtapa.id)
+    console.log("Fase principal:", mainPhase)
+
+    // Encontrar todos os stages desta etapa no progresso do usuário
+    const stageProgressEntries = trailProgress.phases.filter((phase: any) =>
+      phase.id.startsWith(`${currentEtapa.id}_stage_`),
+    )
+
+    console.log("Progresso dos stages encontrados:", stageProgressEntries)
+
+    // Mapear os IDs dos stages para seus status de conclusão
+    const stageProgressMap = new Map()
+
+    stageProgressEntries.forEach((phase: any) => {
+      // Extrair o ID do stage do ID da fase no progresso
+      const stageIdMatch = phase.id.match(new RegExp(`${currentEtapa.id}_stage_(.+)$`))
+      if (stageIdMatch && stageIdMatch[1]) {
+        stageProgressMap.set(stageIdMatch[1], phase.completed)
+        console.log(`Stage ${stageIdMatch[1]}: completed=${phase.completed}`)
+      }
+    })
+
+    // Imprimir todos os stages disponíveis na etapa
+    console.log("Stages disponíveis na etapa:")
+    currentEtapa.stages.forEach((stage: any, i: number) => {
+      console.log(`Stage ${i}: id=${stage.id}, title=${stage.title}`)
+    })
+
+    // Encontrar o primeiro stage não concluído
+    let nextStageIndex = -1
+
+    // Primeiro, verificar se há stages no progresso que não estão concluídos
+    for (let i = 0; i < currentEtapa.stages.length; i++) {
+      const stage = currentEtapa.stages[i]
+      const stageId = stage.id
+
+      // Verificar se este stage existe no mapa de progresso e se não está concluído
+      if (stageProgressMap.has(stageId) && !stageProgressMap.get(stageId)) {
+        nextStageIndex = i
+        console.log(`Encontrado stage não concluído no progresso: ${stageId} (índice ${i})`)
+        break
+      }
+    }
+
+    // Se não encontramos nenhum stage não concluído no progresso,
+    // procurar por stages que não estão no mapa de progresso
+    if (nextStageIndex === -1) {
+      for (let i = 0; i < currentEtapa.stages.length; i++) {
+        const stage = currentEtapa.stages[i]
+        const stageId = stage.id
+
+        if (!stageProgressMap.has(stageId)) {
+          nextStageIndex = i
+          console.log(`Encontrado stage sem registro de progresso: ${stageId} (índice ${i})`)
+          break
+        }
+      }
+    }
+
+    // Se ainda não encontramos nenhum stage, verificar se há algum stage após o último concluído
+    if (nextStageIndex === -1) {
+      // Encontrar o índice do último stage concluído
+      let lastCompletedIndex = -1
+
+      for (let i = 0; i < currentEtapa.stages.length; i++) {
+        const stage = currentEtapa.stages[i]
+        const stageId = stage.id
+
+        if (stageProgressMap.has(stageId) && stageProgressMap.get(stageId)) {
+          lastCompletedIndex = i
+        }
+      }
+
+      // Se encontramos um stage concluído, tentar o próximo
+      if (lastCompletedIndex !== -1 && lastCompletedIndex + 1 < currentEtapa.stages.length) {
+        nextStageIndex = lastCompletedIndex + 1
+        console.log(`Usando o stage após o último concluído: índice ${nextStageIndex}`)
+      }
+    }
+
+    // Se ainda não encontramos nenhum stage, usar o primeiro
+    if (nextStageIndex === -1 && currentEtapa.stages.length > 0) {
+      nextStageIndex = 0
+      console.log(`Usando primeiro stage como fallback: ${currentEtapa.stages[0].id}`)
+    }
+
+    // Se encontramos um stage, usá-lo
+    if (nextStageIndex !== -1) {
+      const stageToUse = currentEtapa.stages[nextStageIndex]
+
+      console.log(`Navegando para o stage ${stageToUse.id} (índice ${nextStageIndex}) da etapa ${currentEtapa.id}`)
+      console.log("Dados do stage:", JSON.stringify(stageToUse, null, 2))
+
+      // Navigate to the start phase with the stage data
+      router.push({
+        pathname: "/questions/start/startPhase",
+        params: {
+          phaseId: currentEtapa.id,
+          trailId: currentTrilha.id,
+          stageId: stageToUse.id,
+          title: stageToUse.title || "",
+          description: stageToUse.description || "",
+          image: stageToUse.image || "",
+          video: stageToUse.video || "",
+          tempo_estimado: stageToUse.tempo_estimado || "10-15 minutos",
+          pontos_chave: JSON.stringify(stageToUse.pontos_chave || []),
+        },
+      } as any)
+    } else {
+      console.error("Nenhum stage encontrado para a etapa", currentEtapa.id)
+    }
 
     // Simulação de ganho de pontos ao clicar em uma etapa
     if (!stages[index].concluida) {
@@ -653,7 +752,6 @@ const Home = () => {
 
       <>
         <DuolingoHeader nome={nome} scrollY={scrollY} selectedQuestion={selectedQuestion} />
-
       </>
       {/* Navegador de trilha */}
       <View className="bg-secondary px-4 py-6 flex-row justify-between items-center absolute bottom-16 left-0 right-0 z-20 border-t-2 border-tertiary">
