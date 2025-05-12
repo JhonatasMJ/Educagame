@@ -1,21 +1,20 @@
 import React from "react";
-import { TouchableOpacity, StyleSheet } from "react-native";
-import { SvgProps } from "react-native-svg";
+import { TouchableOpacity, StyleSheet, Image, ImageSourcePropType } from "react-native";
 
 interface CharacterProps {
-  source: React.FC<SvgProps>;
+  source: ImageSourcePropType;
   id: number;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-const Character = ({ source: SvgImage, isSelected, onSelect }: CharacterProps) => {
+const Character = ({ source, isSelected, onSelect }: CharacterProps) => {
   return (
     <TouchableOpacity 
       style={[styles.character, isSelected && styles.selectedCharacter]}
       onPress={onSelect}
     >
-      <SvgImage width={170} height={170} />
+      <Image source={source} style={styles.image} resizeMode="contain" />
     </TouchableOpacity>
   );
 };
@@ -38,6 +37,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#223AD2",
     borderWidth: 5,
   },
+  image: {
+    width: "100%",
+    height: "100%",
+  }
 });
 
 export default Character;

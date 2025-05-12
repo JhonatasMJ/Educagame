@@ -1,17 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { View, Text, TouchableOpacity, FlatList, SafeAreaView, Animated, StatusBar } from "react-native"
+import { View, Text, TouchableOpacity, FlatList, SafeAreaView, Animated, StatusBar, Image } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import { useAuth } from "@/src/context/AuthContext"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import { getDatabase, ref, get } from "firebase/database"
-
-// Importando os componentes de avatar
-import BigAvatar1 from "../../../assets/images/grande-avatar1.svg"
-import BigAvatar2 from "../../../assets/images/grande-avatar2.svg"
-import BigAvatar3 from "../../../assets/images/grande-avatar3.svg"
-import BigAvatar4 from "../../../assets/images/grande-avatar4.svg"
 import React from "react"
 
 interface User {
@@ -29,12 +23,18 @@ interface User {
   minutesOnline?: number
 }
 
-// Mapeamento dos componentes de avatar
+const avatarImages = {
+  avatar1: require("../../../assets/images/grande-avatar1.png"),
+  avatar2: require("../../../assets/images/grande-avatar2.png"),
+  avatar3: require("../../../assets/images/grande-avatar3.png"),
+  avatar4: require("../../../assets/images/grande-avatar4.png"),
+}
+
 const avatarComponents = {
-  avatar1: BigAvatar1,
-  avatar2: BigAvatar2,
-  avatar3: BigAvatar3,
-  avatar4: BigAvatar4,
+  avatar1: avatarImages.avatar1,
+  avatar2: avatarImages.avatar2,
+  avatar3: avatarImages.avatar3,
+  avatar4: avatarImages.avatar4,
 }
 
 const RankingScreen = () => {
@@ -227,24 +227,24 @@ const RankingScreen = () => {
     const position = item.position || index + 1
     const isCurrentUser = item.id === currentUserId
 
-    const AvatarComponent = avatarComponents[item.avatarSource as keyof typeof avatarComponents] || BigAvatar1
+    // Get the avatar source from the mapping
+    const avatarSource = avatarComponents[item.avatarSource as keyof typeof avatarComponents] || avatarComponents.avatar1
 
     return (
       <View
-        className={`flex-row items-center ${
-          isCurrentUser ? "bg-secondary  mx-1" : "bg-white"
-        } rounded-lg mb-3.5 p-3.5 shadow-md`}
+        className={`flex-row items-center ${isCurrentUser ? "bg-secondary  mx-1" : "bg-white"
+          } rounded-lg mb-3.5 p-3.5 shadow-md`}
         style={
           isCurrentUser
             ? {
-                transform: [{ scale: 1.05 }],
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 6,
-                elevation: 8,
-                zIndex: 10,
-              }
+              transform: [{ scale: 1.05 }],
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 6,
+              elevation: 8,
+              zIndex: 10,
+            }
             : {}
         }
       >
@@ -254,10 +254,15 @@ const RankingScreen = () => {
         <View
           className={`${isCurrentUser ? "w-12 h-12" : "w-10 h-10"} rounded-lg bg-primary overflow-hidden mr-3 justify-center items-center`}
         >
-          <AvatarComponent
-            width={isCurrentUser ? 48 : 40}
-            height={isCurrentUser ? 48 : 40}
-            className={isCurrentUser ? "w-12 h-12" : "w-10 h-10"}
+          {/* Replace SVG component with Image component */}
+          <Image
+            source={avatarSource}
+            style={{
+              width: isCurrentUser ? 48 : 40,
+              height: isCurrentUser ? 48 : 40,
+              borderRadius: 8,
+            }}
+            resizeMode="cover"
           />
         </View>
         <Text className={`flex-1 ${isCurrentUser ? "text-lg" : "text-base"} font-bold capitalize`}>{item.name} {item.surname}</Text>

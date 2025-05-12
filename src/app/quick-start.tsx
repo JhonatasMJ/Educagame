@@ -13,27 +13,22 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Image,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { BRAND_COLORS, TEXT_COLORS, BUTTON_COLORS, UI_COLORS, FORM_COLORS } from "../colors"
 import { useQuickRegister } from "../hooks/useQuickRegister"
 import { useRequireAuth } from "../hooks/useRequireAuth"
 import Toast from "react-native-toast-message"
-
-// Importando os avatares SVG
-import Avatar1 from "../../assets/images/avatar1.svg"
-import Avatar2 from "../../assets/images/avatar2.svg"
-import Avatar3 from "../../assets/images/avatar3.svg"
-import Avatar4 from "../../assets/images/avatar4.svg"
 import Character from "../components/Character"
 import React from "react"
 import { router } from "expo-router"
 
 const avatars = [
-  { id: "1", source: Avatar1, sourceName: "avatar1" },
-  { id: "2", source: Avatar2, sourceName: "avatar2" },
-  { id: "3", source: Avatar3, sourceName: "avatar3" },
-  { id: "4", source: Avatar4, sourceName: "avatar4" },
+  { id: "1", source: require("../../assets/images/avatar1.png"), sourceName: "avatar1" },
+  { id: "2", source: require("../../assets/images/avatar2.png"), sourceName: "avatar2" },
+  { id: "3", source: require("../../assets/images/avatar3.png"), sourceName: "avatar3" },
+  { id: "4", source: require("../../assets/images/avatar4.png"), sourceName: "avatar4" },
 ]
 
 const { width } = Dimensions.get("window")
@@ -166,16 +161,6 @@ export default function QuickStart() {
     ]).start()
   }
 
-  // Determinar o texto de ajuda para o nome
-  const getNameHelperText = () => {
-    if (firstName && lastName) {
-      return `Nome: ${firstName} | Sobrenome: ${lastName}`
-    } else if (firstName) {
-      return `Nome: ${firstName}`
-    }
-    return ""
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -189,8 +174,8 @@ export default function QuickStart() {
               style={{
                 flexDirection: "row",
                 flexWrap: "wrap",
+                gap: 35,
                 justifyContent: "center",
-                gap: '15%',
                 width: "100%",
               }}
             >

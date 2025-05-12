@@ -13,6 +13,7 @@ import {
   Modal,
   StatusBar,
   ActivityIndicator,
+  Image
 } from "react-native"
 import { createDrawerNavigator } from "@react-navigation/drawer"
 import FontAwesome from "@expo/vector-icons/FontAwesome"
@@ -49,11 +50,19 @@ import React from "react"
 const { height, width } = Dimensions.get("window")
 const Drawer = createDrawerNavigator()
 
+
+const avatarImages = {
+  avatar1: require("../../../assets/images/grande-avatar1.png"),
+  avatar2: require("../../../assets/images/grande-avatar2.png"),
+  avatar3: require("../../../assets/images/grande-avatar3.png"),
+  avatar4: require("../../../assets/images/grande-avatar4.png"),
+}
+
 const avatarComponents = {
-  avatar1: BigAvatar1,
-  avatar2: BigAvatar2,
-  avatar3: BigAvatar3,
-  avatar4: BigAvatar4,
+  avatar1: avatarImages.avatar1,
+  avatar2: avatarImages.avatar2,
+  avatar3: avatarImages.avatar3,
+  avatar4: avatarImages.avatar4,
 }
 
 const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
@@ -457,16 +466,30 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                   activeOpacity={editar ? 0.7 : 1}
                   className="relative"
                 >
-                  <AvatarComponent className="-z-10" width={200} height={270} />
-
+                  <Image
+                    source={avatarComponents[avatarSource as keyof typeof avatarComponents] || avatarComponents.avatar1}
+                    style={{
+                      width: 200,
+                      height: 270,
+                      borderRadius: 100,
+                    }}
+                    resizeMode="cover"
+                  />
                   <View className="absolute bottom-10 right-0 bg-primary z-50 p-2 rounded-full shadow-md">
                     <FontAwesome name="camera" size={20} color="#111" />
                   </View>
                 </TouchableOpacity>
               ) : (
                 <View className="relative">
-                  <AvatarComponent className="-z-10" width={200} height={270} />
-
+                  <Image
+                    source={avatarComponents[avatarSource as keyof typeof avatarComponents] || avatarComponents.avatar1}
+                    style={{
+                      width: 200,
+                      height: 270,
+                      borderRadius: 100,
+                    }}
+                    resizeMode="cover"
+                  />
                   <TouchableOpacity
                     onPress={() => {
                       setShowAvatarModal(true)
@@ -503,9 +526,8 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                 </View>
               )}
               <TouchableOpacity
-                className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${
-                  editar ? "bg-primary" : "bg-secondary"
-                }`}
+                className={`flex-row justify-center items-center py-3 px-8 rounded-lg mb-4 ${editar ? "bg-primary" : "bg-secondary"
+                  }`}
                 onPress={handleEdit}
                 disabled={isSaving}
               >
@@ -589,12 +611,20 @@ const PerfilContent = ({ navigation, onOpenDrawer }: any) => {
                     {Object.entries(avatarComponents).map(([key, AvatarComp]) => (
                       <TouchableOpacity
                         key={key}
-                        className={`p-3 rounded-xl border-2 relative ${
-                          avatarSource === key ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent bg-zinc-700"
-                        }`}
+                        className={`p-3 rounded-xl border-2 relative ${avatarSource === key ? "border-[#56A6DC] bg-[#56A6DC]/10" : "border-transparent bg-zinc-700"
+                          }`}
                         onPress={() => handleAvatarChange(key)}
                       >
-                        <AvatarComp width={85} height={85} style={{ borderRadius: 45 }} />
+
+                        <Image
+                          source={avatarComponents[key as keyof typeof avatarComponents]}
+                          style={{
+                            width: 85,
+                            height: 85,
+                            borderRadius: 45
+                          }}
+                          resizeMode="cover"
+                        />
 
                         {avatarSource === key && (
                           <View className="absolute bottom-1 right-1 bg-[#56A6DC] rounded-full w-6 h-6 items-center justify-center">
