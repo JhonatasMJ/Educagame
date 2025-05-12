@@ -1,6 +1,6 @@
 "use client"
 
-import React,{ useState, useRef } from "react"
+import React, { useState, useRef } from "react"
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   TouchableOpacity,
+  Image
 } from "react-native"
 import { router } from "expo-router"
 import Logo from "../../assets/images/web.svg"
@@ -258,14 +259,14 @@ const ForgotPasswordScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-white justify-center">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-        <ArrowBack onPress={() => router.back()} className="absolute top-3 left-3 bg-primary" color="#f2f2f2" />
+        <ArrowBack onPress={() => router.replace("/login")} className="absolute top-3 left-3 bg-primary" color="#f2f2f2" />
         <ScrollView
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}
         >
           <View className="items-center">
-            <Logo style={{ maxWidth: 320, maxHeight: 180, top: 18, position: "relative" }} />
+            <Image source={require("../../assets/images/favicon.png")} resizeMode="contain" style={{ width: 150, height: 150, padding: 10, position: "relative", top: 18 }} />
           </View>
 
           {step === "email" && renderEmailStep()}

@@ -12,6 +12,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Dimensions,
+  Image,
 } from "react-native"
 import { FontAwesome } from "@expo/vector-icons"
 import { useLogin } from "../hooks/UseLogin"
@@ -128,8 +129,8 @@ const Login = () => {
         >
           <View className="px-6 flex-1 justify-evenly">
             <View className={`items-center ${marginTopForLogo()}`}>
-              <View className="items-center">
-                <Logo style={{ width: 400, height: 180 }} />
+              <View className="items-center" >
+                <Image  source={require("../../assets/images/favicon.png")} resizeMode="contain" style={{width: 150, height: 150, padding: 10 }} />
               </View>
             </View>
 
@@ -188,7 +189,7 @@ const Login = () => {
               <View className="flex-row justify-between items-center mt-2.5 mb-[10%] w-4/5">
                 <Checkbox title="Lembrar conta" isChecked={rememberMe} onCheck={setRememberMe} colorText="#111" />
 
-                <TouchableOpacity onPress={() => router.push("/forgotPassword")}>
+                <TouchableOpacity onPress={() => router.replace("/forgotPassword")}>
                   <Text className="text-sm text-primary underline">Esqueci minha senha</Text>
                 </TouchableOpacity>
               </View>
@@ -205,7 +206,7 @@ const Login = () => {
 
               <View className="flex-row justify-center mb-8">
                 <Text className="text-[#6B7280]">Não tem uma conta? </Text>
-                <TouchableOpacity onPress={() => USE_SIMPLIFIED_ONBOARDING ? router.push("/quick-start") : router.push("/(register)")}>
+                <TouchableOpacity onPress={() => USE_SIMPLIFIED_ONBOARDING ? router.push("/quick-start") : router.replace("/(register)")}>
                   <Text className="text-primary font-medium underline">Criar conta</Text>
                 </TouchableOpacity>
               </View>

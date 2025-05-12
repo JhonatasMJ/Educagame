@@ -189,7 +189,8 @@ export default function QuickStart() {
               style={{
                 flexDirection: "row",
                 flexWrap: "wrap",
-                justifyContent: "space-evenly",
+                justifyContent: "center",
+                gap: '15%',
                 width: "100%",
               }}
             >
@@ -266,7 +267,7 @@ export default function QuickStart() {
               )}
             </TouchableOpacity>
             <View style={{ height: 20 }} />
-            <TouchableOpacity style={{ alignItems: "center", justifyContent: "center", flexDirection: "row" }} onPress={() => router.replace("/login")}>
+            <TouchableOpacity style={{ alignItems: "center", justifyContent: "center", flexDirection: "row" }} onPress={() => router.push("/login")}>
               <Text style={styles.subtitle}>Ja possui uma conta?</Text>
               <View style={{ width: 6.75 }} />
               <Text style={[styles.subtitle, { textDecorationLine: "underline"}]}>Clique aqui!</Text>
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    padding: 18,
     paddingTop: 10,
   },
   content: {
