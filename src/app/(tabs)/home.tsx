@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -22,7 +22,6 @@ import LearningPathTrack from "@/src/components/LearningPathTrack"
 import { useRequireAuth } from "@/src/hooks/useRequireAuth"
 import { useTrails } from "@/src/hooks/useTrails"
 import { logSync, LogLevel } from "@/src/services/syncLogger"
-import React from "react"
 
 const { width, height } = Dimensions.get("window")
 
@@ -113,9 +112,16 @@ const Home = () => {
   const [initialRefreshDone, setInitialRefreshDone] = useState(false)
 
   // Função para atualizar trilhas com feedback visual
-  async function refreshTrails(forceUpdate = false) {
-    console.log("Iniciando refresh de trilhas", forceUpdate ? "(forçado)" : "")
-    logSync(LogLevel.INFO, `Iniciando refresh de trilhas ${forceUpdate ? "(forçado)" : ""}`)
+  async function refreshTrails(forceUpdate = false, retryCount = 0) {
+    console.log(
+      "Iniciando refresh de trilhas",
+      forceUpdate ? "(forçado)" : "",
+      retryCount > 0 ? `(tentativa ${retryCount})` : "",
+    )
+    logSync(
+      LogLevel.INFO,
+      `Iniciando refresh de trilhas ${forceUpdate ? "(forçado)" : ""} ${retryCount > 0 ? `(tentativa ${retryCount})` : ""}`,
+    )
 
     // Evitar múltiplos cliques em sequência
     if (trailsLoading || isSyncing || isRefreshing) {
@@ -129,11 +135,6 @@ const Home = () => {
 
       // Atualizar timestamp do último refresh
       lastRefreshTimeRef.current = Date.now()
-
-      // Mostrar alerta para debug (remover em produção)
-      if (Platform.OS === "web") {
-        console.log("Iniciando refresh das trilhas...")
-      }
 
       // Buscar trilhas
       await fetchTrails()
@@ -154,19 +155,26 @@ const Home = () => {
       // Incrementar contador de refreshes
       refreshCountRef.current += 1
 
-      // Mostrar alerta para debug (remover em produção)
-      if (Platform.OS === "web") {
-        console.log("Refresh concluído com sucesso!")
-      }
-    } catch (error) {
-      logSync(LogLevel.ERROR, "Erro ao atualizar trilhas:", error)
-      console.error("Erro ao atualizar trilhas:", error)
 
-      // Mostrar alerta para debug (remover em produção)
-      if (Platform.OS === "web") {
-        console.error("Erro ao atualizar trilhas:", error)
+    } catch (error) {
+      logSync(LogLevel.ERROR, `Erro ao atualizar trilhas (tentativa ${retryCount}):`, error)
+      console.error(`Erro ao atualizar trilhas (tentativa ${retryCount}):`, error)
+
+      // Implementar retry automático com backoff exponencial
+      if (retryCount < 3) {
+        // Máximo de 3 tentativas
+        const backoffTime = 1000 * Math.pow(2, retryCount) // 1s, 2s, 4s
+        console.log(`Tentando novamente em ${backoffTime / 1000}s...`)
+
+        setTimeout(() => {
+          refreshTrails(forceUpdate, retryCount + 1)
+        }, backoffTime)
+
+        // Não finalizar o indicador de carregamento para retries automáticos
+        return
       }
     } finally {
+      // Só finalizar o indicador se não estiver em retry automático
       setIsRefreshing(false)
     }
   }
@@ -330,126 +338,177 @@ const Home = () => {
     const currentEtapa = stages[index]
     if (!currentEtapa || !currentEtapa.stages || currentEtapa.stages.length === 0) return
 
+    const continueWithStageSelection = (etapa: EtapaInfo, trailProgress: any) => {
+      // Verificar se a fase principal está concluída
+      const mainPhase = trailProgress.phases.find((phase: any) => phase.id === etapa.id)
+      console.log("Fase principal:", mainPhase)
+
+      // Encontrar todos os stages desta etapa no progresso do usuário
+      const stageProgressEntries = trailProgress.phases.filter((phase: any) =>
+        phase.id.startsWith(`${etapa.id}_stage_`),
+      )
+
+      console.log("Progresso dos stages encontrados:", stageProgressEntries)
+
+      // Mapear os IDs dos stages para seus status de conclusão
+      const stageProgressMap = new Map()
+
+      stageProgressEntries.forEach((phase: any) => {
+        // Extrair o ID do stage do ID da fase no progresso
+        const stageIdMatch = phase.id.match(new RegExp(`${etapa.id}_stage_(.+)$`))
+        if (stageIdMatch && stageIdMatch[1]) {
+          stageProgressMap.set(stageIdMatch[1], phase.completed)
+          console.log(`Stage ${stageIdMatch[1]}: completed=${phase.completed}`)
+        }
+      })
+
+      // Imprimir todos os stages disponíveis na etapa
+      console.log("Stages disponíveis na etapa:")
+      etapa.stages.forEach((stage: any, i: number) => {
+        console.log(`Stage ${i}: id=${stage.id}, title=${stage.title}`)
+      })
+
+      // Encontrar o primeiro stage não concluído
+      let nextStageIndex = -1
+
+      // Primeiro, verificar se há stages no progresso que não estão concluídos
+      for (let i = 0; i < etapa.stages.length; i++) {
+        const stage = etapa.stages[i]
+        const stageId = stage.id
+
+        // Verificar se este stage existe no mapa de progresso e se não está concluído
+        if (stageProgressMap.has(stageId) && !stageProgressMap.get(stageId)) {
+          nextStageIndex = i
+          console.log(`Encontrado stage não concluído no progresso: ${stageId} (índice ${i})`)
+          break
+        }
+      }
+
+      // Se não encontramos nenhum stage não concluído no progresso,
+      // procurar por stages que não estão no mapa de progresso
+      if (nextStageIndex === -1) {
+        for (let i = 0; i < etapa.stages.length; i++) {
+          const stage = etapa.stages[i]
+          const stageId = stage.id
+
+          if (!stageProgressMap.has(stageId)) {
+            nextStageIndex = i
+            console.log(`Encontrado stage sem registro de progresso: ${stageId} (índice ${i})`)
+            break
+          }
+        }
+      }
+
+      // Se ainda não encontramos nenhum stage, verificar se há algum stage após o último concluído
+      if (nextStageIndex === -1) {
+        // Encontrar o índice do último stage concluído
+        let lastCompletedIndex = -1
+
+        for (let i = 0; i < etapa.stages.length; i++) {
+          const stage = etapa.stages[i]
+          const stageId = stage.id
+
+          if (stageProgressMap.has(stageId) && stageProgressMap.get(stageId)) {
+            lastCompletedIndex = i
+          }
+        }
+
+        // Se encontramos um stage concluído, tentar o próximo
+        if (lastCompletedIndex !== -1 && lastCompletedIndex + 1 < etapa.stages.length) {
+          nextStageIndex = lastCompletedIndex + 1
+          console.log(`Usando o stage após o último concluído: índice ${nextStageIndex}`)
+        }
+      }
+
+      // Se ainda não encontramos nenhum stage, usar o primeiro
+      if (nextStageIndex === -1 && etapa.stages.length > 0) {
+        nextStageIndex = 0
+        console.log(`Usando primeiro stage como fallback: ${etapa.stages[0].id}`)
+      }
+
+      // Se encontramos um stage, usá-lo
+      if (nextStageIndex !== -1) {
+        const stageToUse = etapa.stages[nextStageIndex]
+
+        console.log(`Navegando para o stage ${stageToUse.id} (índice ${nextStageIndex}) da etapa ${etapa.id}`)
+        console.log("Dados do stage:", JSON.stringify(stageToUse, null, 2))
+
+        // Finalizar o indicador de carregamento se estiver ativo
+        setIsRefreshing(false)
+
+        // Navigate to the start phase with the stage data
+        router.push({
+          pathname: "/questions/start/startPhase",
+          params: {
+            phaseId: etapa.id,
+            trailId: currentTrilha?.id || "",
+            stageId: stageToUse.id,
+            title: stageToUse.title || "",
+            description: stageToUse.description || "",
+            image: stageToUse.image || "",
+            video: stageToUse.video || "",
+            tempo_estimado: stageToUse.tempo_estimado || "10-15 minutos",
+            pontos_chave: JSON.stringify(stageToUse.pontos_chave || []),
+          },
+        } as any)
+      } else {
+        console.error("Nenhum stage encontrado para a etapa", etapa.id)
+        setIsRefreshing(false)
+      }
+    }
+
     // Buscar o progresso da trilha
     const trailProgress = currentTrilha.id ? getTrailProgress(currentTrilha.id) : null
 
     if (!trailProgress) {
-      console.error("Progresso da trilha não encontrado")
+      console.log("Progresso da trilha não encontrado, tentando sincronizar...")
+
+      // Mostrar indicador de carregamento
+      setIsRefreshing(true)
+
+      // Tentar sincronizar o progresso e buscar novamente
+      syncProgress()
+        .then(() => {
+          // Tentar novamente após a sincronização
+          const retriedProgress = currentTrilha.id ? getTrailProgress(currentTrilha.id) : null
+
+          if (retriedProgress) {
+            console.log("Progresso da trilha recuperado após sincronização")
+            // Continuar com o progresso recuperado
+            continueWithStageSelection(currentEtapa, retriedProgress)
+          } else {
+            console.error("Progresso da trilha não encontrado mesmo após sincronização")
+            setIsRefreshing(false)
+
+            // Criar um progresso temporário para permitir a navegação
+            const tempProgress = {
+              id: currentTrilha.id,
+              phases: [],
+              completed: false,
+            }
+
+            continueWithStageSelection(currentEtapa, tempProgress)
+          }
+        })
+        .catch((error) => {
+          console.error("Erro ao sincronizar progresso:", error)
+          setIsRefreshing(false)
+
+          // Criar um progresso temporário para permitir a navegação mesmo com erro
+          const tempProgress = {
+            id: currentTrilha.id,
+            phases: [],
+            completed: false,
+          }
+
+          continueWithStageSelection(currentEtapa, tempProgress)
+        })
+
       return
     }
 
-    // Verificar se a fase principal está concluída
-    const mainPhase = trailProgress.phases.find((phase: any) => phase.id === currentEtapa.id)
-    console.log("Fase principal:", mainPhase)
-
-    // Encontrar todos os stages desta etapa no progresso do usuário
-    const stageProgressEntries = trailProgress.phases.filter((phase: any) =>
-      phase.id.startsWith(`${currentEtapa.id}_stage_`),
-    )
-
-    console.log("Progresso dos stages encontrados:", stageProgressEntries)
-
-    // Mapear os IDs dos stages para seus status de conclusão
-    const stageProgressMap = new Map()
-
-    stageProgressEntries.forEach((phase: any) => {
-      // Extrair o ID do stage do ID da fase no progresso
-      const stageIdMatch = phase.id.match(new RegExp(`${currentEtapa.id}_stage_(.+)$`))
-      if (stageIdMatch && stageIdMatch[1]) {
-        stageProgressMap.set(stageIdMatch[1], phase.completed)
-        console.log(`Stage ${stageIdMatch[1]}: completed=${phase.completed}`)
-      }
-    })
-
-    // Imprimir todos os stages disponíveis na etapa
-    console.log("Stages disponíveis na etapa:")
-    currentEtapa.stages.forEach((stage: any, i: number) => {
-      console.log(`Stage ${i}: id=${stage.id}, title=${stage.title}`)
-    })
-
-    // Encontrar o primeiro stage não concluído
-    let nextStageIndex = -1
-
-    // Primeiro, verificar se há stages no progresso que não estão concluídos
-    for (let i = 0; i < currentEtapa.stages.length; i++) {
-      const stage = currentEtapa.stages[i]
-      const stageId = stage.id
-
-      // Verificar se este stage existe no mapa de progresso e se não está concluído
-      if (stageProgressMap.has(stageId) && !stageProgressMap.get(stageId)) {
-        nextStageIndex = i
-        console.log(`Encontrado stage não concluído no progresso: ${stageId} (índice ${i})`)
-        break
-      }
-    }
-
-    // Se não encontramos nenhum stage não concluído no progresso,
-    // procurar por stages que não estão no mapa de progresso
-    if (nextStageIndex === -1) {
-      for (let i = 0; i < currentEtapa.stages.length; i++) {
-        const stage = currentEtapa.stages[i]
-        const stageId = stage.id
-
-        if (!stageProgressMap.has(stageId)) {
-          nextStageIndex = i
-          console.log(`Encontrado stage sem registro de progresso: ${stageId} (índice ${i})`)
-          break
-        }
-      }
-    }
-
-    // Se ainda não encontramos nenhum stage, verificar se há algum stage após o último concluído
-    if (nextStageIndex === -1) {
-      // Encontrar o índice do último stage concluído
-      let lastCompletedIndex = -1
-
-      for (let i = 0; i < currentEtapa.stages.length; i++) {
-        const stage = currentEtapa.stages[i]
-        const stageId = stage.id
-
-        if (stageProgressMap.has(stageId) && stageProgressMap.get(stageId)) {
-          lastCompletedIndex = i
-        }
-      }
-
-      // Se encontramos um stage concluído, tentar o próximo
-      if (lastCompletedIndex !== -1 && lastCompletedIndex + 1 < currentEtapa.stages.length) {
-        nextStageIndex = lastCompletedIndex + 1
-        console.log(`Usando o stage após o último concluído: índice ${nextStageIndex}`)
-      }
-    }
-
-    // Se ainda não encontramos nenhum stage, usar o primeiro
-    if (nextStageIndex === -1 && currentEtapa.stages.length > 0) {
-      nextStageIndex = 0
-      console.log(`Usando primeiro stage como fallback: ${currentEtapa.stages[0].id}`)
-    }
-
-    // Se encontramos um stage, usá-lo
-    if (nextStageIndex !== -1) {
-      const stageToUse = currentEtapa.stages[nextStageIndex]
-
-      console.log(`Navegando para o stage ${stageToUse.id} (índice ${nextStageIndex}) da etapa ${currentEtapa.id}`)
-      console.log("Dados do stage:", JSON.stringify(stageToUse, null, 2))
-
-      // Navigate to the start phase with the stage data
-      router.push({
-        pathname: "/questions/start/startPhase",
-        params: {
-          phaseId: currentEtapa.id,
-          trailId: currentTrilha.id,
-          stageId: stageToUse.id,
-          title: stageToUse.title || "",
-          description: stageToUse.description || "",
-          image: stageToUse.image || "",
-          video: stageToUse.video || "",
-          tempo_estimado: stageToUse.tempo_estimado || "10-15 minutos",
-          pontos_chave: JSON.stringify(stageToUse.pontos_chave || []),
-        },
-      } as any)
-    } else {
-      console.error("Nenhum stage encontrado para a etapa", currentEtapa.id)
-    }
+    // Se temos o progresso, continuar normalmente
+    continueWithStageSelection(currentEtapa, trailProgress)
 
     // Simulação de ganho de pontos ao clicar em uma etapa
     if (!stages[index].concluida) {
@@ -705,8 +764,38 @@ const Home = () => {
     }
   }, [authUser, isTokenLoaded, initialRefreshDone])
 
-  const TAB_HEIGHT = 50
-  const TRAIL_SELECTOR_HEIGHT = 80
+  // Add a new useEffect to ensure progress is synchronized when returning to the home screen
+  // Add this after your other useEffect hooks:
+
+  // Sincronizar progresso quando retornar à tela inicial
+  useEffect(() => {
+    const syncOnFocus = () => {
+      if (authUser && !isSyncing && !isRefreshing && hasLoadedTrails) {
+        console.log("Sincronizando progresso ao retornar à tela inicial...")
+        syncProgress().catch((error) => {
+          console.error("Erro ao sincronizar progresso ao retornar:", error)
+        })
+      }
+    }
+
+    // Para React Native
+    const unsubscribeFocus = router?.addListener?.("focus", syncOnFocus)
+
+    // Para Web
+    if (Platform.OS === "web") {
+      window.addEventListener("focus", syncOnFocus)
+    }
+
+    return () => {
+      // Limpar listeners
+      unsubscribeFocus?.()
+
+      if (Platform.OS === "web") {
+        window.removeEventListener("focus", syncOnFocus)
+      }
+    }
+  }, [authUser, isSyncing, isRefreshing, hasLoadedTrails, syncProgress])
+
 
   return (
     <View className="flex-1" style={{ backgroundColor: "#E5243B" }}>
